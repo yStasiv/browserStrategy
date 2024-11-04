@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Game - Реєстрація та Авторизація</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="form-container">
+        <div class="registration-container">
+            <h2>Реєстрація</h2>
+            <form id="registerForm">
+                <label for="username">Ім'я користувача:</label>
+                <input type="text" id="regUsername" name="regUsername" required>
+
+                <label for="password">Пароль:</label>
+                <input type="password" id="regPassword" name="regPassword" required>
+
+                <button type="button" onclick="register()">Зареєструватися</button>
+            </form>
+        </div>
+
+        <div class="login-container">
+            <h2>Авторизація</h2>
+            <form id="loginForm">
+                <label for="username">Ім'я користувача:</label>
+                <input type="text" id="loginUsername" name="loginUsername" required>
+
+                <label for="password">Пароль:</label>
+                <input type="password" id="loginPassword" name="loginPassword" required>
+
+                <button type="button" onclick="login()">Увійти</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        function register() {
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+
+            fetch('http://127.0.0.1:5000/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message));
+        }
+
+        function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            fetch('http://127.0.0.1:5000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message));
+        }
+    </script>
+</body>
+</html>

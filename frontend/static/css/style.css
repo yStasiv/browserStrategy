@@ -1,0 +1,84 @@
+/* Загальні стилі для сторінки */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.form-container {
+    display: flex;
+    flex-direction: column; /* Розташування форм у стовпчик */
+    gap: 25px; /* Відступ між формами */
+    align-items: center; /* Вирівнювання по центру */
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Контейнер форми реєстрації */
+.registration-container,
+.login-container {
+    background-color: #fff;
+    padding: 20px 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Заголовок форми */
+.registration-container h2,
+.login-container h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Стилі для полів форми */
+.registration-container label ,
+.login-container label{
+    display: block;
+    text-align: left;
+    margin-bottom: 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+.registration-container input[type="text"], 
+.registration-container input[type="password"], 
+.login-container input[type="text"],
+.login-container input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+/* Стиль кнопки */
+.registration-container button, 
+.login-container button {
+    width: 100%;
+    padding: 10px;
+    background-color: #5cb85c;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.registration-container button:hover, 
+.login-container  button:hover {
+    background-color: #4cae4c;
+}
