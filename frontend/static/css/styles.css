@@ -8,12 +8,13 @@ body {
     height: 100vh;
     margin: 0;
 }
-/* Login/Register */
+
+/* Контейнер форми (реєстрація/логін) */
 .form-container {
     display: flex;
-    flex-direction: column; /* Розташування форм у стовпчик */
-    gap: 25px; /* Відступ між формами */
-    align-items: center; /* Вирівнювання по центру */
+    flex-direction: column;
+    gap: 25px;
+    align-items: center;
     padding: 20px;
     background-color: #f9f9f9;
     border-radius: 8px;
@@ -22,39 +23,27 @@ body {
     margin: 0 auto;
 }
 
-/* Контейнер форми реєстрації */
+/* Контейнери для реєстрації та логіну */
 .registration-container,
 .login-container {
     background-color: #fff;
     padding: 20px 40px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    max-width: 400px;
     width: 100%;
     text-align: center;
 }
 
-/* Заголовок форми */
+/* Заголовки для форм */
 .registration-container h2,
 .login-container h2 {
     color: #333;
     margin-bottom: 20px;
 }
 
-/* Стилі для полів форми */
-.registration-container label ,
-.login-container label{
-    display: block;
-    text-align: left;
-    margin-bottom: 5px;
-    color: #666;
-    font-size: 14px;
-}
-
-.registration-container input[type="text"], 
-.registration-container input[type="password"], 
-.login-container input[type="text"],
-.login-container input[type="password"] {
+/* Поля введення */
+.registration-container input,
+.login-container input {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
@@ -64,23 +53,172 @@ body {
     font-size: 16px;
 }
 
-/* Стиль кнопки */
-.registration-container button, 
-.login-container button {
+/* Кнопки для форм */
+button {
     width: 100%;
     padding: 10px;
-    background-color: #5cb85c;
-    color: #fff;
+    font-size: 16px;
     border: none;
     border-radius: 4px;
-    font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
-.registration-container button:hover, 
-.login-container  button:hover {
-    background-color: #4cae4c;
+/* Стилі для кнопок */
+.registration-container button,
+.login-container button,
+.castle-btn button,
+.logout-btn button {
+    background-color: #4caf50;
+    color: white;
 }
 
-/* Character styles */
+button:hover {
+    background-color: #45a049;
+}
+
+
+/* #######################################################################################################*/
+
+.avatar {
+    position: relative;
+    display: inline-block;
+    text-align: center;
+}
+
+.avatar-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+}
+
+.avatar-caption {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #555;
+    font-weight: bold;
+}
+
+/* Стилі для ресурсів персонажа */
+.character-container {
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    width: 70%;
+    max-width: 900px;
+    font-family: 'Georgia', serif;
+    border: 1px solid #d3c7b3;  /* Легкий контур для стилю старої книжки */
+    background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Old_book_paper_texture.jpg/1280px-Old_book_paper_texture.jpg'); /* Текстура книжкового паперу */
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.character-resources {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #3b2f2a;
+}
+
+.resource {
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #fff8e1;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.resource-icon,
+.exp-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+}
+
+/* Стилі для шкали досвіду */
+.character-level-experience {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #3b2f2a;
+}
+
+.experience-bar {
+    position: relative;
+    width: 100%;
+    height: 20px;
+    background-color: #d6b37a;
+    border-radius: 10px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+.experience-filled {
+    height: 100%;
+    background-color: #8a4b31;
+    transition: width 0.5s ease;
+}
+
+.experience-text {
+    position: absolute;
+    top: 0;
+    left: 10px;
+    right: 10px;
+    text-align: center;
+    font-size: 14px;
+    color: #fff;
+    font-weight: bold;
+    line-height: 20px;
+}
+
+.max-lvl-text {
+    margin-top: 10px;
+    font-size: 16px;
+    color: #555; /* Змініть на бажаний колір */
+    text-align: center;
+}
+
+/* Кнопка замку */
+.castle-btn {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.castle-btn button {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #8a4b31;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.castle-btn button:hover {
+    background-color: #7b3e28;
+}
+
+/* Кнопка виходу */
+.logout-btn {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.logout-btn button {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.logout-btn button:hover {
+    background-color: #c62828;
+}

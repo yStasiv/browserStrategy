@@ -6,24 +6,47 @@
 <div class="character-container">
     <!-- Ресурси -->
     <div class="character-resources">
-        <span class="resource">Золото: {{ user.gold }}</span>
-        <span class="resource">Дерево: {{ user.wood }}</span>
-        <span class="resource">Камінь: {{ user.stone }}</span>
+        <span class="resource">
+            <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ user.gold }}
+        </span>
+        <span class="resource">
+            <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Дерево: {{ user.wood }}
+        </span>
+        <span class="resource">
+            <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Камінь: {{ user.stone }}
+        </span>
     </div>
 
     <div class="character-info">
         <!-- Іконка персонажа -->
         <div class="avatar">
-            <img src="https://via.placeholder.com/150" alt="Avatar" class="avatar-img">
+            <img src="../static/images/simple-elfe.png" alt="Avatar" class="avatar-img">
+            <span class="avatar-caption">{{ user.username }}</span>
+
         </div>
 
-        <!-- Рівень і досвід -->
         <div class="character-level-experience">
-            <span>Рівень: {{ user.level }}</span>
+            {% if next_level_exp %}
+            <span>Рівень: {{ user.level }} ({{ ((user.experience / next_level_exp) * 100) | round(0) }}%)</span>
+            <img src="../static/images/exp-icon.png" alt="Exp Icon" class="exp-icon">
             <div class="experience-bar">
-                <div class="experience-filled" style="width: {{ (user.level % 10) * 10 }}%"></div>
+                <div class="experience-filled" style="width: {{ (user.experience / next_level_exp) * 100 }}%"></div>
+                <span class="experience-text">
+                    Поточний досвід: {{ user.experience }} / {{ next_level_exp }}
+                </span>
             </div>
+            {% else %}
+            <span>Рівень: {{ user.level }} ({{ user.experience }})</span>
+            <span class="max-lvl-text">Максимальний рівень досягнуто!</span>
+            {% endif %}
         </div>
+    </div>
+
+    <!-- Кнопка замку -->
+    <div class="castle-btn">
+        <form action="/castle" method="get">
+            <button type="submit">Перейти до замку</button>
+        </form>
     </div>
 
     <!-- Кнопка виходу -->

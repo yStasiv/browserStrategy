@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Замок{% endblock %}
+
+{% block body %}
+<div class="castle-page">
+    <h1>Вибір війська</h1>
+
+    <!-- Форма для вибору і набору юнітів -->
+    <form action="/castle" method="post">
+        <table>
+            <thead>
+                <tr>
+                    <th>Тип юніта</th>
+                    <th>Поточна кількість</th>
+                    <th>Набрати</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for unit in available_units %}
+                <tr>
+                    <td>{{ unit.name }}</td>
+                    <td>{{ user_units.get(unit.name, 0) }}</td>
+                    <td>
+                        <!-- Поле введення для кількості юнітів, яке має обмеження відповідно до рівня -->
+                        <input type="number" name="{{ unit.name }}" id="{{ unit.name }}" min="0" max="{{ unit.max_units }}" value="0">
+                        <span> / {{ unit.max_units }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit">Набрати війська</button>
+    </form>
+
+    <h2>Ваша армія</h2>
+    <ul>
+        {% for unit, qty in user_units.items() %}
+            <li>{{ unit }}: {{ qty }}</li>
+        {% endfor %}
+    </ul>
+
+    <a href="/character">Повернутися до персонажа</a>
+</div>
+{% endblock %}
