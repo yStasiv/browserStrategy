@@ -1,17 +1,15 @@
-# backend/models.py
+from sqlalchemy import Column, Integer, String
+from .database import Base
 
-from flask_sqlalchemy import SQLAlchemy
+class User(Base):
+    __tablename__ = "users"
 
-# Створюємо об'єкт SQLAlchemy, який потім будемо імпортувати
-db = SQLAlchemy()
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    password = Column(String)
 
-class User(db.Model):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(80), nullable=False)
-    level = db.Column(db.Integer, default=1)
-    gold = db.Column(db.Integer, default=0)
-
-    def __repr__(self):
-        return f'<User {self.username}>'
+    level = Column(Integer, default=1)  
+    gold = Column(Integer, default=0) 
+    wood = Column(Integer, default=0)  
+    stone = Column(Integer, default=0) 
+    session_id = Column(String, unique=True, nullable=True)  # Додано поле для session_id

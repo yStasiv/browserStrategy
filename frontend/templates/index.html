@@ -3,33 +3,33 @@
 {% block title %}Увійти/Зареєструватись{% endblock %}
 
 {% block body %}
-    <div class="form-container">
-        <div class="registration-container">
-            <h2>Реєстрація</h2>
-            <form id="registerForm" method="post" action="/register">
-                <label for="username">Ім'я користувача:</label>
-                <input type="text" id="regUsername" name="regUsername" required>
+<div class="form-container">
+    <div class="registration-container">
+        <h2>Реєстрація</h2>
+        <form id="registerForm" method="POST" action="/register">
+            <label for="username">Ім'я користувача:</label>
+            <input type="text" name="username" required>
 
-                <label for="password">Пароль:</label>
-                <input type="password" id="regPassword" name="regPassword" required>
+            <label for="password">Пароль:</label>
+            <input type="password" name="password" required>
 
-                <button type="submit">Зареєструватися</button>
-            </form>
-        </div>
-
-        <div class="login-container">
-            <h2>Авторизація</h2>
-            <form id="loginForm" method="post" action="/login">
-                <label for="username">Ім'я користувача:</label>
-                <input type="text" id="loginUsername" name="loginUsername" required>
-
-                <label for="password">Пароль:</label>
-                <input type="password" id="loginPassword" name="loginPassword" required>
-
-                <button type="submit">Увійти</button>
-            </form>
-        </div>
+            <button type="submit">Зареєструватися</button>
+        </form>
     </div>
+
+    <div class="login-container">
+        <h2>Авторизація</h2>
+        <form id="loginForm" method="POST" action="/login">
+            <label for="username">Ім'я користувача:</label>
+            <input type="text" name="username" required>
+
+            <label for="password">Пароль:</label>
+            <input type="password" name="password" required>
+
+            <button type="submit">Увійти</button>
+        </form>
+    </div>
+</div>
 
 {% endblock %}
 

@@ -3,10 +3,34 @@
 {% block title %}Персонаж{% endblock %}
 
 {% block body %}
-    <div class="character-page">
-        <h1>Ласкаво просимо, {{ user.username }}!</h1>
-        <p>Рівень: {{ user.level }}</p>
-        <p>Золото: {{ user.gold }}</p>
-        <a href="{{ url_for('logout') }}">Вийти</a>
+<div class="character-container">
+    <!-- Ресурси -->
+    <div class="character-resources">
+        <span class="resource">Золото: {{ user.gold }}</span>
+        <span class="resource">Дерево: {{ user.wood }}</span>
+        <span class="resource">Камінь: {{ user.stone }}</span>
     </div>
+
+    <div class="character-info">
+        <!-- Іконка персонажа -->
+        <div class="avatar">
+            <img src="https://via.placeholder.com/150" alt="Avatar" class="avatar-img">
+        </div>
+
+        <!-- Рівень і досвід -->
+        <div class="character-level-experience">
+            <span>Рівень: {{ user.level }}</span>
+            <div class="experience-bar">
+                <div class="experience-filled" style="width: {{ (user.level % 10) * 10 }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопка виходу -->
+    <div class="logout-btn">
+        <form action="/logout" method="POST">
+            <button type="submit">Вийти</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

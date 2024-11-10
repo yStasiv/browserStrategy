@@ -8,7 +8,7 @@ body {
     height: 100vh;
     margin: 0;
 }
-
+/* Login/Register */
 .form-container {
     display: flex;
     flex-direction: column; /* Розташування форм у стовпчик */
@@ -82,3 +82,5 @@ body {
 .login-container  button:hover {
     background-color: #4cae4c;
 }
+
+/* Character styles */
