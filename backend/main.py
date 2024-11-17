@@ -11,6 +11,10 @@ app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
 db = database.init_db()
 
+# Optionl
+# Updated databace via new unit types (uncomment)
+# auth.AuthHelper.add_unit_types(db)  # TODO: fix it
+
 # Включаємо роутери
 app.include_router(auth.router)
 app.include_router(character.router)

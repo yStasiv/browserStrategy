@@ -53,6 +53,14 @@ body {
     font-size: 16px;
 }
 
+select[name="fraction"] {
+    /* Ваші стилі тут */
+    width: 200px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
 /* Кнопки для форм */
 button {
     width: 100%;
@@ -221,4 +229,42 @@ button:hover {
 
 .logout-btn button:hover {
     background-color: #c62828;
+}
+
+.castle-page-my-unit-list {
+    margin-top: 50px;
+    font-family: Arial, sans-serif;
+    color: #333;
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.castle-page-my-unit-list h2 {
+    margin-bottom: 15px;
+}
+
+.castle-page-my-unit-list ul {
+    list-style-type: none; /* Видаляє стандартні маркери списку */
+    padding-left: 0;
+}
+
+.castle-page-my-unit-list li {
+    margin-bottom: 10px; 
+    padding: 10px;
+    /* background-color: #fff; */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+a[href="/character"] {
+    display: inline-block;
+    margin-top: 20px;
+    color: #ff0000;
+    text-decoration: none; /* remove underline from url */
+    font-weight: bold;
+}
+
+a[href="/character"]:hover {
+    text-decoration: underline; /* Підкреслення при наведенні */
 }

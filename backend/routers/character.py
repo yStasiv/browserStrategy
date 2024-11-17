@@ -18,21 +18,21 @@ class CharacterHelper:
         return int(base_experience * (1.3 ** (level - 1)))
      
     @staticmethod
-    def update_user_level(user: models.User, db: Session):
-        """Перевіряє, чи досить досвіду для підвищення рівня, і підвищує рівень."""
+    def update_user_level(user: models.User, db: Session) -> None:
+        """Get user exp, check if lvl is correct and up lvl if needed"""
         next_level_exp = CharacterHelper.experience_needed_for_next_level(user.level)
         
         if next_level_exp is None:
             # Якщо досягнуто максимальний рівень, нічого не робимо
             return
 
-        # Перевірка, чи є досвід для підвищення рівня
+        # Перевірка, чи є досвід для підвищення рівня  # TODO: перенести в функцію логування?
         while user.experience >= next_level_exp and user.level < 8:
-            # Підвищуємо рівень
-            user.level += 1
+            user.level += 1  # Підвищуємо рівень
             user.experience -= next_level_exp  # Віднімаємо досвід для наступного рівня
             next_level_exp = CharacterHelper.experience_needed_for_next_level(user.level)  # Обчислюємо досвід для наступного рівня
             db.commit()  # Зберігаємо зміни в базі даних
+
         
 class CharRotes(CharacterHelper):
 

@@ -41,10 +41,10 @@ class CastleRotes(CastleHelpers):
 
 
         available_units = [
-        {"name": "Піхотинці", "max_units": 10},
-        {"name": "Стрільці", "max_units": 8},
-        {"name": "Кавалерія", "max_units": 5},
-        {"name": "Tester", "max_units": 2},
+        {"name": "Піхотинці", "max_units": 10, "icon_url": "../static/images/frankenstein.png"},
+        {"name": "Стрільці", "max_units": 8, "icon_url": "../static/images/frankenstein.png"},
+        {"name": "Кавалерія", "max_units": 5, "icon_url": "../static/images/frankenstein.png"},
+        {"name": "Tester", "max_units": 1, "icon_url": "../static/images/frankenstein.png"},
     ]
     
         # Захардкоджені війська користувача
@@ -52,7 +52,7 @@ class CastleRotes(CastleHelpers):
             "Піхотинці": 3,
             "Стрільці": 5,
             "Кавалерія": 2,
-            "Дракони": 1
+            "Tester ": 2
         }
 
         
@@ -97,6 +97,7 @@ class CastleRotes(CastleHelpers):
                 CastleHelpers.add_units_to_user(user, unit_type.id, quantity, db)
 
             available_units = CastleHelpers.get_available_units(user.level, db)  # Отримуємо доступні юніти
+        print(db.query(models.UserUnit).filter(models.UserUnit.user_id == user.id).all())
 
         return templates.TemplateResponse("castle.html", {
             "request": request,

@@ -10,6 +10,7 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     password = Column(String)
 
+    fraction = Column(String, default="Elfe")
     experience = Column(Integer, default=1)
 
     level = Column(Integer, default=1)  

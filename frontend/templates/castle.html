@@ -4,42 +4,41 @@
 
 {% block body %}
 <div class="castle-page">
-    <h1>Вибір війська</h1>
+    <h1>Choose units</h1>
 
-    <!-- Форма для вибору і набору юнітів -->
-    <form action="/castle" method="post">
-        <table>
-            <thead>
-                <tr>
-                    <th>Тип юніта</th>
-                    <th>Поточна кількість</th>
-                    <th>Набрати</th>
-                </tr>
-            </thead>
-            <tbody>
+    <!-- Набір Юнітів -->
+    <form action="/castle" method="post" id="choose-units-form">
+        <div class="unit-selection">
+            <div class="unit-grid">
                 {% for unit in available_units %}
-                <tr>
-                    <td>{{ unit.name }}</td>
-                    <td>{{ user_units.get(unit.name, 0) }}</td>
-                    <td>
-                        <!-- Поле введення для кількості юнітів, яке має обмеження відповідно до рівня -->
+                <div class="unit-slot">
+                    <div class="unit-info">
+                        <img src="{{ unit.icon_url }}" alt="{{ unit.name }}", height="25px">
+                        <span>{{ unit.name }}</span>
+                        <span>Actual count: {{ user_units.get(unit.name, 0) }}</span>
                         <input type="number" name="{{ unit.name }}" id="{{ unit.name }}" min="0" max="{{ unit.max_units }}" value="0">
                         <span> / {{ unit.max_units }}</span>
-                    </td>
-                </tr>
+                    </div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
-        <button type="submit">Набрати війська</button>
+            </div>
+            <button type="submit">Набрати війська</button>
+        </div>
     </form>
 
-    <h2>Ваша армія</h2>
-    <ul>
-        {% for unit, qty in user_units.items() %}
-            <li>{{ unit }}: {{ qty }}</li>
-        {% endfor %}
-    </ul>
-
+    <!-- <div class="unit-info">  #todo: add info for each unit
+        <h2>Blue-Elfe</h2>
+        <img src="../static/images/exp-icon.png" alt="Blue-Elfe", height="50px">
+        <p>Лісова істота.</p>
+    </div> -->
+    <div class="castle-page-my-unit-list">
+        <h2>My units</h2>
+        <ul>
+            {% for unit, qty in user_units.items() %}
+                <li>{{ unit }}: {{ qty }}</li>
+            {% endfor %}
+        </ul>
+    </div>
     <a href="/character">Повернутися до персонажа</a>
 </div>
 {% endblock %}
