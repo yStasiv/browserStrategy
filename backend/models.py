@@ -28,8 +28,9 @@ class UnitType(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
+    fraction = Column(String)
     level_required = Column(Integer)  # Рівень, на якому можна набирати цей тип війська
-    max_units = Column(Integer)  # Максимальна кількість юнітів цього типу для кожного героя
+    max_quantity = Column(Integer)  # Максимальна кількість юнітів цього типу для кожного героя
 
 class UserUnit(Base):
     __tablename__ = "user_units"

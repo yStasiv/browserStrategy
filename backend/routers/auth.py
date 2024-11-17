@@ -14,40 +14,41 @@ class AuthHelper():
     def add_unit_types(db):
         """Add unit types for all fractions"""
         elfe_unit_types = [
-            {"name": "Baby", "level_required": 1, "max_units": 17},
-            {"name": "Junior", "level_required": 2, "max_units": 12},
-            {"name": "Adult", "level_required": 5, "max_units": 8},
-            {"name": "Old", "level_required": 8, "max_units": 2}
+            {"name": "Baby", "level_required": 1, "fraction":"elfe", "max_quantity": 17},
+            {"name": "Junior", "level_required": 2, "fraction":"elfe", "max_quantity": 12},
+            {"name": "Adult", "level_required": 5, "fraction":"elfe", "max_quantity": 8},
+            {"name": "Old", "level_required": 8, "fraction":"elfe", "max_quantity": 2}
         ]
 
         green_elfe_unit_types =[
-            {"name": "green_Baby", "level_required": 1, "max_units": 19},
-            {"name": "green_Junior", "level_required": 2, "max_units": 10},
-            {"name": "green_Adult", "level_required": 5, "max_units": 9},
-            {"name": "green_Old", "level_required": 8, "max_units": 3}
+            {"name": "green_Baby", "level_required": 1, "fraction":"darkElfe", "max_quantity": 19},
+            {"name": "green_Junior", "level_required": 2, "fraction":"darkElfe", "max_quantity": 10},
+            {"name": "green_Adult", "level_required": 5, "fraction":"darkElfe", "max_quantity": 9},
+            {"name": "green_Old", "level_required": 8, "fraction":"darkElfe", "max_quantity": 3}
         ]
         for unit_types in [elfe_unit_types, green_elfe_unit_types]:
             for unit in unit_types:
-                unit_type = models.UnitType(name=unit["name"], level_required=unit["level_required"], max_units=unit["max_units"])
+                unit_type = models.UnitType(name=unit["name"], level_required=unit["level_required"], fraction=unit["fraction"],  max_quantity=unit["max_quantity"])
                 db.add(unit_type)
 
         db.commit()
 
-    def get_default_unit_types(db: Session, fraction: str = ""):
+    def get_default_unit_types(fraction: str, db: Session):
         """Get unit types by fraction"""
-        return db.query(models.UnitType).filter(models.User.fraction == fraction).all()
+        return db.query(models.UnitType).filter(models.UnitType.fraction == fraction).all()
 
     def set_default_user_units(user: models.User, db: Session) -> None:
         """Set default user unit values"""
         default_units = AuthHelper.get_default_unit_types(user.fraction, db)
 
         for unit in default_units:
-            unit_type = db.query(models.UnitType).filter(models.UnitType.name == unit["name"]).first()
+            unit_type = db.query(models.UnitType).filter(models.UnitType.name == unit.name).first()
             if unit_type:
+                # TODO: add check if unit was added to avoid duplicates
                 user_unit = models.UserUnit(
                     user_id=user.id,
                     unit_type_id=unit_type.id,
-                    quantity=unit["quantity"]
+                    quantity=0  # unit.max_quantity
                 )
                 db.add(user_unit)
 
