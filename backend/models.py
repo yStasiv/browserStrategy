@@ -31,11 +31,12 @@ class UnitType(Base):
     fraction = Column(String)
     level_required = Column(Integer)  # Рівень, на якому можна набирати цей тип війська
     max_quantity = Column(Integer)  # Максимальна кількість юнітів цього типу для кожного героя
+    icon_url = Column(String)
 
 class UserUnit(Base):
     __tablename__ = "user_units"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)  # TODO: could be removed?
     user_id = Column(Integer, ForeignKey("users.id"))
     unit_type_id = Column(Integer, ForeignKey("unit_types.id"))
     quantity = Column(Integer, default=0)

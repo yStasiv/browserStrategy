@@ -1,0 +1,547 @@
+2024-11-19 23:51:42:ERROR - castle.py:39 Unit quantity should be between 0 and 12, actual quantity is 123
+2024-11-19 23:55:01:ERROR - castle.py:41 Unit quantity should be between 0 and 17, actual quantity is 213
+2024-11-19 23:55:01:ERROR - castle.py:41 Unit quantity should be between 0 and 17, actual quantity is 213
+2024-11-19 23:55:18:ERROR - castle.py:41 Unit quantity should be between 0 and 17, actual quantity is 1222
+2024-11-19 23:55:18:ERROR - castle.py:41 Unit quantity should be between 0 and 17, actual quantity is 1222
+2024-11-19 23:56:28:ERROR - castle.py:41 Unit quantity should be between 0 and 12, actual quantity is 213
+2024-11-19 23:56:28:ERROR - castle.py:41 Unit quantity should be between 0 and 12, actual quantity is 213
+2024-11-19 23:56:40:ERROR - castle.py:41 Unit quantity should be between 0 and 17, actual quantity is 123123
+2024-11-19 23:56:40:ERROR - castle.py:41 Unit quantity should be between 0 and 17, actual quantity is 123123
+2024-11-19 23:57:16:ERROR - castle.py:39 Unit quantity should be between 0 and 17, actual quantity is 12313
+2024-11-19 23:57:44:ERROR - castle.py:39 Unit quantity should be between 0 and 12, actual quantity is 1123123
+2024-11-19 23:57:49:ERROR - castle.py:110 invalid literal for int() with base 10: '03e2'
+2024-11-19 23:59:05:ERROR - castle.py:110 invalid literal for int() with base 10: '0e222', action was ignored
+2024-11-19 23:59:33:ERROR - castle.py:39 Unit quantity should be between 0 and 12, actual quantity is 45
+2024-11-19 23:59:33:ERROR - castle.py:39 Unit quantity should be between 0 and 8, actual quantity is 123
+2024-11-20 00:00:16:ERROR - castle.py:39 Unit Baby quantity should be between 0 and 17, actual quantity is 1231
+2024-11-20 00:00:16:ERROR - castle.py:39 Unit Junior quantity should be between 0 and 12, actual quantity is 123123
+2024-11-20 00:00:16:ERROR - castle.py:39 Unit Adult quantity should be between 0 and 8, actual quantity is 123123
+2024-11-20 00:00:34:ERROR - castle.py:110 invalid literal for int() with base 10: '0e3', action was ignored
+2024-11-20 00:00:34:ERROR - castle.py:110 invalid literal for int() with base 10: '0223e2', action was ignored
+2024-11-20 00:00:34:ERROR - castle.py:39 Unit Adult quantity should be between 0 and 8, actual quantity is 122
+2024-11-20 00:06:21:INFO - castle.py:17 Fetching available units for user id 3, level 7, fraction elfe
+2024-11-20 00:08:15:INFO - castle.py:17 Fetching available units for user id 3, level 7, fraction elfe
+2024-11-20 00:08:33:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:08:33:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:08:33:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:14:08:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:14:08:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:14:08:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:14:08:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:14:08:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:13:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:13:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:13:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:13:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:13:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:15:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:15:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:15:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:15:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:15:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:18:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:18:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:18:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:18:ERROR - castle.py:46 Unit 'Old' quantity should be between 0 and 2, actual quantity is 1231
+2024-11-20 00:15:18:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:18:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:22:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:22:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:22:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:22:ERROR - castle.py:100 invalid literal for int() with base 10: '0223e2', action was ignored
+2024-11-20 00:15:22:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:22:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:27:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:27:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:27:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:27:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:27:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:28:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:28:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:28:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:28:ERROR - castle.py:46 Unit 'Old' quantity should be between 0 and 2, actual quantity is 123
+2024-11-20 00:15:28:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:28:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:29:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:29:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:29:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:29:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:29:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:32:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:32:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:32:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:32:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:32:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:37:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:37:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:37:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:37:ERROR - castle.py:46 Unit 'Old' quantity should be between 0 and 2, actual quantity is 11
+2024-11-20 00:15:37:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:37:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:38:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:38:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:38:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:38:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:38:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:39:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:39:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:39:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:41:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:41:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:41:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:41:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:42:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:42:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:42:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:42:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:42:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:44:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:44:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:44:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:15:44:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:15:44:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:30:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:30:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:30:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:30:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:30:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:34:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:34:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:34:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:34:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:34:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:37:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:37:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:37:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:37:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:37:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:41:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:41:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:41:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:41:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:41:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:41:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:41:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:41:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:41:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:41:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:41:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:42:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:42:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:42:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:42:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:42:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:42:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:42:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:42:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:42:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:45:INFO - castle.py:17 Fetching available units for user id 3, level 8, fraction elfe
+2024-11-20 00:17:45:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:45:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:17:45:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:17:45:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:17:54:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction elfe
+2024-11-20 00:17:54:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:17:58:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction elfe
+2024-11-20 00:17:58:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:19:31:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction darkElfe
+2024-11-20 00:19:31:WARNING - castle.py:24 No units found for user id 1, level 1, fraction darkElfe
+2024-11-20 00:20:27:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction darkElfe
+2024-11-20 00:20:27:WARNING - castle.py:24 No units found for user id 1, level 1, fraction darkElfe
+2024-11-20 00:20:41:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction darkElfe
+2024-11-20 00:20:41:INFO - castle.py:27 Found unit: green_Baby, level_required: 1
+2024-11-20 00:20:45:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction darkElfe
+2024-11-20 00:20:45:INFO - castle.py:27 Found unit: green_Baby, level_required: 1
+2024-11-20 00:21:03:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction darkElfe
+2024-11-20 00:21:03:INFO - castle.py:27 Found unit: green_Baby, level_required: 1
+2024-11-20 00:21:22:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction darkElfe
+2024-11-20 00:21:22:INFO - castle.py:27 Found unit: green_Baby, level_required: 1
+2024-11-20 00:22:11:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction darkElfe
+2024-11-20 00:22:11:INFO - castle.py:27 Found unit: green_Baby, level_required: 1
+2024-11-20 00:22:21:INFO - castle.py:17 Fetching available units for user id 2, level 1, fraction elfe
+2024-11-20 00:22:21:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:22:29:ERROR - castle.py:46 Unit 'Baby' quantity should be between 0 and 17, actual quantity is 45
+2024-11-20 00:22:29:INFO - castle.py:17 Fetching available units for user id 2, level 1, fraction elfe
+2024-11-20 00:22:29:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:22:32:INFO - castle.py:17 Fetching available units for user id 2, level 1, fraction elfe
+2024-11-20 00:22:32:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:22:51:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:22:51:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:22:51:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:22:51:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:22:51:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:22:54:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:22:54:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:22:54:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:22:54:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:22:54:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:00:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:00:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:00:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:00:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:00:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:06:ERROR - castle.py:46 Unit 'Baby' quantity should be between 0 and 17, actual quantity is 125
+2024-11-20 00:23:06:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:06:ERROR - castle.py:46 Unit 'Junior' quantity should be between 0 and 12, actual quantity is 15
+2024-11-20 00:23:06:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:06:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:06:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:06:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:09:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:09:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:09:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:09:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:09:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:12:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:12:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:12:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:12:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:12:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:14:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:14:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:14:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:14:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:14:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:15:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:15:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:15:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:15:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:15:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:17:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:17:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:17:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:17:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:17:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:26:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:26:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:26:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:26:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:26:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:23:29:INFO - castle.py:17 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-20 00:23:29:INFO - castle.py:27 Found unit: Baby, level_required: 1
+2024-11-20 00:23:29:INFO - castle.py:27 Found unit: Junior, level_required: 2
+2024-11-20 00:23:29:INFO - castle.py:27 Found unit: Adult, level_required: 5
+2024-11-20 00:23:29:INFO - castle.py:27 Found unit: Old, level_required: 8

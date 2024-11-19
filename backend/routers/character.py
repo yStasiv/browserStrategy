@@ -27,10 +27,14 @@ class CharacterHelper:
             return
 
         # Перевірка, чи є досвід для підвищення рівня  # TODO: перенести в функцію логування?
-        while user.experience >= next_level_exp and user.level < 8:
+        while int(user.experience) >= int(next_level_exp) and int(user.level) < 8:
             user.level += 1  # Підвищуємо рівень
-            user.experience -= next_level_exp  # Віднімаємо досвід для наступного рівня
+            # user.experience -= next_level_exp  # Віднімаємо досвід для наступного рівня
             next_level_exp = CharacterHelper.experience_needed_for_next_level(user.level)  # Обчислюємо досвід для наступного рівня
+            if next_level_exp is None:
+                # logger.info("Max lvl was claimed!")
+                db.commit()
+                break
             db.commit()  # Зберігаємо зміни в базі даних
 
         

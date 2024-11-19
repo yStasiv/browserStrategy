@@ -14,17 +14,17 @@ class AuthHelper():
     def add_unit_types(db):
         """Add unit types for all fractions"""
         elfe_unit_types = [
-            {"name": "Baby", "level_required": 1, "fraction":"elfe", "max_quantity": 17},
-            {"name": "Junior", "level_required": 2, "fraction":"elfe", "max_quantity": 12},
-            {"name": "Adult", "level_required": 5, "fraction":"elfe", "max_quantity": 8},
-            {"name": "Old", "level_required": 8, "fraction":"elfe", "max_quantity": 2}
+            {"name": "Baby", "level_required": 1, "fraction":"elfe", "max_quantity": 17, "icon_url": "../static/images/frankenstein.png"},
+            {"name": "Junior", "level_required": 2, "fraction":"elfe", "max_quantity": 12, "icon_url": "../static/images/frankenstein.png"},
+            {"name": "Adult", "level_required": 5, "fraction":"elfe", "max_quantity": 8, "icon_url": "../static/images/frankenstein.png"},
+            {"name": "Old", "level_required": 8, "fraction":"elfe", "max_quantity": 2, "icon_url": "../static/images/frankenstein.png"}
         ]
 
         green_elfe_unit_types =[
-            {"name": "green_Baby", "level_required": 1, "fraction":"darkElfe", "max_quantity": 19},
-            {"name": "green_Junior", "level_required": 2, "fraction":"darkElfe", "max_quantity": 10},
-            {"name": "green_Adult", "level_required": 5, "fraction":"darkElfe", "max_quantity": 9},
-            {"name": "green_Old", "level_required": 8, "fraction":"darkElfe", "max_quantity": 3}
+            {"name": "green_Baby", "level_required": 1, "fraction":"darkElfe", "max_quantity": 19, "icon_url": "../static/images/frankenstein.png"},
+            {"name": "green_Junior", "level_required": 2, "fraction":"darkElfe", "max_quantity": 10, "icon_url": "../static/images/frankenstein.png"},
+            {"name": "green_Adult", "level_required": 5, "fraction":"darkElfe", "max_quantity": 9, "icon_url": "../static/images/frankenstein.png"},
+            {"name": "green_Old", "level_required": 8, "fraction":"darkElfe", "max_quantity": 3, "icon_url": "../static/images/frankenstein.png"}
         ]
         for unit_types in [elfe_unit_types, green_elfe_unit_types]:
             for unit in unit_types:
@@ -43,16 +43,16 @@ class AuthHelper():
 
         for unit in default_units:
             unit_type = db.query(models.UnitType).filter(models.UnitType.name == unit.name).first()
-            if unit_type:
-                # TODO: add check if unit was added to avoid duplicates
-                user_unit = models.UserUnit(
-                    user_id=user.id,
-                    unit_type_id=unit_type.id,
-                    quantity=0  # unit.max_quantity
-                )
-                db.add(user_unit)
-
-        db.commit()
+            if unit_type: # check if unit was added to avoid duplicates
+                existing_user_unit = db.query(models.UserUnit).filter( models.UserUnit.user_id == user.id, models.UserUnit.unit_type_id == unit_type.id ).first() 
+                if not existing_user_unit: 
+                    user_unit = models.UserUnit( 
+                        user_id=user.id, 
+                        unit_type_id=unit_type.id,
+                          quantity=0 # unit.max_quantity 
+                          ) 
+                    db.add(user_unit) 
+            db.commit()
 
 class AuthRotes:
     @router.post("/register")
@@ -81,9 +81,9 @@ class AuthRotes:
         db.add(new_user)
         db.commit()
 
-        AuthHelper.add_unit_types(db)  # TODO: move from there...
+        # AuthHelper.add_unit_types(db)  # TODO: move from there...
 
-        AuthHelper.set_default_user_units(new_user, db)
+        # AuthHelper.set_default_user_units(new_user, db)  # TODO: Think if i need it))
 
         return RedirectResponse(url="/", status_code=303)
 

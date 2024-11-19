@@ -16,7 +16,7 @@
                         <img src="{{ unit.icon_url }}" alt="{{ unit.name }}", height="25px">
                         <span>{{ unit.name }}</span>
                         <span>Actual count: {{ user_units.get(unit.name, 0) }}</span>
-                        <input type="number" name="{{ unit.name }}" id="{{ unit.name }}" min="0" max="{{ unit.max_units }}" value="0">
+                        <input type="number" name="{{ unit.name }}" id="{{ unit.name }}" min="0" max="{{ unit.max_quantity }}" value={{ user_units.get(unit.name, 0) }}>
                         <span> / {{ unit.max_units }}</span>
                     </div>
                 </div>
