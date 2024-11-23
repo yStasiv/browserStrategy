@@ -2,10 +2,9 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
-from .. import models, database
-from utils import setup_logger
+from .. import models, database, utils
 
-logger = setup_logger(__name__)
+logger = utils.setup_logger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
@@ -73,7 +72,7 @@ class CastleRotes(CastleHelpers):
         user_units = db.query(models.UserUnit).filter(models.UserUnit.user_id == user.id).all()
         user_units_dict = {unit.unit_type.name: unit.quantity for unit in user_units}
 
-        
+
         return templates.TemplateResponse("castle.html", {
             "request": request,
             "user": user,

@@ -545,3 +545,67 @@
 2024-11-20 00:23:29:INFO - castle.py:27 Found unit: Junior, level_required: 2
 2024-11-20 00:23:29:INFO - castle.py:27 Found unit: Adult, level_required: 5
 2024-11-20 00:23:29:INFO - castle.py:27 Found unit: Old, level_required: 8
+2024-11-20 00:26:37:INFO - castle.py:17 Fetching available units for user id 1, level 1, fraction darkElfe
+2024-11-20 00:26:37:INFO - castle.py:27 Found unit: green_Baby, level_required: 1
+2024-11-23 17:33:53:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:33:53:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:33:53:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:33:53:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:33:53:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:33:57:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:33:57:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:33:57:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:33:57:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:33:57:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:34:38:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:34:38:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:34:38:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:34:38:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:34:38:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:36:30:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:36:30:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:36:30:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:36:30:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:36:30:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:36:30:INFO - castle.py:75 {'request': <starlette.requests.Request object at 0x000001DEAB1C8D40>, 'user': <backend.models.User object at 0x000001DEAB260BC0>, 'available_units': [{'name': 'Baby', 'max_units': 17, 'icon_url': None}, {'name': 'Junior', 'max_units': 12, 'icon_url': None}, {'name': 'Adult', 'max_units': 8, 'icon_url': None}, {'name': 'Old', 'max_units': 2, 'icon_url': None}], 'user_units': {'Baby': 12, 'Junior': 12, 'Adult': 1, 'Old': 2}}
+2024-11-23 17:37:39:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:37:39:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:37:39:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:37:39:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:37:39:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:37:39:INFO - castle.py:75 {'request': <starlette.requests.Request object at 0x000001DEAB1C8D40>, 'user': <backend.models.User object at 0x000001DEAB263D40>, 'available_units': [{'name': 'Baby', 'max_units': 17, 'icon_url': '../static/images/frankenstein.png'}, {'name': 'Junior', 'max_units': 12, 'icon_url': '../static/images/frankenstein.png'}, {'name': 'Adult', 'max_units': 8, 'icon_url': '../static/images/frankenstein.png'}, {'name': 'Old', 'max_units': 2, 'icon_url': '../static/images/frankenstein.png'}], 'user_units': {'Baby': 12, 'Junior': 12, 'Adult': 1, 'Old': 2}}
+2024-11-23 17:38:14:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:38:14:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:38:14:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Old, level_required: 8
+2024-11-23 17:38:14:INFO - castle.py:16 Fetching available units for user id 2, level 8, fraction elfe
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Baby, level_required: 1
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Junior, level_required: 2
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Adult, level_required: 5
+2024-11-23 17:38:14:INFO - castle.py:26 Found unit: Old, level_required: 8

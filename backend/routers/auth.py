@@ -4,14 +4,18 @@ from fastapi import FastAPI, Request, Form, Depends, HTTPException, Response, AP
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
+
+from backend.routers.char_tasks import TaskHelper
 from .. import database, models
-from ..utils import verify_password, hash_password
+from ..utils import verify_password, hash_password, setup_logger
+
+logger = setup_logger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
 
 class AuthHelper():
-    def add_unit_types(db):
+    def add_unit_types(db: Session):
         """Add unit types for all fractions"""
         elfe_unit_types = [
             {"name": "Baby", "level_required": 1, "fraction":"elfe", "max_quantity": 17, "icon_url": "../static/images/frankenstein.png"},
@@ -28,9 +32,14 @@ class AuthHelper():
         ]
         for unit_types in [elfe_unit_types, green_elfe_unit_types]:
             for unit in unit_types:
-                unit_type = models.UnitType(name=unit["name"], level_required=unit["level_required"], fraction=unit["fraction"],  max_quantity=unit["max_quantity"])
+                unit_type = models.UnitType(
+                    name=unit["name"], 
+                    level_required=unit["level_required"],
+                    fraction=unit["fraction"],  
+                    max_quantity=unit["max_quantity"],
+                    icon_url=unit["icon_url"]
+                )
                 db.add(unit_type)
-
         db.commit()
 
     def get_default_unit_types(fraction: str, db: Session):
@@ -82,8 +91,11 @@ class AuthRotes:
         db.commit()
 
         # AuthHelper.add_unit_types(db)  # TODO: move from there...
-
-        # AuthHelper.set_default_user_units(new_user, db)  # TODO: Think if i need it))
+        # AuthHelper.set_default_user_units(new_user, db)  # TODO: Think if i need it)) >>> 23.11.2024 U think that this is no needed
+        db_tasks = TaskHelper.get_all_tasks(db)    
+        for task in db_tasks:
+            TaskHelper.update_tasks_for_users(db, task, [new_user])
+            logger.info(f"Task {task.id} with title: {task.title} was added fot user {new_user.username}")
 
         return RedirectResponse(url="/", status_code=303)
 

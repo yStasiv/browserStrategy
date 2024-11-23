@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Завдання{% endblock %}
+
+{% block body %}
+<div class="tasks-container">
+    <h1>Завдання</h1>
+    <ul class="task-list">
+        {% for user_task in user_tasks %}
+            <li class="task-item">
+                <span class="task-title">{{ user_task.task.title }}</span>
+                <span class="task-description">{{ user_task.task.description }}</span>
+                <span class="task-level">Потрібний рівень: {{ user_task.task.level_required }}</span>
+                <span class="task-status">
+                    {% if user_task.is_completed %}
+                        Виконано
+                    {% else %}
+                        Не виконано
+                    {% endif %}
+                </span>
+                {% if not user_task.is_completed %}
+                <form action="/char_tasks/complete" method="post">
+                    <input type="hidden" name="task_id" value="{{ user_task.task.id }}">
+                    <button type="submit">Виконати</button>
+                </form>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+
+    {% if user.id == 1 %}
+    <h2>Додати нове завдання</h2>
+    <form action="/char_tasks/add" method="post">
+        <label for="title">Назва завдання:</label>
+        <input type="text" id="title" name="title" required>
+        <br>
+        <label for="description">Опис завдання:</label>
+        <textarea id="description" name="description" required></textarea>
+        <br>
+        <label for="level_required">Потрібний рівень:</label>
+        <input type="number" id="level_required" name="level_required" required>
+        <br>
+        <button type="submit">Додати завдання</button>
+    </form>
+    {% endif %}
+<a href="/character">Повернутися до персонажа</a>
+</div>
+
+{% endblock %}

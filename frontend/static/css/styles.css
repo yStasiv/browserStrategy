@@ -76,6 +76,7 @@ button {
 .registration-container button,
 .login-container button,
 .castle-btn button,
+.task-btn button,
 .logout-btn button {
     background-color: #4caf50;
     color: white;
@@ -205,6 +206,19 @@ button:hover {
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
+
+.task-btn button {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #a73a0b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 5px;
+    margin-bottom: 5px;
+
 
 .castle-btn button:hover {
     background-color: #7b3e28;

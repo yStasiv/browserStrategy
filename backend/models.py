@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey
 from .database import Base
 from sqlalchemy.orm import relationship
 
@@ -21,6 +21,8 @@ class User(Base):
 
     units = relationship("UserUnit", back_populates="user")
 
+    tasks = relationship("Task", back_populates="user")
+    user_tasks = relationship("UserTask", back_populates="user")
 
 
 class UnitType(Base):
@@ -29,8 +31,8 @@ class UnitType(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     fraction = Column(String)
-    level_required = Column(Integer)  # Рівень, на якому можна набирати цей тип війська
-    max_quantity = Column(Integer)  # Максимальна кількість юнітів цього типу для кожного героя
+    level_required = Column(Integer)
+    max_quantity = Column(Integer)
     icon_url = Column(String)
 
 class UserUnit(Base):
@@ -43,3 +45,28 @@ class UserUnit(Base):
 
     user = relationship("User", back_populates="units")
     unit_type = relationship("UnitType")
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(String)
+    is_completed = Column(Boolean, default=False)
+    # level_required = Column(Integer, ForeignKey("users.level"), default=1)
+    level_required = Column(Integer, ForeignKey("users.id"), default=1)
+
+
+    user = relationship("User", back_populates="tasks")
+    user_tasks = relationship("UserTask", back_populates="task")
+
+class UserTask(Base): 
+    __tablename__ = "user_tasks" 
+    
+    id = Column(Integer, primary_key=True, index=True) 
+    user_id = Column(Integer, ForeignKey("users.id")) 
+    task_id = Column(Integer, ForeignKey("tasks.id")) 
+    is_completed = Column(Boolean, default=False) 
+
+    user = relationship("User", back_populates="user_tasks") 
+    task = relationship("Task", back_populates="user_tasks")
