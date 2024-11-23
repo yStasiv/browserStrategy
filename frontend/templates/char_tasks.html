@@ -18,6 +18,12 @@
                         Не виконано
                     {% endif %}
                 </span>
+                <span class="task-reward">Винагорода: 
+                    {{ user_task.task.reward_gold }} золото, 
+                    {{ user_task.task.reward_wood }} дерево, 
+                    {{ user_task.task.reward_stone }} камінь, 
+                    {{ user_task.task.reward_exp }} досвід 
+                </span>
                 {% if not user_task.is_completed %}
                 <form action="/char_tasks/complete" method="post">
                     <input type="hidden" name="task_id" value="{{ user_task.task.id }}">
@@ -40,6 +46,16 @@
         <label for="level_required">Потрібний рівень:</label>
         <input type="number" id="level_required" name="level_required" required>
         <br>
+        <label for="reward">Нагорода:</label><br>
+        <input type="number" id="reward_gold_input" name="reward_gold" value=0>
+        <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"><br>
+        <input type="number" id="reward_wood_input" name="reward_wood" value=0>
+        <img src="../static/images/wood-resource-icon.png" alt="Gold Icon" class="resource-icon"><br>
+        <input type="number" id="reward_stone_input" name="reward_stone" value=0>
+        <img src="../static/images/stone-resourse-icon.png" alt="Gold Icon" class="resource-icon"><br>
+        <input type="number" id="reward_exp_input" name="reward_exp" value=0>
+        <img src="../static/images/exp-icon.png" alt="Gold Icon" class="resource-icon"><br>
+
         <button type="submit">Додати завдання</button>
     </form>
     {% endif %}

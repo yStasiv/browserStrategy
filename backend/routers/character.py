@@ -2,7 +2,9 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
-from backend import models, database
+from backend import models, database, utils
+
+logger = utils.setup_logger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")

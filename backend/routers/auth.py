@@ -92,6 +92,8 @@ class AuthRotes:
 
         # AuthHelper.add_unit_types(db)  # TODO: move from there...
         # AuthHelper.set_default_user_units(new_user, db)  # TODO: Think if i need it)) >>> 23.11.2024 U think that this is no needed
+
+        # Add all existing tasks for new user
         db_tasks = TaskHelper.get_all_tasks(db)    
         for task in db_tasks:
             TaskHelper.update_tasks_for_users(db, task, [new_user])

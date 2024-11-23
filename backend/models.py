@@ -17,7 +17,7 @@ class User(Base):
     gold = Column(Integer, default=0) 
     wood = Column(Integer, default=0)  
     stone = Column(Integer, default=0) 
-    session_id = Column(String, unique=True, nullable=True)  # Додано поле для session_id
+    session_id = Column(String, unique=True, nullable=True)
 
     units = relationship("UserUnit", back_populates="user")
 
@@ -53,11 +53,15 @@ class Task(Base):
     title = Column(String, index=True)
     description = Column(String)
     is_completed = Column(Boolean, default=False)
+    reward_gold = Column(Integer, default=0)
+    reward_wood = Column(Integer, default=0) 
+    reward_stone = Column(Integer, default=0) 
+    reward_exp = Column(Integer, default=0) 
     # level_required = Column(Integer, ForeignKey("users.level"), default=1)
-    level_required = Column(Integer, ForeignKey("users.id"), default=1)
+    level_required = Column(Integer, ForeignKey("users.id"), default=1)  # TODO remove this fields? $1
 
 
-    user = relationship("User", back_populates="tasks")
+    user = relationship("User", back_populates="tasks")   # TODO remove this fields? $1
     user_tasks = relationship("UserTask", back_populates="task")
 
 class UserTask(Base): 
