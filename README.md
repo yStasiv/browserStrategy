@@ -11,7 +11,7 @@ Tasks for user via some rewards
 Note: Just admin can add new tasks
 
 User can update  characteristics as he wish
-![alt text](AboutImg/AboutImg/CharacteristicsUpdateImg.png)
+![alt text](AboutImg/CharacteristicsUpdateImg.png)
 
 User cat choose some units related to user lvl
 ![alt text](AboutImg/UnitPage.png)
