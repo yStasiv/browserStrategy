@@ -9,8 +9,14 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password = Column(String)
-
+    avatar_url = Column(String, nullable=True) # user img path
     fraction = Column(String, default="Elfe")
+
+    pending_attribute_points =  Column(Integer, default=1)
+    strength = Column(Integer, default=0)
+    defense = Column(Integer, default=0)
+    initiative = Column(Integer, default=0)
+
     experience = Column(Integer, default=1)
 
     level = Column(Integer, default=1)  

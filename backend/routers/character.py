@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Form, HTTPException, Request, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
 from backend import models, database, utils
@@ -37,6 +37,7 @@ class CharacterHelper:
                 # logger.info("Max lvl was claimed!")
                 db.commit()
                 break
+            user.pending_attribute_points += 1
             db.commit()  # Зберігаємо зміни в базі даних
 
         
@@ -60,3 +61,46 @@ class CharRotes(CharacterHelper):
         
         return templates.TemplateResponse("character.html", {"request": request, "user": user,  "next_level_exp": next_level_exp})
         
+
+    @router.post("/update-attribute", response_class=RedirectResponse)
+    async def update_attribute(
+        request: Request,
+        attribute: str = Form(...),
+        db: Session = Depends(database.get_db)
+    ):
+        user_session_id = request.cookies.get("session_id")
+        if not user_session_id:
+            raise HTTPException(status_code=401, detail="Not logged in")
+
+        user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if user.pending_attribute_points <= 0:
+            raise HTTPException(status_code=400, detail="No pending attribute points available")
+        
+        attribute_update = { 
+            "strength": lambda u: setattr(u, "strength", u.strength + 1), 
+            "defense": lambda u: setattr(u, "defense", u.defense + 1), 
+            "initiative": lambda u: setattr(u, "initiative", u.initiative + 1) 
+            } 
+        update_func = attribute_update.get(attribute, None) 
+        if update_func is not None: 
+            update_func(user) 
+            user.pending_attribute_points -= 1 
+            db.commit()
+
+        # if attribute == "strength":
+        #     user.strength += 1
+        # elif attribute == "defense":
+        #     user.defense += 1
+        # elif attribute == "initiative":
+        #     user.initiative += 1
+        else:
+            logger.error(HTTPException(status_code=400, detail="Invalid attribute"))
+        #     pass
+
+        # user.pending_attribute_points -= 1
+        # db.commit()
+
+        return RedirectResponse(url="/character", status_code=303)

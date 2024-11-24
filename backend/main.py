@@ -4,12 +4,13 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from backend import database, utils
-from .routers import auth, character, castle, char_tasks
+from .routers import auth, character, castle, char_tasks, upload
 
 logger = utils.setup_logger(__name__)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+app.mount("/avatars", StaticFiles(directory="frontend/user_resourses/avatars"), name="avatars")
 
 db = database.init_db()
 
@@ -18,6 +19,7 @@ app.include_router(auth.router)
 app.include_router(character.router)
 app.include_router(castle.router)
 app.include_router(char_tasks.router)
+app.include_router(upload.router)
 
 
 # TODO: Run this just one time when app start

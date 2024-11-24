@@ -20,10 +20,45 @@
     <div class="character-info">
         <!-- Іконка персонажа -->
         <div class="avatar">
-            <img src="../static/images/simple-elfe.png" alt="Avatar" class="avatar-img">
+            <img src="{{ user.avatar_url or '../static/images/simple-elfe.png' }}" alt="Avatar" class="avatar-img">
             <span class="avatar-caption">{{ user.username }}</span>
-
         </div>
+
+        <!-- Характеристики персонажа --> 
+         <div class="character-attributes"> 
+            <h3>Характеристики:</h3> 
+            <p><img src="../static/images/strengh-attributes-icon.png" alt="Strength Icon" class="attribute-icon">Сила: {{ user.strength }}
+            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('strength')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/defense-attributes-icon.png" alt="Defense Icon" class="attribute-icon">Захист: {{ user.defense }}
+            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('defense')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/initiative-attributes-icon.jpg" alt="Initiative Icon" class="attribute-icon">Ініціатива: {{ user.initiative }}
+            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('initiative')">+</button> {% endif %}</p> 
+        </div>
+        <!-- Форма для вибору параметра --> 
+        <!-- {% if user.pending_attribute_points > 0 %} 
+        <div class="attribute-selection"> 
+            <h3>Виберіть параметр для підвищення:</h3> 
+            <form action="/update-attribute" method="post"> 
+                <label> <input type="radio" name="attribute" value="strength"> Сила </label> 
+                <label> <input type="radio" name="attribute" value="defense"> Захист </label> 
+                <label> <input type="radio" name="attribute" value="initiative"> Ініціатива </label> 
+                <button type="submit">Застосувати</button> 
+            </form> 
+        </div> 
+        {% endif %} -->
+        <!-- Кнопка для оновлення зображення -->
+        <button id="update-avatar-button" onclick="showUploadForm()">Оновити зображення</button>
+
+         <!-- Кнопка для скасування оновлення зображення -->
+         <button id="update-cancel-avatar-button" style="display: none;" onclick="hideUploadForm()">Скасувати</button>
+
+        <!-- Форма для завантаження зображення, спочатку прихована -->
+        <form id="upload-avatar-form" action="/upload-avatar" method="post" enctype="multipart/form-data" style="display: none;">
+            <label for="avatar">Завантажити зображення (150x150 пікселів):</label>
+            <input type="file" id="avatar" name="avatar" accept="image/*" onchange="showFileName()">
+            <span id="file-name"></span> <!-- Елемент для відображення імені файлу -->
+            <button type="submit">Завантажити</button>
+        </form>
 
         <div class="character-level-experience">
             {% if next_level_exp %}
@@ -49,12 +84,12 @@
         </form>
     </div>
 
-        <!-- Кнопка завдання -->
-        <div class="task-btn">
-            <form action="/char_tasks" method="get">
-                <button type="submit">Перейти до завдань</button>
-            </form>
-        </div>
+    <!-- Кнопка завдання -->
+    <div class="task-btn">
+        <form action="/char_tasks" method="get">
+            <button type="submit">Перейти до завдань</button>
+        </form>
+    </div>
 
     <!-- Кнопка виходу -->
     <div class="logout-btn">
@@ -63,4 +98,41 @@
         </form>
     </div>
 </div>
+
+<!-- Додавання JavaScript для відображення імені файлу та форми завантаження -->
+<script>
+    function showUploadForm() {
+        document.getElementById('upload-avatar-form').style.display = 'block';
+        document.getElementById('update-avatar-button').style.display = 'none';
+        document.getElementById('update-cancel-avatar-button').style.display = 'block';
+
+    }
+
+    function hideUploadForm() {
+        document.getElementById('upload-avatar-form').style.display = 'none';
+        document.getElementById('update-avatar-button').style.display = 'block';
+        document.getElementById('update-cancel-avatar-button').style.display = 'none';
+
+    }
+
+    function showFileName() {
+        const input = document.getElementById('avatar');
+        const fileName = input.files[0].name;
+        document.getElementById('file-name').textContent = "Вибрано файл: " + fileName;
+    }
+
+    function updateAttribute(attribute) { 
+        const form = document.createElement('form'); 
+        form.method = 'post'; 
+        form.action = '/update-attribute'; 
+        const input = document.createElement('input'); 
+        input.type = 'hidden'; 
+        input.name = 'attribute'; 
+        input.value = attribute; 
+        form.appendChild(input); 
+        document.body.appendChild(form); 
+        form.submit(); 
+        }
+</script>
+
 {% endblock %}

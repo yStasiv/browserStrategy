@@ -89,6 +89,54 @@ button:hover {
 
 /* #######################################################################################################*/
 
+/*START*****Характеристики персонажа*/
+.character-attributes {
+    float: right;
+    margin-right: 20px;
+    text-align: right;
+}
+
+.character-attributes h3 {
+    text-align: right;
+}
+
+.attribute-icon {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.character-attributes p {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.character-attributes button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    width: 20px;
+    height: 20px;
+    margin-left: 5px;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 0;
+}
+
+.character-attributes button:hover {
+    background-color: #b35e18; /* Темніший зелений */
+}
+
+/*END*****Характеристики персонажа*/
+
 .avatar {
     position: relative;
     display: inline-block;
