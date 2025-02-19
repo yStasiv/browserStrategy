@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Замок{% endblock %}
+
+{% block body %}
+<div class="castle-page">
+    <h1>Choose units</h1>
+
+    <!-- Набір Юнітів -->
+    <form action="/castle" method="post" id="choose-units-form">
+        <div class="unit-selection">
+            <div class="unit-grid">
+                {% for unit in available_units %}
+                <div class="unit-slot">
+                    <div class="unit-info">
+                        <img src="{{ unit.icon_url }}" alt="{{ unit.name }}", height="25px">
+                        <span>{{ unit.name }}</span>
+                        <span>Actual count: {{ user_units.get(unit.name, 0) }}</span>
+                        <input type="number" name="{{ unit.name }}" id="{{ unit.name }}" min="0" max="{{ unit.max_quantity }}" value={{ user_units.get(unit.name, 0) }}>
+                        <span> / {{ unit.max_units }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="submit">Набрати війська</button>
+        </div>
+    </form>
+
+    <!-- <div class="unit-info">  #todo: add info for each unit
+        <h2>Blue-Elfe</h2>
+        <img src="../static/images/exp-icon.png" alt="Blue-Elfe", height="50px">
+        <p>Лісова істота.</p>
+    </div> -->
+    <div class="castle-page-my-unit-list">
+        <h2>My units</h2>
+        <ul>
+            {% for unit, qty in user_units.items() %}
+                <li>{{ unit }}: {{ qty }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <a href="/character">Повернутися до персонажа</a>
+</div>
+{% endblock %}

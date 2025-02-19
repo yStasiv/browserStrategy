@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/navigation.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Навігаційна панель -->
+    <nav class="main-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="/character" class="nav-link">
+                    <img src="../static/images/character-icon.png" alt="Character" class="nav-icon">
+                    Персонаж
+                </a>
+                <a href="/map" class="nav-link">
+                    <img src="../static/images/map-icon.png" alt="Map" class="nav-icon">
+                    Карта
+                </a>
+                <a href="/castle" class="nav-link">
+                    <img src="../static/images/castle-icon.png" alt="Castle" class="nav-icon">
+                    Замок
+                </a>
+            </div>
+            <div class="nav-center">
+                <div class="current-time" id="currentTime"></div>
+            </div>
+            <div class="nav-right">
+                <div class="user-resources">
+                    <span class="resource">
+                        <img src="../static/images/gold-resource-icon.png" alt="Gold" class="resource-icon">
+                        {{ user.gold }}
+                    </span>
+                    <span class="resource">
+                        <img src="../static/images/wood-resource-icon.png" alt="Wood" class="resource-icon">
+                        {{ user.wood }}
+                    </span>
+                    <span class="resource">
+                        <img src="../static/images/stone-resourse-icon.png" alt="Stone" class="resource-icon">
+                        {{ user.stone }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="content">
+        {% block body %}{% endblock %}
+    </div>
+
+    <script>
+    function updateClock() {
+        const now = new Date();
+        const timeElement = document.getElementById('currentTime');
+        timeElement.textContent = now.toLocaleTimeString();
+    }
+
+    // Оновлюємо годинник кожну секунду
+    updateClock();
+    setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>

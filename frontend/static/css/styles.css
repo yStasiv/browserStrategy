@@ -1,0 +1,718 @@
+/* Загальні стилі для сторінки */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+/* Контейнер форми (реєстрація/логін) */
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    align-items: center;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Контейнери для реєстрації та логіну */
+.registration-container,
+.login-container {
+    background-color: #fff;
+    padding: 20px 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    text-align: center;
+}
+
+/* Заголовки для форм */
+.registration-container h2,
+.login-container h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Поля введення */
+.registration-container input,
+.login-container input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+select[name="fraction"] {
+    /* Ваші стилі тут */
+    width: 200px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Кнопки для форм */
+button {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+/* Стилі для кнопок */
+.registration-container button,
+.login-container button,
+.castle-btn button,
+.task-btn button,
+.logout-btn button {
+    background-color: #4caf50;
+    color: white;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+
+/* #######################################################################################################*/
+
+/*START*****Характеристики персонажа*/
+.character-attributes {
+    float: right;
+    margin-right: 20px;
+    text-align: right;
+}
+
+.character-attributes h3 {
+    text-align: right;
+}
+
+.attribute-icon {
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.character-attributes p {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.character-attributes button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    width: 20px;
+    height: 20px;
+    margin-left: 5px;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 0;
+}
+
+.character-attributes button:hover {
+    background-color: #b35e18; /* Темніший зелений */
+}
+
+/*END*****Характеристики персонажа*/
+
+.avatar {
+    position: relative;
+    display: inline-block;
+    text-align: center;
+}
+
+.avatar-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+}
+
+.avatar-caption {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #555;
+    font-weight: bold;
+}
+
+/* Стилі для ресурсів персонажа */
+.character-container {
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    width: 70%;
+    max-width: 900px;
+    font-family: 'Georgia', serif;
+    border: 1px solid #d3c7b3;  /* Легкий контур для стилю старої книжки */
+    background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Old_book_paper_texture.jpg/1280px-Old_book_paper_texture.jpg'); /* Текстура книжкового паперу */
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.character-resources {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #3b2f2a;
+}
+
+.resource {
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #fff8e1;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.resource-icon,
+.exp-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+}
+
+/* Стилі для шкали досвіду */
+.character-level-experience {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #3b2f2a;
+}
+
+.experience-bar {
+    position: relative;
+    width: 100%;
+    height: 20px;
+    background-color: #d6b37a;
+    border-radius: 10px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+.experience-filled {
+    height: 100%;
+    background-color: #8a4b31;
+    transition: width 0.5s ease;
+}
+
+.experience-text {
+    position: absolute;
+    top: 0;
+    left: 10px;
+    right: 10px;
+    text-align: center;
+    font-size: 14px;
+    color: #fff;
+    font-weight: bold;
+    line-height: 20px;
+}
+
+.max-lvl-text {
+    margin-top: 10px;
+    font-size: 16px;
+    color: #555; /* Змініть на бажаний колір */
+    text-align: center;
+}
+
+/* Кнопка замку */
+.castle-btn {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.castle-btn button {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #8a4b31;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.task-btn button {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #a73a0b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.castle-btn button:hover {
+    background-color: #7b3e28;
+}
+
+/* Кнопка виходу */
+.logout-btn {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.logout-btn button {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.logout-btn button:hover {
+    background-color: #c62828;
+}
+
+.castle-page-my-unit-list {
+    margin-top: 50px;
+    font-family: Arial, sans-serif;
+    color: #333;
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.castle-page-my-unit-list h2 {
+    margin-bottom: 15px;
+}
+
+.castle-page-my-unit-list ul {
+    list-style-type: none; /* Видаляє стандартні маркери списку */
+    padding-left: 0;
+}
+
+.castle-page-my-unit-list li {
+    margin-bottom: 10px; 
+    padding: 10px;
+    /* background-color: #fff; */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+a[href="/character"] {
+    display: inline-block;
+    margin-top: 20px;
+    color: #ff0000;
+    text-decoration: none; /* remove underline from url */
+    font-weight: bold;
+}
+
+a[href="/character"]:hover {
+    text-decoration: underline; /* Підкреслення при наведенні */
+}
+
+/* Додайте після стилів .castle-btn */
+.map-btn {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.map-btn button {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #4a6741; /* Зелений колір для кнопки карти */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.map-btn button:hover {
+    background-color: #3d5635;
+}
+
+/* Стилі для сторінки карти */
+.map-container {
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    width: 70%;
+    max-width: 900px;
+    font-family: 'Georgia', serif;
+    border: 1px solid #d3c7b3;
+    /* background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Old_book_paper_texture.jpg/1280px-Old_book_paper_texture.jpg'); */
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.map-content {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.map-content h2 {
+    color: #3b2f2a;
+    margin-bottom: 20px;
+}
+
+.world-map {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    overflow: hidden;
+}
+
+.map-overlay {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.map-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sector-borders {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+}
+
+.sector {
+    flex: 1;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: background-color 0.3s;
+}
+
+.sector.active {
+    background-color: rgba(74, 103, 65, 0.2);
+    border: 2px solid #4a6741;
+}
+
+.player-position {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: #ff4444;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
+}
+
+/* Стилі для компаса навігації */
+.compass-navigation {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.compass-row {
+    display: flex;
+    justify-content: center;
+}
+
+.compass-btn {
+    width: 30px;
+    height: 30px;
+    margin: 1px;
+    font-size: 16px;
+}
+
+.compass-btn:hover {
+    background-color: #4a6741;
+    color: white;
+}
+
+.compass-center {
+    cursor: default;
+    background-color: #f0f0f0;
+}
+
+.navigation-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.character-btn button {
+    padding: 12px 25px;
+    font-size: 18px;
+    background-color: #4a6741;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.character-btn button:hover {
+    background-color: #3d5635;
+}
+
+/* Додайте новий layout */
+.game-layout {
+    display: flex;
+    width: 100%;
+    max-width: 1400px;
+    gap: 20px;
+    margin: 0 auto;
+}
+
+.map-container {
+    flex: 2;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    font-family: 'Georgia', serif;
+    border: 1px solid #d3c7b3;
+}
+
+.buildings-placeholder {
+    flex: 1;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    padding: 20px;
+    min-height: 600px;
+    border: 1px solid #d3c7b3;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.buildings-placeholder h3 {
+    color: #3b2f2a;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Оновлені стилі для компаса */
+.compass-navigation {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.compass-btn {
+    width: 30px;
+    height: 30px;
+    margin: 1px;
+    font-size: 16px;
+}
+
+/* Оновлені стилі для секторів */
+.sector {
+    flex: 1;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: background-color 0.3s;
+    cursor: pointer;
+}
+
+.sector:hover {
+    background-color: rgba(74, 103, 65, 0.1);
+}
+
+.sector.active {
+    background-color: rgba(74, 103, 65, 0.2);
+    border: 2px solid #4a6741;
+}
+
+/* Оновлені стилі для маркера гравця */
+.player-position {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: #ff4444;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
+    z-index: 5;
+    transition: all 3s ease-in-out;
+}
+
+/* Стилі для лісопилки */
+.sawmill-container {
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    width: 80%;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.sawmill-info {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.sawmill-info h2 {
+    color: #3b2f2a;
+    margin-bottom: 20px;
+}
+
+.status-working {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.status-not-working {
+    color: #f44336;
+    font-weight: bold;
+}
+
+.warning {
+    color: #ff9800;
+    font-weight: bold;
+}
+
+.work-btn, .quit-btn, .buy-btn {
+    padding: 10px 20px;
+    margin: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.work-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.quit-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+.buy-btn {
+    background-color: #2196F3;
+    color: white;
+}
+
+.buy-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.work-btn:hover { background-color: #45a049; }
+.quit-btn:hover { background-color: #da190b; }
+.buy-btn:hover:not(:disabled) { background-color: #1976D2; }
+
+/* Додайте ці стилі до існуючих стилів лісопилки */
+.enterprise-image {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.sawmill-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Оновлені стилі для enterprise-links в buildings-placeholder */
+.buildings-placeholder .enterprise-links {
+    position: static;  /* Змінюємо з absolute на static */
+    transform: none;   /* Прибираємо transform */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.buildings-placeholder .enterprise-link {
+    width: 80%;
+    padding: 15px;
+    background: #fff;
+    border: 2px solid #4a6741;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.buildings-placeholder .enterprise-link:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.buildings-placeholder .enterprise-icon {
+    width: 80px;  /* Збільшуємо розмір іконки */
+    height: 80px;
+    margin-bottom: 10px;
+}
+
+.buildings-placeholder span {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #3b2f2a;
+}
+
+/* Стилі для годинника */
+.current-time {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 1.2em;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+/* Стилі для таймера очікування */
+.cooldown-timer {
+    color: #f57c00;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+/* Стилі для відключеної кнопки */
+.work-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.work-btn:disabled:hover {
+    background-color: #cccccc;
+}
