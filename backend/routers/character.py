@@ -150,7 +150,7 @@ class CharRotes(CharacterHelper):
             
             # Визначаємо сектор на основі x-координати (тепер як рядок)
             if new_x < 33.3:
-                new_sector = "Moutains"
+                new_sector = "Mountain"
             elif new_x < 66.6:
                 new_sector = "Castle"
             else:
@@ -182,7 +182,7 @@ class CharRotes(CharacterHelper):
         x = movement.get("x")
         y = movement.get("y")
         
-        if sector in ["Moutains", "Castle", "Forest"] and x is not None and y is not None:
+        if sector in ["Mountain", "Castle", "Forest"] and x is not None and y is not None:
             user.map_sector = sector
             user.map_x = x
             user.map_y = y

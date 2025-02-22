@@ -1,10 +1,28 @@
-<!-- {% extends 'base.html' %}
+<!-- <div class="enterprise-actions">
+    {% if not user.workplace %}
+        <form method="POST" action="/enterprise/{{ enterprise.id }}/work">
+            <button type="submit" class="work-btn">Влаштуватися на роботу</button>
+        </form>
+    {% endif %}
 
-{% block title %}Лісопилка{% endblock %}
+    Додаємо форму для купівлі ресурсів
+    <form method="POST" action="/enterprise/{{ enterprise.id }}/buy" class="buy-resources">
+        <div class="form-group">
+            <label for="amount">Кількість {{ enterprise.resource_type }}:</label>
+            <input type="number" id="amount" name="amount" min="1" max="{{ enterprise.resource_stored }}" required>
+        </div>
+        <p class="price-info">Ціна за одиницю: {{ enterprise.item_price }} золота</p>
+        <button type="submit" class="buy-btn">Купити</button>
+    </form>
+</div>  -->
+
+{% extends 'base.html' %}
+
+{% block title %}{{ enterprise.name }}{% endblock %}
 
 {% block body %}
-<div class="sawmill-container">
-    Ресурси
+<div class="enterprise-container">
+    <!-- Ресурси -->
     <div class="character-resources">
         <span class="resource">
             <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ user.gold }}
@@ -12,22 +30,32 @@
         <span class="resource">
             <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Дерево: {{ user.wood }}
         </span>
+        <span class="resource">
+            <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Камінь: {{ user.stone }}
+        </span>
     </div>
 
     <div class="enterprise-image">
-        <img src="../static/images/sawmill_model.png" alt="Sawmill" class="sawmill-img">
+        {% if enterprise.resource_type == 'wood' %}
+            <img src="../static/images/sawmill_model.png" alt="Sawmill" class="sawmill-img">
+        {% elif enterprise.resource_type == 'stone' %}
+            <img src="../static/images/mine_model.png" alt="Mine" class="sawmill-img">
+        {% elif enterprise.resource_type == 'gold' %}
+            <img src="../static/images/gold_mine_model.png" alt="Gold Mine" class="sawmill-img">
+        {% endif %}
     </div>
 
     <div class="sawmill-info">
-        <h2>Лісопилка</h2>
+        <h2>{{ enterprise.name }}</h2>
+        <p>Тип ресурсу: {{ enterprise.resource_type }}</p>
         <p>Працівників: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}</p>
-        <p>Дерева на складі: {{ enterprise.resource_stored }}/{{ enterprise.max_storage }}</p>
+        <p>{{ enterprise.resource_type }} на складі: {{ enterprise.resource_stored }}/{{ enterprise.max_storage }}</p>
         
-        {% if is_working %}
-            <p class="status-working">Ви працюєте на лісопилці</p>
+        {% if user.workplace == "enterprise_" ~ enterprise.id %}
+            <p class="status-working">Ви працюєте на підприємстві</p>
             <button onclick="quitWork()" class="quit-btn">Покинути роботу</button>
         {% else %}
-            <p class="status-not-working">Ви не працюєте на лісопилці</p>
+            <p class="status-not-working">Ви не працюєте на підприємстві</p>
             {% if not user.workplace %}
                 {% if enterprise.workers_count >= enterprise.max_workers %}
                     <p class="warning">Досягнуто максимальної кількості працівників</p>
@@ -42,12 +70,14 @@
             {% endif %}
         {% endif %}
 
-        Додамо форму для введення кількості дерева
+        <!-- Додамо форму для введення кількості дерева -->
         <div class="buy-wood-form">
-            <input type="number" id="woodAmount" min="1" max="{{ enterprise.resource_stored }}" value="1">
-            <button onclick="buyWood()" class="buy-btn" {% if user.gold < 11 or enterprise.resource_stored < 1 %}disabled{% endif %}>
-                Купити дерево (11 золота за штуку)
-            </button>
+            <form method="POST" action="/enterprise/{{ enterprise.id }}/buy-resources">
+                <input type="number" id="amount" name="amount" min="1" max="{{ enterprise.resource_stored }}" value="1">
+                <button type="submit" class="buy-btn" {% if user.gold < enterprise.item_price or enterprise.resource_stored < 1 %}disabled{% endif %}>
+                    Купити {{ enterprise.resource_type }} ({{ enterprise.item_price }} золота за штуку)
+                </button>
+            </form>
         </div>
     </div>
 
@@ -58,9 +88,9 @@
             </form>
         </div>
     </div>
-</div> -->
+</div>
 
-<!-- <script>
+<script>
 async function startWork() {
     try {
         const response = await fetch(`/enterprise/{{ enterprise.id }}/start-work`, {
@@ -93,29 +123,6 @@ async function quitWork() {
     }
 }
 
-async function buyWood() {
-    const amount = document.getElementById('woodAmount').value;
-    try {
-        const response = await fetch(`/enterprise/{{ enterprise.id }}/buy-wood`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                amount: parseInt(amount)
-            })
-        });
-        if (response.ok) {
-            window.location.reload();
-        } else {
-            const error = await response.json();
-            alert(error.detail);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
 // Додаємо функцію для оновлення таймера
 function updateCooldownTimer() {
     const lastQuitTime = new Date("{{ user.last_quit_time }}");
@@ -142,4 +149,4 @@ if (document.getElementById('cooldownTimer')) {
     setInterval(updateCooldownTimer, 5000);
 }
 </script>
-{% endblock %}  -->
+{% endblock %} 

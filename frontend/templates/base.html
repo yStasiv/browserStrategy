@@ -10,6 +10,7 @@
     {% block head %}{% endblock %}
 </head>
 <body>
+    {% if user %}
     <!-- Навігаційна панель -->
     <nav class="main-nav">
         <div class="nav-container">
@@ -26,6 +27,12 @@
                     <img src="../static/images/castle-icon.png" alt="Castle" class="nav-icon">
                     Замок
                 </a>
+                {% if user.id == 1 %}
+                <a href="/admin/enterprises" class="nav-link">
+                    <img src="../static/images/admin-icon.png" alt="Admin" class="nav-icon">
+                    Керування підприємствами
+                </a>
+                {% endif %}
             </div>
             <div class="nav-center">
                 <div class="current-time" id="currentTime"></div>
@@ -48,11 +55,13 @@
             </div>
         </div>
     </nav>
+    {% endif %}
 
     <div class="content">
         {% block body %}{% endblock %}
     </div>
 
+    {% if user %}
     <script>
     function updateClock() {
         const now = new Date();
@@ -64,5 +73,6 @@
     updateClock();
     setInterval(updateClock, 1000);
     </script>
+    {% endif %}
 </body>
 </html>
