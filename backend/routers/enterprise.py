@@ -122,16 +122,29 @@ async def start_work(enterprise_id: int, request: Request, db: Session = Depends
     if user.map_sector != enterprise.sector:
         raise HTTPException(status_code=400, detail="You must be in the same sector as the enterprise")
     
+    # Розраховуємо кількість ресурсів, які будуть вироблені за зміну
+    productivity_bonus = 1 + (enterprise.workers_count // 25) * 0.01
+    resources_per_shift = int(8 * 60 * productivity_bonus)  # 8 годин * 60 хвилин * бонус продуктивності
+    
+    # Перевіряємо, чи вистачить місця на складі
+    space_needed = resources_per_shift
+    space_available = enterprise.max_storage - enterprise.resource_stored
+    
+    if space_needed > space_available:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"На складі недостатньо місця. Потрібно: {space_needed}, доступно: {space_available}"
+        )
+    
     # Розраховуємо зарплату за зміну
-    salary_for_worker = 8 * 60 * enterprise.salary  # 8 годин * 60 хвилин * ставка за хвилину
+    salary_for_shift = 8 * 60 * enterprise.salary  # 8 годин * 60 хвилин * ставка за хвилину
     
     # Перевіряємо, чи вистачає балансу на зарплату
-    salary_for_worker = 8 * 60 * enterprise.salary  # 8 годин * 60 хвилин * ставка за хвилину
-    if enterprise.balance < salary_for_worker:
+    if enterprise.balance < salary_for_shift:
         raise HTTPException(status_code=400, detail="Enterprise doesn't have enough money to pay salary")
     
     # Знімаємо зарплату з балансу підприємства одразу
-    enterprise.balance -= salary_for_worker
+    enterprise.balance -= salary_for_shift
     
     user.workplace = f"enterprise_{enterprise.id}"
     user.work_start_time = current_time

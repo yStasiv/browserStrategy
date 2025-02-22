@@ -1,21 +1,3 @@
-<!-- <div class="enterprise-actions">
-    {% if not user.workplace %}
-        <form method="POST" action="/enterprise/{{ enterprise.id }}/work">
-            <button type="submit" class="work-btn">Влаштуватися на роботу</button>
-        </form>
-    {% endif %}
-
-    Додаємо форму для купівлі ресурсів
-    <form method="POST" action="/enterprise/{{ enterprise.id }}/buy" class="buy-resources">
-        <div class="form-group">
-            <label for="amount">Кількість {{ enterprise.resource_type }}:</label>
-            <input type="number" id="amount" name="amount" min="1" max="{{ enterprise.resource_stored }}" required>
-        </div>
-        <p class="price-info">Ціна за одиницю: {{ enterprise.item_price }} золота</p>
-        <button type="submit" class="buy-btn">Купити</button>
-    </form>
-</div>  -->
-
 {% extends 'base.html' %}
 
 {% block title %}{{ enterprise.name }}{% endblock %}
@@ -45,7 +27,7 @@
         {% endif %}
     </div>
 
-    <div class="sawmill-info">
+    <div class="enterprise-info">
         <h2>{{ enterprise.name }}</h2>
         <h4>Description: {{ enterprise.description }}</h4>  <!--додати в базу опис підприємства-->
         <p>Сектор підприємства: {{ enterprise.sector }}</p>
@@ -55,7 +37,7 @@
         <!-- Прогресбар працівників -->
         <div class="workers-progress">
             <div class="progress-label">
-                <span>Працівників: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}</span>
+                <span>Працівників: {{ enterprise.workers_count }}/{{ enterprise.max_workers }} ({{enterprise.max_workers - enterprise.workers_count}})</span>
                 {% set productivity_bonus = (enterprise.workers_count // 25) %}
                 {% if productivity_bonus > 0 %}
                     <span class="bonus">+{{ productivity_bonus }}% до продуктивності</span>

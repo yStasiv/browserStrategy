@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+
+{% block title %}Довідка{% endblock %}
+
+{% block body %}
+<style>
+.help-container {
+    display: flex;
+    gap: 2rem;
+    padding: 2rem;
+    min-height: 80vh;
+}
+
+.help-sidebar {
+    flex: 0 0 250px;
+    padding: 1rem;
+    background: #f5f5f5;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.help-section {
+    margin-bottom: 1.5rem;
+}
+
+.help-section h3 {
+    color: #333;
+    margin-bottom: 0.8rem;
+    font-size: 1.1rem;
+}
+
+.help-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.help-section li {
+    margin: 0.5rem 0;
+}
+
+.help-item {
+    display: block;
+    padding: 0.5rem;
+    color: #555;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.help-item:hover {
+    background: #e0e0e0;
+    color: #000;
+}
+
+.help-item.active {
+    background: #4a90e2;
+    color: white;
+}
+
+.help-content {
+    flex: 1;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.help-content h2 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #eee;
+}
+
+.help-content h3 {
+    color: #34495e;
+    margin: 1.5rem 0 1rem 0;
+}
+
+.help-content ul, .help-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.help-content li {
+    margin: 0.5rem 0;
+    line-height: 1.6;
+}
+
+.help-content p {
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.formula {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+    font-family: monospace;
+}
+
+.tip {
+    background: #e1f5fe;
+    padding: 1rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+}
+
+.tip::before {
+    content: "💡 ";
+}
+</style>
+
+<div class="help-container">
+    <div class="help-sidebar">
+        <div class="help-section">
+            <h3>📖 Основне</h3>
+            <ul>
+                <li><a href="#intro" class="help-item" data-content="intro">Вступ до гри</a></li>
+                <li><a href="#getting-started" class="help-item" data-content="getting-started">З чого почати</a></li>
+                <li><a href="#faq" class="help-item" data-content="faq">Часті питання</a></li>
+            </ul>
+        </div>
+        <div class="help-section">
+            <h3>🏛 Механіки</h3>
+            <ul>
+                <li><a href="#basics" class="help-item" data-content="basics">Основи гри</a></li>
+                <li><a href="#interface" class="help-item" data-content="interface">Інтерфейс</a></li>
+                <li><a href="#resources" class="help-item" data-content="resources">Ресурси</a></li>
+            </ul>
+        </div>
+        <div class="help-section">
+            <h3>🏰 Економіка</h3>
+            <ul>
+                <li><a href="#economy" class="help-item" data-content="economy">Економіка</a></li>
+                <li><a href="#enterprises" class="help-item" data-content="enterprises">Підприємства</a></li>
+                <li><a href="#trade" class="help-item" data-content="trade">Торгівля</a></li>
+            </ul>
+        </div>
+        <div class="help-section">
+            <h3>💡 Ідеї</h3>
+            <ul>
+                <li><a href="#ideas" class="help-item" data-content="ideas">Ідеї</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="help-content" id="helpContent">
+        <!-- Контент буде завантажуватись сюди через JavaScript -->
+        <div class="help-welcome">
+            <h2>Ласкаво просимо до довідки!</h2>
+            <p>Оберіть розділ зліва для перегляду інформації.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const helpContent = document.getElementById('helpContent');
+    const helpItems = document.querySelectorAll('.help-item');
+
+    // Об'єкт з контентом для кожного розділу
+    const contents = {
+        'intro': {
+            title: 'Вступ до гри',
+            content: `
+                <h2>Вступ до гри</h2>
+                <p>Ласкаво просимо до нашої гри! Це середньовічна стратегія, де ви можете...</p>
+                <!-- Додайте більше контенту -->
+            `
+        },
+        'enterprises': {
+            title: 'Підприємства',
+            content: `
+                <h1>Довідка: Підприємства</h1>
+                
+                <h2>Типи підприємств</h2>
+                <ul>
+                    <li><strong>Лісопилка</strong> – виробляє деревину.</li>
+                    <li><strong>Каменоломня</strong> – видобуває камінь.</li>
+                </ul>
+                
+                <h2>Інтерфейс підприємства</h2>
+                <ul>
+                    <li>Зображення підприємства та короткий опис.</li>
+                    <li>Винагорода за робочу зміну.</li>
+                    <li>Баланс підприємства.</li>
+                    <li>Кількість працівників та доступні робочі місця.</li>
+                    <li>Статистика підприємства:</li>
+                    <ul>
+                        <li>Список працівників із можливістю перегляду профілю.</li>
+                        <li>Зарезервована сума для виплат.</li>
+                        <li>Очікувана кількість вироблених ресурсів.</li>
+                    </ul>
+                </ul>
+                
+                <h2>Робочий процес</h2>
+                <ul>
+                    <li>Гравець може працювати, якщо:
+                        <ul>
+                            <li>На підприємстві є золото для виплати зарплати.</li>
+                            <li>На підприємстві є  вільні робочі місця.</li>
+                            <li>Гравець ще не працював цього дня.</li>
+                            <li>Гравець знаходиться в тому ж секторі, що й підприємство.</li>
+                            <li>Є місце на складі для зберігання ресурсів, які будуть виготовленя за робочу зміну.</li> (Додати цю умову в код)
+                        </ul>
+                    </li>
+                    <li>Робочий день триває 8 годин. Протягом цього часу гравець не може переміщатися між секторами.</li> (можливо заблокувати гравцю все на час роботи)
+                    <li>Після завершення зміни виплачується зарплата в повному обсязі згідно <a href="#salary">формули</a>.</li>
+                    <li>Для початку роботи натисніть кнопку <strong>«Почати роботу»</strong>.</li>
+                </ul>
+                
+                <h2>Продуктивність підприємства</h2>
+                <ul>
+                    <li>Кожні 25 працівників додають +1% до загальної продуктивності.</li>
+                    <li>Бонус продуктивності впливає на кількість вироблених ресурсів.</li>
+                </ul>
+                
+                <h2>Формули розрахунку</h2>
+                <h3>Виробництво</h3>
+                <p><strong>Кількість ресурсів</strong> = Базова продуктивність × Кількість працівників × 8 годин × (1 + Бонус ефективності)</p>
+                
+                <h3 id="salary">Зарплата</h3>
+                <p><strong>Нагорода</strong> = Погодинна ставка × 8 годин × (1 + Вміння персонажа)</p>
+                
+                <h3>Доходи&Витрати підприємства</h3>
+                <p><strong>Загальні витрати</strong> = Кількість працівників × 8 годин × Погодинна ставка</p>
+                <p>Баланс підприємства поповнюється за рахунок продажу вироблених ресурсів.</p>
+            `
+        },
+        'ideas': {
+            title: 'Ідеї',
+            content: `
+                <h1>Ідеї для гри</h1>
+                <p class="note">*Покращення шахт та магазинів після досягнення певного рівня виготовленого ресурсу чи проданого ресурсу чи заробленого золота, а також к-ть потенційних рівнів</p>
+                <p class="note">*Можливо потрібно додати ресурси, які можна буде отримати з переробики ресурсів</p>
+                <p class="note">*Банк, можливо потрібно буде додати банк де можна брати кредити та вкладати ресурси(золото) як депозити</p>
+                <p class="note">*Додати інтерактивні елементи, рух кирки, дим від вогню чи опилки від дерева, іскри від кування артефакту</p>
+           
+            `
+        },
+        // Додайте інші розділи
+    };
+
+    // Функція для збереження активного розділу
+    function saveActiveSection(section) {
+        localStorage.setItem('activeHelpSection', section);
+    }
+
+    // Функція для завантаження контенту
+    function loadContent(contentKey) {
+        const content = contents[contentKey];
+        if (content) {
+            helpContent.innerHTML = content.content;
+            helpItems.forEach(i => i.classList.remove('active'));
+            document.querySelector(`[data-content="${contentKey}"]`).classList.add('active');
+            saveActiveSection(contentKey);
+        }
+    }
+
+    // Обробник кліків
+    helpItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const contentKey = this.dataset.content;
+            loadContent(contentKey);
+        });
+    });
+
+    // Завантаження останнього активного розділу при оновленні сторінки
+    const lastActiveSection = localStorage.getItem('activeHelpSection');
+    if (lastActiveSection) {
+        loadContent(lastActiveSection);
+    }
+
+    // Обробка хеша URL при прямому переході
+    const hash = window.location.hash.slice(1);
+    if (hash && contents[hash]) {
+        loadContent(hash);
+    }
+});
+</script>
+{% endblock %} 
