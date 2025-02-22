@@ -60,6 +60,11 @@ async def enterprise_page(enterprise_id: int, request: Request, db: Session = De
     if not enterprise:
         raise HTTPException(status_code=404, detail="Enterprise not found")
     
+    # Отримуємо список всіх працівників підприємства
+    workers = db.query(models.User).filter(
+        models.User.workplace == f"enterprise_{enterprise.id}"
+    ).all()
+    
     update_resources(db)
     
     return templates.TemplateResponse(
@@ -68,7 +73,7 @@ async def enterprise_page(enterprise_id: int, request: Request, db: Session = De
             "request": request,
             "user": user,
             "enterprise": enterprise,
-            # "is_working": user.workplace == f"enterprise_{enterprise.id}",
+            "workers": workers,  # Додаємо список працівників
             "last_quit_time": user.last_quit_time.isoformat() if user.last_quit_time else None
         }
     )
@@ -145,45 +150,6 @@ async def quit_work(enterprise_id: int, request: Request, db: Session = Depends(
 # Додаємо модель для запиту
 class buyResources(BaseModel):
     amount: int
-
-# @router.post("/enterprise/{enterprise_id}/buy-wood")
-# async def buy_wood(
-#     enterprise_id: int, 
-#     request: Request, 
-#     buy_request: buyResources,
-#     db: Session = Depends(database.get_db)
-# ):
-#     user_session_id = request.cookies.get("session_id")
-#     if not user_session_id:
-#         raise HTTPException(status_code=401, detail="Not logged in")
-    
-#     user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found")
-    
-#     enterprise = db.query(models.Enterprise).filter(models.Enterprise.id == enterprise_id).first()
-#     if not enterprise:
-#         raise HTTPException(status_code=404, detail="Enterprise not found")
-    
-#     # Використовуємо amount з моделі запиту
-#     amount = buy_request.amount
-#     total_cost = amount * enterprise.item_price
-    
-#     if user.gold < total_cost:
-#         raise HTTPException(status_code=400, detail="Not enough gold")
-    
-#     if enterprise.resource_stored < amount:
-#         raise HTTPException(
-#             status_code=400, 
-#             detail="Ой, на складі порожньо, влаштуйтесь на підприємство, щоб виготовити ресурси"
-#         )
-    
-#     user.gold -= total_cost
-#     user.wood += amount
-#     enterprise.resource_stored -= amount
-    
-#     db.commit()
-#     return {"status": "success"}
 
 @router.post("/enterprise/{enterprise_id}/buy-resources")
 async def buy_resources(

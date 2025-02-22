@@ -784,3 +784,176 @@ button[type="submit"] {
     color: #666;
     margin-top: 5px;
 }
+
+/* Стилі для списку працівників */
+.workers-list {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+}
+
+.workers-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.worker-link {
+    color: #2196F3;
+    text-decoration: none;
+    padding: 5px 10px;
+    background-color: #fff;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.worker-link:hover {
+    background-color: #2196F3;
+    color: #fff;
+}
+
+.show-all-btn {
+    margin-top: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.show-all-btn:hover {
+    background-color: #45a049;
+}
+
+/* Стилі для модального вікна */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.full-workers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.no-workers {
+    color: #666;
+    font-style: italic;
+}
+
+/* Стилі для перегляду профілю персонажа */
+.character-view-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.character-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.character-header h2 {
+    margin: 0;
+    color: #333;
+}
+
+.fraction {
+    color: #666;
+    margin-top: 5px;
+}
+
+.character-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.character-avatar {
+    text-align: center;
+}
+
+.avatar-img {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #4CAF50;
+}
+
+.character-stats,
+.character-resources,
+.workplace-info {
+    padding: 15px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+}
+
+.stat-row,
+.resource-row {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.stat-icon,
+.resource-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+}
+
+.back-btn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+    background-color: #45a049;
+}

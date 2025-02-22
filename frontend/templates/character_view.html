@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Профіль {{ character.username }}{% endblock %}
+
+{% block body %}
+<div class="character-view-container">
+    <div class="character-header">
+        <h2>{{ character.username }}</h2>
+        <p class="fraction">Фракція: {{ character.fraction }}</p>
+    </div>
+
+    <div class="character-info">
+        <!-- Аватар -->
+        <div class="character-avatar">
+            {% if character.avatar_url %}
+                <img src="{{ character.avatar_url }}" alt="Avatar" class="avatar-img">
+            {% else %}
+                <img src="../static/images/default_avatar.png" alt="Default Avatar" class="avatar-img">
+            {% endif %}
+        </div>
+
+        <!-- Характеристики -->
+        <div class="character-stats">
+            <h3>Характеристики</h3>
+            <div class="stat-row">
+                <img src="../static/images/level-icon.png" alt="Level" class="stat-icon">
+                <span>Рівень: {{ character.level }}</span>
+            </div>
+            <div class="stat-row">
+                <img src="../static/images/exp-icon.png" alt="Experience" class="stat-icon">
+                <span>Досвід: {{ character.experience }}</span>
+            </div>
+            <div class="stat-row">
+                <img src="../static/images/strength-icon.png" alt="Strength" class="stat-icon">
+                <span>Сила: {{ character.strength }}</span>
+            </div>
+            <div class="stat-row">
+                <img src="../static/images/defense-icon.png" alt="Defense" class="stat-icon">
+                <span>Захист: {{ character.defense }}</span>
+            </div>
+            <div class="stat-row">
+                <img src="../static/images/initiative-icon.png" alt="Initiative" class="stat-icon">
+                <span>Ініціатива: {{ character.initiative }}</span>
+            </div>
+        </div>
+
+        <!-- Ресурси -->
+        <div class="character-resources">
+            <h3>Ресурси</h3>
+            <div class="resource-row">
+                <img src="../static/images/gold-resource-icon.png" alt="Gold" class="resource-icon">
+                <span>Золото: {{ character.gold }}</span>
+            </div>
+            <div class="resource-row">
+                <img src="../static/images/wood-resource-icon.png" alt="Wood" class="resource-icon">
+                <span>Дерево: {{ character.wood }}</span>
+            </div>
+            <div class="resource-row">
+                <img src="../static/images/stone-resourse-icon.png" alt="Stone" class="resource-icon">
+                <span>Камінь: {{ character.stone }}</span>
+            </div>
+        </div>
+
+        <!-- Місце роботи -->
+        {% if character.workplace %}
+            <div class="workplace-info">
+                <h3>Місце роботи</h3>
+                <p>{{ character.workplace.replace('enterprise_', 'Підприємство #') }}</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="navigation-buttons">
+        <button onclick="history.back()" class="back-btn">Повернутися назад</button>
+    </div>
+</div>
+{% endblock %} 

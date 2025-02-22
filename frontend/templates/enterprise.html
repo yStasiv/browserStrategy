@@ -47,9 +47,43 @@
 
     <div class="sawmill-info">
         <h2>{{ enterprise.name }}</h2>
-        <p>Тип ресурсу: {{ enterprise.resource_type }}</p>
+        <p>Сектор підприємства: {{ enterprise.sector}}</p>
+        <p>Зарплата на підприємстві: {{ enterprise.salary}} золота за хвилину, або {{ enterprise.salary * 60 }} золота за годину</p>
         <p>Працівників: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}</p>
         <p>{{ enterprise.resource_type }} на складі: {{ enterprise.resource_stored }}/{{ enterprise.max_storage }}</p>
+        
+        <!-- Додаємо список працівників -->
+        <div class="workers-list">
+            <h3>Працівники:</h3>
+            {% if workers %}
+                <div class="workers-preview">
+                    {% for worker in workers[:20] %}
+                        <a href="/view-character?character_id={{ worker.id }}" class="worker-link">{{ worker.username }}</a>
+                    {% endfor %}
+                    
+                    {% if workers|length > 20 %}
+                        <button onclick="showAllWorkers()" class="show-all-btn">
+                            Переглянути всіх ({{ workers|length }})
+                        </button>
+                    {% endif %}
+                </div>
+                
+                <!-- Модальне вікно для повного списку -->
+                <div id="workersModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h3>Всі працівники</h3>
+                        <div class="full-workers-list">
+                            {% for worker in workers %}
+                                <a href="/view-character?character_id={{ worker.id }}" class="worker-link">{{ worker.username }}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <p class="no-workers">Наразі немає працівників</p>
+            {% endif %}
+        </div>
         
         {% if user.workplace == "enterprise_" ~ enterprise.id %}
             <p class="status-working">Ви працюєте на підприємстві</p>
@@ -147,6 +181,24 @@ function updateCooldownTimer() {
 if (document.getElementById('cooldownTimer')) {
     updateCooldownTimer();
     setInterval(updateCooldownTimer, 5000);
+}
+
+// Отримуємо модальне вікно
+const modal = document.getElementById("workersModal");
+const closeBtn = document.getElementsByClassName("close")[0];
+
+function showAllWorkers() {
+    modal.style.display = "block";
+}
+
+closeBtn.onclick = function() {
+    modal.style.display = "none";
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
 }
 </script>
 {% endblock %} 

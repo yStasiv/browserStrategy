@@ -43,24 +43,30 @@ class CharacterHelper:
         
 class CharRotes(CharacterHelper):
 
-    @router.get("/character", response_class=HTMLResponse)
+    @router.get("/character")
     async def character(
         request: Request,
         db: Session = Depends(database.get_db)
-        ):
+    ):
         user_session_id = request.cookies.get("session_id")
         if not user_session_id:
             raise HTTPException(status_code=401, detail="Not logged in")
         
         user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
         if not user:
-                raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail="User not found")
         
         CharacterHelper().update_user_level(user, db)
         next_level_exp = CharacterHelper().experience_needed_for_next_level(user.level)
         
-        return templates.TemplateResponse("character.html", {"request": request, "user": user,  "next_level_exp": next_level_exp})
-        
+        return templates.TemplateResponse(
+            "character.html",
+            {
+                "request": request,
+                "user": user,
+                "next_level_exp": next_level_exp
+            }
+        )
 
     @router.post("/update-attribute", response_class=RedirectResponse)
     async def update_attribute(
@@ -189,3 +195,21 @@ class CharRotes(CharacterHelper):
             db.commit()
         
         return {"status": "success"}
+
+    @router.get("/view-character")
+    async def view_character(
+        character_id: int,
+        request: Request,
+        db: Session = Depends(database.get_db)
+    ):
+        character = db.query(models.User).filter(models.User.id == character_id).first()
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found")
+        
+        return templates.TemplateResponse(
+            "character_view.html",
+            {
+                "request": request,
+                "character": character
+            }
+        )
