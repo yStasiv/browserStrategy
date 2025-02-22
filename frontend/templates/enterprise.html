@@ -47,36 +47,116 @@
 
     <div class="sawmill-info">
         <h2>{{ enterprise.name }}</h2>
-        <p>Тип ресурсу: {{ enterprise.resource_type }}</p>
-        <p>Працівників: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}</p>
-        <p>{{ enterprise.resource_type }} на складі: {{ enterprise.resource_stored }}/{{ enterprise.max_storage }}</p>
+        <h4>Description: {{ enterprise.description }}</h4>  <!--додати в базу опис підприємства-->
+        <p>Сектор підприємства: {{ enterprise.sector }}</p>
+        <p>Ресурс: {{ enterprise.resource_type }}</p>
+        <p>Кількість ресурсів на складі: {{ enterprise.resource_stored }}/{{ enterprise.max_storage }}</p>
         
-        {% if user.workplace == "enterprise_" ~ enterprise.id %}
-            <p class="status-working">Ви працюєте на підприємстві</p>
-            <button onclick="quitWork()" class="quit-btn">Покинути роботу</button>
-        {% else %}
-            <p class="status-not-working">Ви не працюєте на підприємстві</p>
-            {% if not user.workplace %}
-                {% if enterprise.workers_count >= enterprise.max_workers %}
-                    <p class="warning">Досягнуто максимальної кількості працівників</p>
-                {% else %}
-                    {% if user.last_quit_time %}
-                        <p class="cooldown-timer" id="cooldownTimer"></p>
+        <!-- Прогресбар працівників -->
+        <div class="workers-progress">
+            <div class="progress-label">
+                <span>Працівників: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}</span>
+                {% set productivity_bonus = (enterprise.workers_count // 25) %}
+                {% if productivity_bonus > 0 %}
+                    <span class="bonus">+{{ productivity_bonus }}% до продуктивності</span>
+                {% endif %}
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ (enterprise.workers_count / enterprise.max_workers * 100)|round }}%"></div>
+            </div>
+        </div>
+        
+        <!-- Блок статистики -->
+        <div class="enterprise-stats">
+            <h3>Статистика підприємства</h3>
+            <div class="stats-grid">
+                <div class="stat-item expenses">
+                    <h4>Витрати</h4>
+                    {% set hourly_salary_cost = enterprise.workers_count * enterprise.salary * 60 %}
+                    <p>Витрати на зарплати за годину: {{ hourly_salary_cost }} монет</p>
+                    <p>Витрати на зарплати за зміну (8 годин): {{ hourly_salary_cost * 8 }} монет</p>
+                </div>
+                <div class="stat-item income">
+                    <h4>Доходи</h4>
+                    {% set hourly_production = enterprise.workers_count * 60 * (1 + (enterprise.workers_count // 25) * 0.01) %}
+                    {% set hourly_income = (hourly_production|round(0)) * enterprise.item_price %}
+                    <p>Виробництво ресурсів за годину: {{ hourly_production|round(0) }}</p>
+                    <p>Потенційний дохід за годину: {{ hourly_income|round(0) }} монет</p>
+                </div>
+            </div>
+        </div>
+        
+        <p>Зарплата за хвилину: {{ enterprise.salary }}</p> <!-- додати очікувану зарплату за зміну-->
+        <p>Баланс підприємства: {{ enterprise.balance }}</p>
+        
+        <!-- Додаємо список працівників -->
+        <div class="workers-list">
+            <h3>Працівники:</h3>
+            {% if workers %}
+                <div class="workers-preview">
+                    {% for worker in workers[:20] %}
+                        <a href="/view-character?character_id={{ worker.id }}" class="worker-link">{{ worker.username }}</a>
+                    {% endfor %}
+                    
+                    {% if workers|length > 20 %}
+                        <button onclick="showAllWorkers()" class="show-all-btn">
+                            Переглянути всіх ({{ workers|length }})
+                        </button>
                     {% endif %}
-                    <button onclick="startWork()" class="work-btn" id="workBtn">Влаштуватися на роботу</button>
+                </div>
+                
+                <!-- Модальне вікно для повного списку -->
+                <div id="workersModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h3>Всі працівники</h3>
+                        <div class="full-workers-list">
+                            {% for worker in workers %}
+                                <a href="/view-character?character_id={{ worker.id }}" class="worker-link">{{ worker.username }}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <p class="no-workers">Наразі немає працівників</p>
+            {% endif %}
+        </div>
+        
+        <div class="enterprise-actions">
+            {% if not user.workplace %}
+                {% if user.last_work_day and user.last_work_day.date() == current_time.date() %}
+                    <button class="work-btn" disabled title="Ви вже працювали сьогодні">Влаштуватися на роботу</button>
+                {% else %}
+                    <form method="POST" action="/enterprise/{{ enterprise.id }}/start-work">
+                        <button type="submit" class="work-btn">Влаштуватися на роботу</button>
+                    </form>
                 {% endif %}
             {% else %}
-                <p class="warning">Ви вже працюєте в іншому місці</p>
+                {% if user.workplace == "enterprise_" ~ enterprise.id %}
+                    <p>Ви працюєте тут</p>
+                    {% if user.work_start_time %}
+                        <!-- не впевнений, що меніф треба то все-->
+                        <p>Час початку роботи: {{ user.work_start_time.strftime('%H:%M:%S') }}</p>
+                        {% set end_time = user.work_start_time + timedelta(hours=8) %}
+                        <p>Час завершення роботи: {{ end_time.strftime('%H:%M:%S') }}</p>
+                        {% set hours_left = ((end_time - current_time).total_seconds() / 3600)|round(1) %}
+                        {% if hours_left > 0 %}
+                            <p>Залишилось працювати: {{ hours_left }} годин</p>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    <p>Ви вже працюєте на іншому підприємстві</p>
+                {% endif %}
             {% endif %}
-        {% endif %}
 
-        <!-- Додамо форму для введення кількості дерева -->
-        <div class="buy-wood-form">
-            <form method="POST" action="/enterprise/{{ enterprise.id }}/buy-resources">
-                <input type="number" id="amount" name="amount" min="1" max="{{ enterprise.resource_stored }}" value="1">
-                <button type="submit" class="buy-btn" {% if user.gold < enterprise.item_price or enterprise.resource_stored < 1 %}disabled{% endif %}>
-                    Купити {{ enterprise.resource_type }} ({{ enterprise.item_price }} золота за штуку)
-                </button>
+            <!-- Форма для купівлі ресурсів -->
+            <form method="POST" action="/enterprise/{{ enterprise.id }}/buy-resources" class="buy-resources">
+                <div class="form-group">
+                    <label for="amount">Кількість {{ enterprise.resource_type }}:</label>
+                    <input type="number" id="amount" name="amount" min="1" max="{{ enterprise.resource_stored }}" required>
+                </div>
+                <p class="price-info">Ціна за одиницю: {{ enterprise.item_price }} золота</p>
+                <button type="submit" class="buy-btn">Купити</button>
             </form>
         </div>
     </div>
@@ -147,6 +227,24 @@ function updateCooldownTimer() {
 if (document.getElementById('cooldownTimer')) {
     updateCooldownTimer();
     setInterval(updateCooldownTimer, 5000);
+}
+
+// Отримуємо модальне вікно
+const modal = document.getElementById("workersModal");
+const closeBtn = document.getElementsByClassName("close")[0];
+
+function showAllWorkers() {
+    modal.style.display = "block";
+}
+
+closeBtn.onclick = function() {
+    modal.style.display = "none";
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
 }
 </script>
 {% endblock %} 

@@ -33,6 +33,12 @@ class User(Base):
     last_salary_time = Column(DateTime, nullable=True)  # Час останньої виплати
     last_quit_time = Column(DateTime, nullable=True)  # Час останнього звільнення
 
+    # Додаємо нові поля для відстеження часу роботи
+    daily_work_minutes = Column(Integer, default=0)  # Хвилини роботи за день
+    last_work_day = Column(DateTime, nullable=True)  # Останній робочий день
+
+    work_start_time = Column(DateTime, nullable=True)  # Час початку роботи
+
     units = relationship("UserUnit", back_populates="user")
 
     tasks = relationship("Task", back_populates="user")
@@ -103,3 +109,4 @@ class Enterprise(Base):
     max_storage = Column(Integer, default=666)  # Максимальна кількість ресурсу на складі
     salary = Column(Integer, default=3)  # Зарплата за хвилину
     item_price = Column(Integer, default=11)  # Ціна за одиницю ресурсу
+    balance = Column(Integer, default=1000)  # Додаємо поле балансу

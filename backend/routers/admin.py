@@ -73,3 +73,5 @@ async def delete_enterprise(
         db.commit()
     
     return RedirectResponse(url="/admin/enterprises", status_code=303) 
+
+# хочу ще, щоб максимальний час роботи для гравця був 8 годин і якщо він відпрацював 8 хвилин, тоді мав зробити перерву на 14 хвилин і тільки тоді знову зміг влаштуватись на роботу
