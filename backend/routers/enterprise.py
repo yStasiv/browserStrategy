@@ -19,8 +19,13 @@ def update_resources(db: Session):
         if enterprise.last_production_time:
             minutes_passed = (current_time - enterprise.last_production_time).total_seconds() / 60
             if minutes_passed >= 1:
-                # Кожен працівник виробляє 1 ресурс за хвилину
-                resources_produced = int(minutes_passed) * enterprise.workers_count
+                # Розраховуємо бонус продуктивності на основі кількості працівників
+                productivity_bonus = 1 + (enterprise.workers_count // 25) * 0.01  # +1% за кожні 25 працівників
+                
+                # Кожен працівник виробляє 1 ресурс за хвилину + бонус продуктивності
+                base_production = int(minutes_passed) * enterprise.workers_count
+                resources_produced = int(base_production * productivity_bonus)
+                
                 # Перевіряємо, щоб не перевищити максимальну місткість складу
                 new_resource_amount = min(
                     enterprise.max_storage,
@@ -44,9 +49,6 @@ def update_resources(db: Session):
                 if hours_worked >= 8:
                     # Нараховуємо зарплату за 8 годин
                     gold_earned = int(8 * 60 * enterprise.salary)  # 8 годин * 60 хвилин * ставка
-                    
-                    # Знімаємо зарплату з балансу підприємства
-                    enterprise.balance -= gold_earned
                     worker.gold += gold_earned
                     
                     # Звільняємо працівника
@@ -120,10 +122,16 @@ async def start_work(enterprise_id: int, request: Request, db: Session = Depends
     if user.map_sector != enterprise.sector:
         raise HTTPException(status_code=400, detail="You must be in the same sector as the enterprise")
     
+    # Розраховуємо зарплату за зміну
+    salary_for_worker = 8 * 60 * enterprise.salary  # 8 годин * 60 хвилин * ставка за хвилину
+    
     # Перевіряємо, чи вистачає балансу на зарплату
     salary_for_worker = 8 * 60 * enterprise.salary  # 8 годин * 60 хвилин * ставка за хвилину
     if enterprise.balance < salary_for_worker:
         raise HTTPException(status_code=400, detail="Enterprise doesn't have enough money to pay salary")
+    
+    # Знімаємо зарплату з балансу підприємства одразу
+    enterprise.balance -= salary_for_worker
     
     user.workplace = f"enterprise_{enterprise.id}"
     user.work_start_time = current_time

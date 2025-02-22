@@ -958,3 +958,82 @@ button[type="submit"] {
 .back-btn:hover {
     background-color: #45a049;
 }
+
+.workers-progress {
+    margin: 20px 0;
+    width: 100%;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.bonus {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #4CAF50;
+    transition: width 0.3s ease;
+}
+
+.enterprise-stats {
+    margin: 30px auto;
+    max-width: 600px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.enterprise-stats h3 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.stat-item {
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.stat-item h4 {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.expenses {
+    background-color: #fff5f5;
+    border: 1px solid #feb2b2;
+}
+
+.income {
+    background-color: #f0fff4;
+    border: 1px solid #9ae6b4;
+}
+
+.stat-item p {
+    margin: 8px 0;
+    font-size: 0.9em;
+}

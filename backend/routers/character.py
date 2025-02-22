@@ -42,6 +42,24 @@ class CharacterHelper:
             db.commit()  # Зберігаємо зміни в базі даних
 
         
+@router.get("/view-character")
+async def view_character(
+    character_id: int,
+    request: Request,
+    db: Session = Depends(database.get_db)
+):
+    character = db.query(models.User).filter(models.User.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+    
+    return templates.TemplateResponse(
+        "character_view.html",
+        {
+            "request": request,
+            "character": character
+        }
+    )
+
 class CharRotes(CharacterHelper):
 
     @router.get("/character")
@@ -202,21 +220,3 @@ async def move_to_sector(
         db.commit()
     
     return {"status": "success"}
-
-    @router.get("/view-character")
-    async def view_character(
-        character_id: int,
-        request: Request,
-        db: Session = Depends(database.get_db)
-    ):
-        character = db.query(models.User).filter(models.User.id == character_id).first()
-        if not character:
-            raise HTTPException(status_code=404, detail="Character not found")
-        
-        return templates.TemplateResponse(
-            "character_view.html",
-            {
-                "request": request,
-                "character": character
-            }
-        )
