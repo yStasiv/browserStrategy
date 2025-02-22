@@ -37,12 +37,23 @@ def update_resources(db: Session):
         ).all()
         
         for worker in workers:
-            if worker.last_salary_time:
-                minutes_passed = (current_time - worker.last_salary_time).total_seconds() / 60
-                if minutes_passed >= 1:
-                    gold_earned = int(minutes_passed) * enterprise.salary
+            if worker.work_start_time:
+                hours_worked = (current_time - worker.work_start_time).total_seconds() / 3600
+                
+                # Якщо пройшло 8 годин, нараховуємо зарплату і звільняємо
+                if hours_worked >= 8:
+                    # Нараховуємо зарплату за 8 годин
+                    gold_earned = int(8 * 60 * enterprise.salary)  # 8 годин * 60 хвилин * ставка
+                    
+                    # Знімаємо зарплату з балансу підприємства
+                    enterprise.balance -= gold_earned
                     worker.gold += gold_earned
-                    worker.last_salary_time = current_time
+                    
+                    # Звільняємо працівника
+                    worker.workplace = None
+                    worker.work_start_time = None
+                    worker.last_quit_time = current_time
+                    enterprise.workers_count -= 1
     
     db.commit()
 
@@ -73,8 +84,9 @@ async def enterprise_page(enterprise_id: int, request: Request, db: Session = De
             "request": request,
             "user": user,
             "enterprise": enterprise,
-            "workers": workers,  # Додаємо список працівників
-            "last_quit_time": user.last_quit_time.isoformat() if user.last_quit_time else None
+            "workers": workers,
+            "current_time": datetime.now(),
+            "timedelta": timedelta
         }
     )
 
@@ -92,60 +104,34 @@ async def start_work(enterprise_id: int, request: Request, db: Session = Depends
     if not enterprise:
         raise HTTPException(status_code=404, detail="Enterprise not found")
     
+    current_time = datetime.now()
+    
+    # Перевіряємо, чи працював сьогодні
+    if user.last_work_day and user.last_work_day.date() == current_time.date():
+        raise HTTPException(status_code=400, detail="You can only work once per day!")
+    
     if user.workplace:
         raise HTTPException(status_code=400, detail="Already working somewhere")
     
     if enterprise.workers_count >= enterprise.max_workers:
         raise HTTPException(status_code=400, detail="No vacant positions")
     
-    # Перевіряємо кулдаун
-    if user.last_quit_time:
-        cooldown_time = datetime.now() - user.last_quit_time
-        if cooldown_time.total_seconds() < 20:  # 20 секунд кулдауну
-            raise HTTPException(status_code=400, detail="You must wait before starting new work")
+    # Перевіряємо, чи знаходиться гравець у правильному секторі
+    if user.map_sector != enterprise.sector:
+        raise HTTPException(status_code=400, detail="You must be in the same sector as the enterprise")
+    
+    # Перевіряємо, чи вистачає балансу на зарплату
+    salary_for_worker = 8 * 60 * enterprise.salary  # 8 годин * 60 хвилин * ставка за хвилину
+    if enterprise.balance < salary_for_worker:
+        raise HTTPException(status_code=400, detail="Enterprise doesn't have enough money to pay salary")
     
     user.workplace = f"enterprise_{enterprise.id}"
-    user.last_salary_time = datetime.now()
+    user.work_start_time = current_time
+    user.last_work_day = current_time
     enterprise.workers_count += 1
-    
-    # Встановлюємо час початку виробництва, якщо це перший працівник
-    if enterprise.workers_count == 1:
-        enterprise.last_production_time = datetime.now()
     
     db.commit()
     return {"status": "success"}
-
-@router.post("/enterprise/{enterprise_id}/quit-work")
-async def quit_work(enterprise_id: int, request: Request, db: Session = Depends(database.get_db)):
-    user_session_id = request.cookies.get("session_id")
-    if not user_session_id:
-        raise HTTPException(status_code=401, detail="Not logged in")
-    
-    user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    enterprise = db.query(models.Enterprise).filter(models.Enterprise.id == enterprise_id).first()
-    if not enterprise:
-        raise HTTPException(status_code=404, detail="Enterprise not found")
-    
-    if user.workplace != f"enterprise_{enterprise.id}":
-        raise HTTPException(status_code=400, detail="Not working at this enterprise")
-    
-    # Нараховуємо зарплату при звільненні
-    current_time = datetime.now()
-    if user.last_salary_time:
-        minutes_worked = (current_time - user.last_salary_time).total_seconds() / 60
-        gold_earned = int(minutes_worked * enterprise.salary)
-        user.gold += gold_earned
-    
-    user.workplace = None
-    user.last_salary_time = None
-    user.last_quit_time = current_time  # Зберігаємо час звільнення
-    enterprise.workers_count -= 1
-    
-    db.commit()
-    return {"status": "success", "gold_earned": gold_earned}
 
 # Додаємо модель для запиту
 class buyResources(BaseModel):
@@ -178,8 +164,11 @@ async def buy_resources(
     if enterprise.resource_stored < amount:
         raise HTTPException(status_code=400, detail="Not enough resources in storage")
 
-    # Віднімаємо золото і додаємо ресурси
+    # Віднімаємо золото у користувача і додаємо на баланс підприємства
     user.gold -= total_cost
+    enterprise.balance += total_cost
+    
+    # Віднімаємо ресурси зі складу
     enterprise.resource_stored -= amount
     
     # Додаємо ресурси користувачу
@@ -192,6 +181,38 @@ async def buy_resources(
 
     db.commit()
     return RedirectResponse(url=f"/enterprise/{enterprise_id}", status_code=303)
+
+# @router.post("/move-to-sector")
+# async def move_to_sector(
+#     request: Request,
+#     movement: dict,
+#     db: Session = Depends(database.get_db)
+# ):
+#     user_session_id = request.cookies.get("session_id")
+#     if not user_session_id:
+#         raise HTTPException(status_code=401, detail="Not logged in")
+    
+#     user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+    
+#     # Перевіряємо, чи не працює зараз гравець
+#     if user.workplace and user.work_start_time:
+#         hours_worked = (datetime.now() - user.work_start_time).total_seconds() / 3600
+#         if hours_worked < 8:
+#             raise HTTPException(status_code=400, detail="You cannot leave sector while working! (8 hours not passed)")
+    
+#     sector = str(movement.get("sector"))
+#     x = movement.get("x")
+#     y = movement.get("y")
+    
+#     if sector in ["Mountain", "Castle", "Forest"] and x is not None and y is not None:
+#         user.map_sector = sector
+#         user.map_x = x
+#         user.map_y = y
+#         db.commit()
+    
+#     return {"status": "success"}
 
 
 

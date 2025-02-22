@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Form, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -170,31 +171,37 @@ class CharRotes(CharacterHelper):
         
         return {"status": "success"}
 
-    @router.post("/move-to-sector")
-    async def move_to_sector(
-        request: Request,
-        movement: dict,
-        db: Session = Depends(database.get_db)
-    ):
-        user_session_id = request.cookies.get("session_id")
-        if not user_session_id:
-            raise HTTPException(status_code=401, detail="Not logged in")
-        
-        user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        sector = str(movement.get("sector"))  # Конвертуємо в рядок
-        x = movement.get("x")
-        y = movement.get("y")
-        
-        if sector in ["Mountain", "Castle", "Forest"] and x is not None and y is not None:
-            user.map_sector = sector
-            user.map_x = x
-            user.map_y = y
-            db.commit()
-        
-        return {"status": "success"}
+@router.post("/move-to-sector")
+async def move_to_sector(
+    request: Request,
+    movement: dict,
+    db: Session = Depends(database.get_db)
+):
+    user_session_id = request.cookies.get("session_id")
+    if not user_session_id:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    
+    user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Перевіряємо, чи не працює зараз гравець
+    if user.workplace and user.work_start_time:
+        hours_worked = (datetime.now() - user.work_start_time).total_seconds() / 3600
+        if hours_worked < 8:
+            raise HTTPException(status_code=400, detail="You cannot leave sector while working! (8 hours not passed)")
+    
+    sector = str(movement.get("sector"))
+    x = movement.get("x")
+    y = movement.get("y")
+    
+    if sector in ["Mountain", "Castle", "Forest"] and x is not None and y is not None:
+        user.map_sector = sector
+        user.map_x = x
+        user.map_y = y
+        db.commit()
+    
+    return {"status": "success"}
 
     @router.get("/view-character")
     async def view_character(
