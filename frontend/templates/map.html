@@ -84,7 +84,10 @@
                         {% endif %}
                         <span>{{ enterprise.name }}</span>
                         <div class="enterprise-info">
-                            Працівники: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}
+                            <p>Площа: {{ enterprise.area }} у.о.</p>
+                            <p>Зарплата: {{ enterprise.salary }} золота/год</p>
+                            <p>Працівники: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}</p>
+                            <p>Склад: {{ enterprise.resource_stored }}/{{ enterprise.max_storage }}</p>
                         </div>
                     </a>
                 {% endfor %}

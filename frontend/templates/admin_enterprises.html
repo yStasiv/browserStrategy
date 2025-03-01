@@ -4,106 +4,102 @@
 
 {% block body %}
 <div class="admin-panel">
-    <h2>Створення нового підприємства</h2>
-    <form method="POST" action="/admin/enterprises/create">
-        <div class="form-group">
-            <label for="name">Назва підприємства:</label>
-            <input type="text" id="name" name="name" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="resource_type">Тип ресурсу:</label>
-            <select id="resource_type" name="resource_type" required>
-                <option value="wood">Деревина</option>
-                <option value="stone">Камінь</option>
-                <option value="gold">Золото</option>
-            </select>
-        </div>
+    <h2>Керування підприємствами</h2>
+    
+    <div class="enterprise-form-container">
+        <h3>Додати нове підприємство</h3>
+        {% include 'admin/enterprise_form.html' %}
+    </div>
 
-        <div class="form-group">
-            <label for="sector">Сектор карти:</label>
-            <select id="sector" name="sector" required>
-                <option value="Castle">Замок</option>
-                <option value="Forest">Ліс</option>
-                <option value="Mountain">Гори</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="max_workers">Максимальна кількість працівників:</label>
-            <input type="number" id="max_workers" name="max_workers" value="10" required>
-        </div>
-
-        <div class="form-group">
-            <label for="max_storage">Максимальний об'єм складу:</label>
-            <input type="number" id="max_storage" name="max_storage" value="1000" required>
-        </div>
-
-        <div class="form-group">
-            <label for="salary">Зарплата за хвилину:</label>
-            <input type="number" id="salary" name="salary" value="3" required>
-        </div>
-
-        <div class="form-group">
-            <label for="item_price">Ціна за одиницю ресурсу:</label>
-            <input type="number" id="item_price" name="item_price" value="11" required>
-        </div>
-
-        <button type="submit">Створити підприємство</button>
-    </form>
-
-    <h2>Існуючі підприємства</h2>
-    <table class="enterprises-table">
-        <thead>
-            <tr>
-                <th>Назва</th>
-                <th>Тип ресурсу</th>
-                <th>Сектор</th>
-                <th>Макс. працівників</th>
-                <th>Поточні працівники</th>
-                <th>Ресурсів на складі</th>
-                <th>Дії</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for enterprise in enterprises %}
-            <tr>
-                <td>{{ enterprise.name }}</td>
-                <td>{{ enterprise.resource_type }}</td>
-                <td>{{ enterprise.sector }}</td>
-                <td>{{ enterprise.max_workers }}</td>
-                <td>{{ enterprise.workers_count }}</td>
-                <td>{{ enterprise.resource_stored }}/{{ enterprise.max_storage }}</td>
-                <td>
-                    <form method="POST" action="/admin/enterprises/delete/{{ enterprise.id }}" style="display: inline;">
-                        <button type="submit" onclick="return confirm('Ви впевнені?')">Видалити</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="enterprises-list">
+        <h3>Існуючі підприємства</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Назва</th>
+                    <th>Сектор</th>
+                    <th>Тип ресурсу</th>
+                    <th>Площа</th>
+                    <th>Коеф. складу</th>
+                    <th>Тип виробництва</th>
+                    <th>Макс. працівників</th>
+                    <th>Макс. склад</th>
+                    <th>Зарплата</th>
+                    <th>Ціна ресурсу</th>
+                    <th>Дії</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for enterprise in enterprises %}
+                <tr>
+                    <td>{{ enterprise.id }}</td>
+                    <td>{{ enterprise.name }}</td>
+                    <td>{{ enterprise.sector }}</td>
+                    <td>{{ enterprise.resource_type }}</td>
+                    <td>{{ enterprise.area }}</td>
+                    <td>{{ enterprise.storage_multiplier }}</td>
+                    <td>{{ enterprise.production_type }}</td>
+                    <td>{{ enterprise.max_workers }}</td>
+                    <td>{{ enterprise.max_storage }}</td>
+                    <td>{{ enterprise.salary }}</td>
+                    <td>{{ enterprise.item_price }}</td>
+                    <td>
+                        <form action="/admin/enterprises/delete/{{ enterprise.id }}" method="POST" style="display: inline;">
+                            <button type="submit" class="delete-btn">Видалити</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<script>
-function updateIcon() {
-    const resourceType = document.getElementById('resource_type').value;
-    const iconSelect = document.getElementById('icon_url');
-    
-    switch(resourceType) {
-        case 'wood':
-            iconSelect.value = '../static/images/sawmill-icon.png';
-            break;
-        case 'stone':
-            iconSelect.value = '../static/images/mine-icon.png';
-            break;
-        case 'gold':
-            iconSelect.value = '../static/images/gold-mine-icon.png';
-            break;
-    }
+<style>
+.admin-panel {
+    padding: 20px;
 }
 
-// Встановлюємо початкову іконку
-document.addEventListener('DOMContentLoaded', updateIcon);
-</script>
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f4f4f4;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
+.enterprise-form-container {
+    max-width: 600px;
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+</style>
 {% endblock %} 

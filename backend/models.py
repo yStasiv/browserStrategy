@@ -103,10 +103,13 @@ class Enterprise(Base):
     sector = Column(String, default="Castle")  # Додаємо поле для сектора
     resource_type = Column(String)  # Тип ресурсу (wood, stone, etc.)
     resource_stored = Column(Integer, default=0)  # Кількість ресурсу на складі
+    area = Column(Integer, default=100)  # Площа підприємства в умовних одиницях
     last_production_time = Column(DateTime, nullable=True)  # Час останнього виробництва
     workers_count = Column(Integer, default=0)  # Кількість працівників
     max_workers = Column(Integer, default=10)  # Максимальна кількість працівників
     max_storage = Column(Integer, default=666)  # Максимальна кількість ресурсу на складі
-    salary = Column(Integer, default=3)  # Зарплата за хвилину
+    salary = Column(Integer, default=30)  # Зарплата за годину
     item_price = Column(Integer, default=11)  # Ціна за одиницю ресурсу
     balance = Column(Integer, default=1000)  # Додаємо поле балансу
+    storage_multiplier = Column(Integer, default=40)  # Коефіцієнт для розміру складу
+    production_type = Column(String, default="factory")  # factory або mine

@@ -28,32 +28,38 @@ async def admin_enterprises(
         {"request": request, "user": current_user, "enterprises": enterprises}
     )
 
-@router.post("/admin/enterprises/create")
-async def create_enterprise(
+@router.post("/admin/enterprises/add")
+async def add_enterprise(
     request: Request,
     name: str = Form(...),
-    resource_type: str = Form(...),
     sector: str = Form(...),
-    max_workers: int = Form(...),
-    max_storage: int = Form(...),
+    resource_type: str = Form(...),
+    area: int = Form(...),
+    storage_multiplier: int = Form(...),
+    production_type: str = Form(...),
     salary: int = Form(...),
     item_price: int = Form(...),
-    db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(get_current_user)
+    db: Session = Depends(database.get_db)
 ):
-    if not current_user or current_user.id != 1:
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Перевіряємо чи адмін
+    user = get_current_user(request, db)
+    if not user or user.id != 1:
+        raise HTTPException(status_code=403, detail="Not authorized")
     
-    enterprise = models.Enterprise(
+    new_enterprise = models.Enterprise(
         name=name,
-        resource_type=resource_type,
         sector=sector,
-        max_workers=max_workers,
-        max_storage=max_storage,
+        resource_type=resource_type,
+        area=area,
+        storage_multiplier=storage_multiplier,
+        production_type=production_type,
         salary=salary,
-        item_price=item_price
+        item_price=item_price,
+        max_workers=area * 3,  # Встановлюємо початкові значення
+        max_storage=area * storage_multiplier
     )
-    db.add(enterprise)
+    
+    db.add(new_enterprise)
     db.commit()
     
     return RedirectResponse(url="/admin/enterprises", status_code=303)
@@ -73,5 +79,3 @@ async def delete_enterprise(
         db.commit()
     
     return RedirectResponse(url="/admin/enterprises", status_code=303) 
-
-# хочу ще, щоб максимальний час роботи для гравця був 8 годин і якщо він відпрацював 8 хвилин, тоді мав зробити перерву на 14 хвилин і тільки тоді знову зміг влаштуватись на роботу
