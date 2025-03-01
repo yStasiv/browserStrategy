@@ -8,11 +8,10 @@ connection = engine.connect()
 metadata = MetaData()
 
 
-connection.execute(text('ALTER TABLE enterprises ADD COLUMN item_price INTEGER DEFAULT 11'))  # add column
-# connection.execute(text('ALTER TABLE users ADD COLUMN last_quit_time DATETIME DEFAULT null'))  # add column
+connection.execute(text('ALTER TABLE enterprises ADD COLUMN balance INTEGER DEFAULT 1000'))  # add column
+# connection.execute(text('ALTER TABLE users ADD COLUMN work_start_time DATETIME DEFAULT null'))  # add column
 # connection.execute(text('ALTER TABLE users DROP COLUMN map_н'))  # drop column
 # connection.execute(text("UPDATE users SET map_x = :value"), {"value": 50})  # update column
-# connection.commit()  # Не забудь зберегти зміни після оновлення даних в стовбці
 
 
 

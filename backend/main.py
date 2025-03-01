@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from backend import database, utils
-from .routers import auth, character, castle, char_tasks, upload, enterprise, map
+from .routers import auth, character, castle, char_tasks, upload, enterprise, map, admin, help
 
 logger = utils.setup_logger(__name__)
 
@@ -30,6 +30,10 @@ app.include_router(enterprise.router)
 logger.info("Enterprise router registered")
 app.include_router(map.router)
 logger.info("Map router registered")
+app.include_router(admin.router)
+logger.info("Admin router registered")
+app.include_router(help.router)
+logger.info("Help router registered")
 
 
 # TODO: Run this just one time when app start

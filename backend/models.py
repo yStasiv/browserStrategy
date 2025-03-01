@@ -1,6 +1,6 @@
 from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, DateTime
-from .database import Base
 from sqlalchemy.orm import relationship
+from .db_base import Base
 
 
 class User(Base):
@@ -32,6 +32,12 @@ class User(Base):
     workplace = Column(String, nullable=True)  # Назва підприємства, де працює
     last_salary_time = Column(DateTime, nullable=True)  # Час останньої виплати
     last_quit_time = Column(DateTime, nullable=True)  # Час останнього звільнення
+
+    # Додаємо нові поля для відстеження часу роботи
+    daily_work_minutes = Column(Integer, default=0)  # Хвилини роботи за день
+    last_work_day = Column(DateTime, nullable=True)  # Останній робочий день
+
+    work_start_time = Column(DateTime, nullable=True)  # Час початку роботи
 
     units = relationship("UserUnit", back_populates="user")
 
@@ -94,11 +100,13 @@ class Enterprise(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)  # Назва підприємства (sawmill, mine, etc.)
+    sector = Column(String, default="Castle")  # Додаємо поле для сектора
+    resource_type = Column(String)  # Тип ресурсу (wood, stone, etc.)
     resource_stored = Column(Integer, default=0)  # Кількість ресурсу на складі
     last_production_time = Column(DateTime, nullable=True)  # Час останнього виробництва
     workers_count = Column(Integer, default=0)  # Кількість працівників
     max_workers = Column(Integer, default=10)  # Максимальна кількість працівників
     max_storage = Column(Integer, default=666)  # Максимальна кількість ресурсу на складі
-    resource_type = Column(String)  # Тип ресурсу (wood, stone, etc.)
     salary = Column(Integer, default=3)  # Зарплата за хвилину
     item_price = Column(Integer, default=11)  # Ціна за одиницю ресурсу
+    balance = Column(Integer, default=1000)  # Додаємо поле балансу

@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Form, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -41,26 +42,50 @@ class CharacterHelper:
             db.commit()  # Зберігаємо зміни в базі даних
 
         
+@router.get("/view-character")
+async def view_character(
+    character_id: int,
+    request: Request,
+    db: Session = Depends(database.get_db)
+):
+    character = db.query(models.User).filter(models.User.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+    
+    return templates.TemplateResponse(
+        "character_view.html",
+        {
+            "request": request,
+            "character": character
+        }
+    )
+
 class CharRotes(CharacterHelper):
 
-    @router.get("/character", response_class=HTMLResponse)
+    @router.get("/character")
     async def character(
         request: Request,
         db: Session = Depends(database.get_db)
-        ):
+    ):
         user_session_id = request.cookies.get("session_id")
         if not user_session_id:
             raise HTTPException(status_code=401, detail="Not logged in")
         
         user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
         if not user:
-                raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail="User not found")
         
         CharacterHelper().update_user_level(user, db)
         next_level_exp = CharacterHelper().experience_needed_for_next_level(user.level)
         
-        return templates.TemplateResponse("character.html", {"request": request, "user": user,  "next_level_exp": next_level_exp})
-        
+        return templates.TemplateResponse(
+            "character.html",
+            {
+                "request": request,
+                "user": user,
+                "next_level_exp": next_level_exp
+            }
+        )
 
     @router.post("/update-attribute", response_class=RedirectResponse)
     async def update_attribute(
@@ -150,7 +175,7 @@ class CharRotes(CharacterHelper):
             
             # Визначаємо сектор на основі x-координати (тепер як рядок)
             if new_x < 33.3:
-                new_sector = "Moutains"
+                new_sector = "Mountain"
             elif new_x < 66.6:
                 new_sector = "Castle"
             else:
@@ -164,28 +189,34 @@ class CharRotes(CharacterHelper):
         
         return {"status": "success"}
 
-    @router.post("/move-to-sector")
-    async def move_to_sector(
-        request: Request,
-        movement: dict,
-        db: Session = Depends(database.get_db)
-    ):
-        user_session_id = request.cookies.get("session_id")
-        if not user_session_id:
-            raise HTTPException(status_code=401, detail="Not logged in")
-        
-        user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        sector = str(movement.get("sector"))  # Конвертуємо в рядок
-        x = movement.get("x")
-        y = movement.get("y")
-        
-        if sector in ["Moutains", "Castle", "Forest"] and x is not None and y is not None:
-            user.map_sector = sector
-            user.map_x = x
-            user.map_y = y
-            db.commit()
-        
-        return {"status": "success"}
+@router.post("/move-to-sector")
+async def move_to_sector(
+    request: Request,
+    movement: dict,
+    db: Session = Depends(database.get_db)
+):
+    user_session_id = request.cookies.get("session_id")
+    if not user_session_id:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    
+    user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Перевіряємо, чи не працює зараз гравець
+    if user.workplace and user.work_start_time:
+        hours_worked = (datetime.now() - user.work_start_time).total_seconds() / 3600
+        if hours_worked < 8:
+            raise HTTPException(status_code=400, detail="You cannot leave sector while working! (8 hours not passed)")
+    
+    sector = str(movement.get("sector"))
+    x = movement.get("x")
+    y = movement.get("y")
+    
+    if sector in ["Mountain", "Castle", "Forest"] and x is not None and y is not None:
+        user.map_sector = sector
+        user.map_x = x
+        user.map_y = y
+        db.commit()
+    
+    return {"status": "success"}

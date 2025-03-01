@@ -19,12 +19,12 @@
         </div>
 
         <div class="map-content">
-            <h2>Карта світу - Сектор {{ user.map_sector }}</h2>
+            <h2>Карта світу - Сектор: {{ user.map_sector }}</h2>
             <div class="world-map">
                 <div class="map-overlay">
                     <img src="../static/images/map_v1.png" alt="World Map" class="map-image">
                     <div class="sector-borders">
-                        <div class="sector sector-1 {% if user.map_sector == "Moutains" %}active{% endif %}" onclick="moveToSector('Moutains')"></div>
+                        <div class="sector sector-1 {% if user.map_sector == "Mountain" %}active{% endif %}" onclick="moveToSector('Mountain')"></div>
                         <div class="sector sector-2 {% if user.map_sector == "Castle" %}active{% endif %}" onclick="moveToSector('Castle')"></div>
                         <div class="sector sector-3 {% if user.map_sector == "Forest" %}active{% endif %}" onclick="moveToSector('Forest')"></div>
                     </div>
@@ -70,43 +70,28 @@
 
     <!-- Плейсхолдер для підприємств -->
     <div class="buildings-placeholder">
-        <h3>Підприємства</h3>
-        <!-- Debug info -->
-        <p style="color: gray;">Debug: Current sector: '{{ user.map_sector }}'</p>
-        <p style="color: gray;">Debug: Total enterprises: {{ enterprises|length }}</p>
-        <p style="color: gray;">Debug: Is Forest: {{ user.map_sector == "Forest" }}</p>
-        
-        {% if enterprises %}
+        <h3>Доступні підприємства в секторі {{ user.map_sector }}</h3>
         <div class="enterprise-links">
-            {% for enterprise in enterprises %}
-            <p style="color: gray;">Debug: Enterprise {{ enterprise.id }}: {{ enterprise.name }} ({{ enterprise.salary }} gold)</p>
-            
-            {% if enterprise.name == "sawmill" %}
-            <a href="/enterprise/{{ enterprise.id }}" class="enterprise-link sawmill-link">
-                <img src="../static/images/sawmill_model.png" alt="Sawmill" class="enterprise-icon">
-                <span>Лісопилка (Зарплата: {{ enterprise.salary }} золота/хв)</span>
-            </a>
+            {% if enterprises %}
+                {% for enterprise in enterprises %}
+                    <a href="/enterprise/{{ enterprise.id }}" class="enterprise-link">
+                        {% if enterprise.resource_type == 'wood' %}
+                            <img src="../static/images/sawmill-icon.png" alt="Sawmill" class="enterprise-icon">
+                        {% elif enterprise.resource_type == 'stone' %}
+                            <img src="../static/images/mine-icon.png" alt="Mine" class="enterprise-icon">
+                        {% elif enterprise.resource_type == 'gold' %}
+                            <img src="../static/images/gold-mine-icon.png" alt="Gold Mine" class="enterprise-icon">
+                        {% endif %}
+                        <span>{{ enterprise.name }}</span>
+                        <div class="enterprise-info">
+                            Працівники: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}
+                        </div>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <p class="no-enterprises">У цьому секторі немає доступних підприємств</p>
             {% endif %}
-            
-            {% if enterprise.name == "mine" %}
-            <a href="/enterprise/{{ enterprise.id }}" class="enterprise-link mine-link">
-                <img src="../static/images/mine_model.png" alt="Mine" class="enterprise-icon">
-                <span>Шахта (Зарплата: {{ enterprise.salary }} золота/хв)</span>
-            </a>
-            {% endif %}
-            
-            {% if enterprise.name == "blacksmith" %}
-            <a href="/enterprise/{{ enterprise.id }}" class="enterprise-link blacksmith-link">
-                <img src="../static/images/blacksmith_model.png" alt="Blacksmith" class="enterprise-icon">
-                <span>Кузня (Зарплата: {{ enterprise.salary }} золота/хв)</span>
-            </a>
-            {% endif %}
-            
-            {% endfor %}
         </div>
-        {% else %}
-        <p style="color: gray;">Debug: No enterprises in sector {{ user.map_sector }}</p>
-        {% endif %}
     </div>
 </div>
 
@@ -141,7 +126,7 @@ async function moveToSector(sector) {
     
     // Розраховуємо центральну позицію для кожного сектора
     const sectorCenters = {
-        "Moutains": { x: 16.5, y: 50 },
+        "Mountain": { x: 16.5, y: 50 },
         "Castle": { x: 49.5, y: 50 },
         "Forest": { x: 82.5, y: 50 }
     };
@@ -153,7 +138,7 @@ async function moveToSector(sector) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ 
-                sector: sector.toString(), 
+                sector: sector, 
                 x: sectorCenters[sector].x, 
                 y: sectorCenters[sector].y 
             })
