@@ -15,27 +15,37 @@ def update_resources(db: Session):
     current_time = datetime.now()
     
     for enterprise in enterprises:
-        # Оновлюємо зарплати працівників та виробництво ресурсів
+        # Оновлюємо максимальну кількість працівників (площа * 3)
+        enterprise.max_workers = enterprise.area * 3
+        
+        # Оновлюємо максимальний розмір складу
+        enterprise.max_storage = enterprise.area * enterprise.storage_multiplier
+        
         if enterprise.last_production_time:
-            minutes_passed = (current_time - enterprise.last_production_time).total_seconds() / 60
-            if minutes_passed >= 1:
-                # Розраховуємо бонус продуктивності на основі кількості працівників
-                productivity_bonus = 1 + (enterprise.workers_count // 25) * 0.01  # +1% за кожні 25 працівників
+            hours_passed = (current_time - enterprise.last_production_time).total_seconds() / 3600
+            if hours_passed >= 1:
+                # Бонус від кількості працівників (1% за кожні 25 працівників)
+                worker_bonus = 1 + (enterprise.workers_count // 25) * 0.01
                 
-                # Кожен працівник виробляє 1 ресурс за хвилину + бонус продуктивності
-                base_production = int(minutes_passed) * enterprise.workers_count
-                resources_produced = int(base_production * productivity_bonus)
+                # Розраховуємо базову продуктивність залежно від типу виробництва
+                if enterprise.production_type == 'mine':
+                    # Для шахт: 1 ресурс на працівника за годину
+                    base_production = enterprise.workers_count
+                else:
+                    # Для заводів: 1 ресурс * площа на працівника за годину
+                    base_production = enterprise.workers_count * enterprise.area
                 
-                # Перевіряємо, щоб не перевищити максимальну місткість складу
+                # Розраховуємо загальне виробництво
+                resources_produced = int(hours_passed * base_production * worker_bonus)
+                
+                # Перевіряємо ліміт складу
                 new_resource_amount = min(
                     enterprise.max_storage,
                     enterprise.resource_stored + resources_produced
                 )
                 enterprise.resource_stored = new_resource_amount
                 enterprise.last_production_time = current_time
-        else:
-            enterprise.last_production_time = current_time
-
+        
         # Оновлюємо зарплати працівників
         workers = db.query(models.User).filter(
             models.User.workplace == f"enterprise_{enterprise.id}"
@@ -48,7 +58,7 @@ def update_resources(db: Session):
                 # Якщо пройшло 8 годин, нараховуємо зарплату і звільняємо
                 if hours_worked >= 8:
                     # Нараховуємо зарплату за 8 годин
-                    gold_earned = int(8 * 60 * enterprise.salary)  # 8 годин * 60 хвилин * ставка
+                    gold_earned = int(8 * enterprise.salary)  # 8 годин * ставка за годину
                     worker.gold += gold_earned
                     
                     # Звільняємо працівника
@@ -124,7 +134,7 @@ async def start_work(enterprise_id: int, request: Request, db: Session = Depends
     
     # Розраховуємо кількість ресурсів, які будуть вироблені за зміну
     productivity_bonus = 1 + (enterprise.workers_count // 25) * 0.01
-    resources_per_shift = int(8 * 60 * productivity_bonus)  # 8 годин * 60 хвилин * бонус продуктивності
+    resources_per_shift = int(8 * productivity_bonus)  # 8 годин бонус продуктивності
     
     # Перевіряємо, чи вистачить місця на складі
     space_needed = resources_per_shift
@@ -137,7 +147,7 @@ async def start_work(enterprise_id: int, request: Request, db: Session = Depends
         )
     
     # Розраховуємо зарплату за зміну
-    salary_for_shift = 8 * 60 * enterprise.salary  # 8 годин * 60 хвилин * ставка за хвилину
+    salary_for_shift = 8 * enterprise.salary  # 8 годин * ставка за годину
     
     # Перевіряємо, чи вистачає балансу на зарплату
     if enterprise.balance < salary_for_shift:
