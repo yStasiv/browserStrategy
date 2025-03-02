@@ -51,7 +51,7 @@ async def get_guild(
                 "selected_scenario": 1,
                 "available_tasks": [task] if task else [],
                 "completed_task_ids": [],
-                "in_progress_task_ids": [1] if first_task_in_progress else [],
+                "in_progress_task_ids": [1],
                 "completed_scenarios": set(),
                 "active_scenarios": set([1]) if scenario else set()
             }
