@@ -41,7 +41,6 @@ class User(Base):
 
     units = relationship("UserUnit", back_populates="user")
 
-    tasks = relationship("Task", back_populates="user")
     user_tasks = relationship("UserTask", back_populates="user")
 
 
@@ -70,19 +69,18 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
+    scenario_id = Column(Integer, ForeignKey("quest_scenarios.id"))
+    title = Column(String)
     description = Column(String)
-    is_completed = Column(Boolean, default=False)
+    level_required = Column(Integer, default=1)
+    order_in_scenario = Column(Integer, default=0)
     reward_gold = Column(Integer, default=0)
-    reward_wood = Column(Integer, default=0) 
-    reward_stone = Column(Integer, default=0) 
-    reward_exp = Column(Integer, default=0) 
-    # level_required = Column(Integer, ForeignKey("users.level"), default=1)
-    level_required = Column(Integer, ForeignKey("users.id"), default=1)  # TODO remove this fields? $1
+    reward_wood = Column(Integer, default=0)
+    reward_stone = Column(Integer, default=0)
+    reward_exp = Column(Integer, default=0)
 
-
-    user = relationship("User", back_populates="tasks")   # TODO remove this fields? $1
     user_tasks = relationship("UserTask", back_populates="task")
+    scenario = relationship("QuestScenario", back_populates="tasks")
 
 class UserTask(Base): 
     __tablename__ = "user_tasks" 
@@ -113,3 +111,13 @@ class Enterprise(Base):
     balance = Column(Integer, default=1000)  # Додаємо поле балансу
     storage_multiplier = Column(Integer, default=40)  # Коефіцієнт для розміру складу
     production_type = Column(String, default="factory")  # factory або mine
+
+class QuestScenario(Base):
+    __tablename__ = "quest_scenarios"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)  # Назва сценарію
+    description = Column(String)  # Опис сценарію
+    min_level = Column(Integer, default=1)  # Мінімальний рівень для доступу
+    is_active = Column(Boolean, default=True)  # Чи активний сценарій
+    tasks = relationship("Task", back_populates="scenario")

@@ -21,7 +21,7 @@
         <!-- Іконка персонажа -->
         <div class="avatar">
             <img src="{{ user.avatar_url or '../static/images/simple-elfe.png' }}" alt="Avatar" class="avatar-img">
-            <span class="avatar-caption">{{ user.username }}</span>
+            <span class="avatar-caption"><a href="/view-character?character_id={{ user.id }}">{{ user.username }}</a></span>
         </div>
 
         <!-- Характеристики персонажа --> 
@@ -75,6 +75,15 @@
             <span class="max-lvl-text">Максимальний рівень досягнуто!</span>
             {% endif %}
         </div>
+
+        {% if user.has_adventurer_card %}
+        <div class="adventurer-card">
+            <h3>Картка авантюриста</h3>
+            <p>Статус: Активна</p>
+            <p>Власник: {{ user.username }}</p>
+            <p>Рівень: {{ user.level }}</p>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Додайте цей блок перед кнопкою замку -->
@@ -94,7 +103,7 @@
     <!-- Кнопка завдання -->
     <div class="task-btn">
         <form action="/char_tasks" method="get">
-            <button type="submit">Перейти до завдань</button>
+            <button type="submit">Активні завдання</button>
         </form>
     </div>
 
@@ -141,5 +150,24 @@
         form.submit(); 
         }
 </script>
+
+<style>
+/* ... існуючі стилі ... */
+
+.adventurer-card {
+    background: linear-gradient(45deg, #ffd700, #ffa500);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    color: #333;
+}
+
+.adventurer-card h3 {
+    margin: 0 0 10px 0;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+</style>
 
 {% endblock %}

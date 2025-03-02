@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Гільдія авантюристів{% endblock %}
+
+{% block body %}
+<div class="navigation-panel">
+    <a href="/character" class="nav-link">Мій персонаж</a>
+    <a href="/map" class="nav-link">Карта</a>
+    <a href="/guild" class="nav-link active">Гільдія</a>
+    <a href="/char_tasks" class="nav-link">Завдання</a>
+    <a href="/castle" class="nav-link">Замок</a>
+</div>
+
+<div class="guild-container">
+    <div class="guild-header">
+        <h1>Гільдія авантюристів</h1>
+        <p>Рівень персонажа: {{ user.level }}</p>
+    </div>
+
+    <div class="scenarios-container">
+        <h2>Доступні сценарії</h2>
+        {% if scenarios %}
+            <div class="scenarios-grid">
+                {% for scenario in scenarios %}
+                <div class="scenario-card {% if scenario.id == selected_scenario %}selected{% endif %}">
+                    <a href="/guild?scenario_id={{ scenario.id }}" class="scenario-link">
+                        <h3>{{ scenario.title }}</h3>
+                        <p class="scenario-description">{{ scenario.description }}</p>
+                        <div class="scenario-info">
+                            <span class="min-level">Мін. рівень: {{ scenario.min_level }}</span>
+                            {% if scenario.id in completed_scenarios %}
+                            <span class="status completed">Завершено</span>
+                            {% elif scenario.id in active_scenarios %}
+                            <span class="status active">Активний</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="no-scenarios">Наразі немає доступних сценаріїв для вашого рівня</p>
+        {% endif %}
+    </div>
+
+    {% if selected_scenario %}
+    <div class="tasks-container">
+        <h2>Завдання сценарію</h2>
+        {% if available_tasks %}
+            {% for task in available_tasks %}
+            <div class="task-card {% if task.id in completed_task_ids %}completed{% elif task.id in in_progress_task_ids %}in-progress{% endif %}">
+                <h3>{{ task.title }}</h3>
+                <p class="task-description">{{ task.description }}</p>
+                <div class="task-rewards">
+                    <h4>Нагорода:</h4>
+                    {% if task.reward_gold > 0 %}
+                    <span class="reward">
+                        <img src="../static/images/gold-resource-icon.png" alt="Gold">
+                        {{ task.reward_gold }}
+                    </span>
+                    {% endif %}
+                    {% if task.reward_wood > 0 %}
+                    <span class="reward">
+                        <img src="../static/images/wood-resource-icon.png" alt="Wood">
+                        {{ task.reward_wood }}
+                    </span>
+                    {% endif %}
+                    {% if task.reward_stone > 0 %}
+                    <span class="reward">
+                        <img src="../static/images/stone-resourse-icon.png" alt="Stone">
+                        {{ task.reward_stone }}
+                    </span>
+                    {% endif %}
+                    {% if task.reward_exp > 0 %}
+                    <span class="reward">
+                        <img src="../static/images/exp-icon.png" alt="Experience">
+                        {{ task.reward_exp }}
+                    </span>
+                    {% endif %}
+                </div>
+                {% if task.id not in completed_task_ids and task.id not in in_progress_task_ids %}
+                <form action="/guild/accept-task/{{ task.id }}" method="POST">
+                    <button type="submit" class="accept-task-btn">Прийняти завдання</button>
+                </form>
+                {% elif task.id in in_progress_task_ids %}
+                <span class="task-status in-progress">В процесі</span>
+                {% else %}
+                <span class="task-status completed">Виконано</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-tasks">Наразі немає доступних завдань у цьому сценарії</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% if error %}
+<div class="error-message">
+    {{ error }}
+</div>
+{% endif %}
+
+<style>
+.guild-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.guild-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.scenarios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.scenario-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.scenario-card:hover {
+    transform: translateY(-5px);
+}
+
+.scenario-card.selected {
+    border: 2px solid #007bff;
+}
+
+.scenario-link {
+    display: block;
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.scenario-description {
+    color: #666;
+    margin: 10px 0;
+}
+
+.scenario-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.min-level {
+    color: #666;
+}
+
+.status {
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.status.completed {
+    background: #28a745;
+    color: white;
+}
+
+.status.active {
+    background: #007bff;
+    color: white;
+}
+
+.tasks-container {
+    margin-top: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.task-card {
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.task-rewards {
+    margin-top: 15px;
+}
+
+.reward {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 15px;
+}
+
+.reward img {
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+}
+
+.accept-task-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.accept-task-btn:hover {
+    background: #0056b3;
+}
+
+.task-status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-top: 15px;
+}
+
+.task-status.completed {
+    background: #28a745;
+    color: white;
+}
+
+.task-status.in-progress {
+    background: #ffc107;
+    color: black;
+}
+
+.error-message {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    text-align: center;
+}
+</style>
+{% endblock %} 
