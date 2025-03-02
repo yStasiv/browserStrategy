@@ -93,6 +93,18 @@ def init_test_data(db: Session):
         for task in advanced_tasks:
             db.add(task)
 
+        # # Додаємо початкове досягнення
+        # achievement = db.query(models.Achievement).filter(models.Achievement.id == 1).first()
+        # if not achievement:
+        #     achievement = models.Achievement(
+        #         id=1,
+        #         title="Початок шляху",
+        #         description="Виконайте своє перше завдання в гільдії авантюристів",
+        #         icon_url="../static/images/achievements/first-quest.png"  # Додайте відповідну іконку
+        #     )
+        #     db.add(achievement)
+        #     db.commit()
+
         db.commit()
         print("Тестові дані успішно створено")
 

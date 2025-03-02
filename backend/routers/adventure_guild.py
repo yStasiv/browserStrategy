@@ -19,7 +19,45 @@ async def get_guild(
     if not current_user:
         return RedirectResponse(url="/")
     
-    # Отримуємо доступні сценарії для рівня користувача
+    # Перевіряємо чи користувач в секторі Castle
+    if current_user.map_sector != "Castle":
+        return templates.TemplateResponse(
+            "adventure_guild.html",
+            {
+                "request": request,
+                "user": current_user,
+                "error": "Гільдія авантюристів доступна тільки в секторі Castle"
+            }
+        )
+    
+    # Перевіряємо чи виконане перше завдання
+    first_task_completed = db.query(UserTask).filter(
+        UserTask.user_id == current_user.id,
+        UserTask.task_id == 1,
+        UserTask.is_completed == True
+    ).first() is not None
+
+    # Якщо перше завдання не виконане, показуємо тільки перший сценарій і перше завдання
+    if not first_task_completed:
+        scenario = db.query(QuestScenario).filter(QuestScenario.id == 1).first()
+        task = db.query(Task).filter(Task.id == 1).first()
+        
+        return templates.TemplateResponse(
+            "adventure_guild.html",
+            {
+                "request": request,
+                "user": current_user,
+                "scenarios": [scenario] if scenario else [],
+                "selected_scenario": 1,
+                "available_tasks": [task] if task else [],
+                "completed_task_ids": [],
+                "in_progress_task_ids": [1] if first_task_in_progress else [],
+                "completed_scenarios": set(),
+                "active_scenarios": set([1]) if scenario else set()
+            }
+        )
+
+    # Якщо перше завдання виконане, показуємо всі доступні сценарії та завдання
     scenarios = db.query(QuestScenario).filter(
         QuestScenario.min_level <= current_user.level,
         QuestScenario.is_active == True
@@ -56,7 +94,7 @@ async def get_guild(
         elif any(task_id in in_progress_task_ids for task_id in scenario_tasks):
             active_scenarios.add(scenario.id)
     
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "adventure_guild.html",
         {
             "request": request,
@@ -70,6 +108,11 @@ async def get_guild(
             "active_scenarios": active_scenarios
         }
     )
+    
+    # Позначаємо що користувач відвідав гільдію
+    response.set_cookie(key="visited_guild", value="true")
+    
+    return response
 
 @router.post("/guild/accept-task/{task_id}")
 async def accept_task(

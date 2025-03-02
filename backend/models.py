@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from .db_base import Base
+from datetime import datetime
 
 
 class User(Base):
@@ -42,6 +43,8 @@ class User(Base):
     units = relationship("UserUnit", back_populates="user")
 
     user_tasks = relationship("UserTask", back_populates="user")
+
+    achievements = relationship("UserAchievement", back_populates="user")
 
 
 class UnitType(Base):
@@ -121,3 +124,22 @@ class QuestScenario(Base):
     min_level = Column(Integer, default=1)  # Мінімальний рівень для доступу
     is_active = Column(Boolean, default=True)  # Чи активний сценарій
     tasks = relationship("Task", back_populates="scenario")
+
+class Achievement(Base):
+    __tablename__ = "achievements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    description = Column(String)
+    icon_url = Column(String, nullable=True)
+
+class UserAchievement(Base):
+    __tablename__ = "user_achievements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    achievement_id = Column(Integer, ForeignKey("achievements.id"))
+    obtained_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="achievements")
+    achievement = relationship("Achievement")

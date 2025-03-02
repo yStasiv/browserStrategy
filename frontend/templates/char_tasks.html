@@ -47,10 +47,16 @@
         </div>
         
         {% if not user_task.is_completed %}
-            {% if user_task.task.is_initial and not user.has_adventurer_card %}
-            <div class="task-hint">
-                Щоб виконати це завдання, відвідайте <a href="/guild">гільдію авантюристів</a>
-            </div>
+            {% if user_task.task.id == 1 %}
+                {% if has_visited_guild %}
+                <form action="/complete-task/{{ user_task.task.id }}" method="POST">
+                    <button type="submit" class="complete-btn">Завершити завдання</button>
+                </form>
+                {% else %}
+                <div class="task-hint">
+                    Щоб виконати це завдання, відвідайте <a href="/guild">гільдію авантюристів</a>
+                </div>
+                {% endif %}
             {% else %}
             <form action="/complete-task/{{ user_task.task.id }}" method="POST">
                 <button type="submit" class="complete-btn">Завершити завдання</button>
