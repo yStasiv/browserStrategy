@@ -66,40 +66,56 @@ class AuthHelper():
 class AuthRotes:
     @router.post("/register")
     async def register(
-        # request: Request,
+        request: Request,
         username: str = Form(...),
         password: str = Form(...),
         fraction: str = Form(...),
         db: Session = Depends(database.get_db)
     ):
-        # Перевірка на наявність користувача
+        # Перевіряємо чи існує користувач
         existing_user = db.query(models.User).filter(models.User.username == username).first()
         if existing_user:
-            raise HTTPException(status_code=400, detail="User already exists")
-        
-        # Створення нового користувача
-        new_user = models.User(
-            username=username, 
-            password=hash_password(password), 
-            fraction=fraction,
-            level=1, 
-            gold=0,  
-            wood=0, 
-            stone=0,
+            return templates.TemplateResponse(
+                "register.html",
+                {"request": request, "error": "Користувач з таким ім'ям вже існує"}
             )
+
+        # Хешуємо пароль
+        hashed_password = hash_password(password)
+
+        # Створюємо нового користувача
+        new_user = models.User(
+            username=username,
+            password=hashed_password,
+            fraction=fraction
+        )
         db.add(new_user)
         db.commit()
+        db.refresh(new_user)
 
-        # AuthHelper.add_unit_types(db)  # TODO: move from there...
-        # AuthHelper.set_default_user_units(new_user, db)  # TODO: Think if i need it)) >>> 23.11.2024 U think that this is no needed
+        # Додаємо початкові юніти
+        unit_types = AuthHelper.get_default_unit_types(fraction, db)
+        for unit_type in unit_types:
+            user_unit = models.UserUnit(
+                user_id=new_user.id,
+                unit_type_id=unit_type.id,
+                quantity=0
+            )
+            db.add(user_unit)
 
-        # Add all existing tasks for new user
-        db_tasks = TaskHelper.get_all_tasks(db)    
-        for task in db_tasks:
-            TaskHelper.update_tasks_for_users(db, task, [new_user])
-            logger.info(f"Task {task.id} with title: {task.title} was added fot user {new_user.username}")
+        # Автоматично додаємо перше завдання користувачу
+        first_task = db.query(models.Task).filter(models.Task.id == 1).first()
+        if first_task:
+            user_task = models.UserTask(
+                user_id=new_user.id,
+                task_id=first_task.id,
+                is_completed=False
+            )
+            db.add(user_task)
+        
+        db.commit()
 
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url="/login", status_code=303)
 
 
     @router.post("/login")
@@ -135,3 +151,11 @@ class AuthRotes:
     @router.get("/")
     async def root(request: Request):
         return templates.TemplateResponse("index.html", {"request": request})
+
+    @router.get("/register")
+    async def show_register_form(request: Request):
+        return templates.TemplateResponse("register.html", {"request": request})
+
+    @router.get("/login")
+    async def show_login_form(request: Request):
+        return templates.TemplateResponse("login.html", {"request": request})

@@ -84,7 +84,10 @@
                         {% endif %}
                         <span>{{ enterprise.name }}</span>
                         <div class="enterprise-info">
-                            Працівники: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}
+                            <p>Площа: {{ enterprise.area }} у.о.</p>
+                            <p>Зарплата: {{ enterprise.salary }} золота/год</p>
+                            <p>Працівники: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}</p>
+                            <p>Склад: {{ enterprise.resource_stored }}/{{ enterprise.max_storage }}</p>
                         </div>
                     </a>
                 {% endfor %}
@@ -92,6 +95,19 @@
                 <p class="no-enterprises">У цьому секторі немає доступних підприємств</p>
             {% endif %}
         </div>
+
+        {% if user.map_sector == "Castle" %}
+        <div class="guild-section">
+            <h3>Гільдія авантюристів</h3>
+            <a href="/guild" class="guild-link">
+                <img src="../static/images/guild-icon.png" alt="Guild" class="guild-icon">
+                <div class="guild-info">
+                    <span class="guild-name">Гільдія авантюристів</span>
+                    <p class="guild-description">Тут ви можете знайти завдання та отримати нагороди</p>
+                </div>
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 

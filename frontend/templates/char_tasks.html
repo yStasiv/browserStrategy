@@ -3,63 +3,161 @@
 {% block title %}Завдання{% endblock %}
 
 {% block body %}
-<div class="tasks-container">
-    <h1>Завдання</h1>
-    <ul class="task-list">
-        {% for user_task in user_tasks %}
-            <li class="task-item">
-                <span class="task-title">{{ user_task.task.title }}</span>
-                <span class="task-description">{{ user_task.task.description }}</span>
-                <span class="task-level">Потрібний рівень: {{ user_task.task.level_required }}</span>
-                <span class="task-status">
-                    {% if user_task.is_completed %}
-                        Виконано
-                    {% else %}
-                        Не виконано
-                    {% endif %}
-                </span>
-                <span class="task-reward">Винагорода: 
-                    {{ user_task.task.reward_gold }} золото, 
-                    {{ user_task.task.reward_wood }} дерево, 
-                    {{ user_task.task.reward_stone }} камінь, 
-                    {{ user_task.task.reward_exp }} досвід 
-                </span>
-                {% if not user_task.is_completed %}
-                <form action="/char_tasks/complete" method="post">
-                    <input type="hidden" name="task_id" value="{{ user_task.task.id }}">
-                    <button type="submit">Виконати</button>
-                </form>
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
-
-    {% if user.id == 1 %}
-    <h2>Додати нове завдання</h2>
-    <form action="/char_tasks/add" method="post">
-        <label for="title">Назва завдання:</label>
-        <input type="text" id="title" name="title" required>
-        <br>
-        <label for="description">Опис завдання:</label>
-        <textarea id="description" name="description" required></textarea>
-        <br>
-        <label for="level_required">Потрібний рівень:</label>
-        <input type="number" id="level_required" name="level_required" required>
-        <br>
-        <label for="reward">Нагорода:</label><br>
-        <input type="number" id="reward_gold_input" name="reward_gold" value=0>
-        <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"><br>
-        <input type="number" id="reward_wood_input" name="reward_wood" value=0>
-        <img src="../static/images/wood-resource-icon.png" alt="Gold Icon" class="resource-icon"><br>
-        <input type="number" id="reward_stone_input" name="reward_stone" value=0>
-        <img src="../static/images/stone-resourse-icon.png" alt="Gold Icon" class="resource-icon"><br>
-        <input type="number" id="reward_exp_input" name="reward_exp" value=0>
-        <img src="../static/images/exp-icon.png" alt="Gold Icon" class="resource-icon"><br>
-
-        <button type="submit">Додати завдання</button>
-    </form>
-    {% endif %}
-<a href="/character">Повернутися до персонажа</a>
+<div class="navigation-panel">
+    <a href="/character" class="nav-link">Мій персонаж</a>
+    <a href="/map" class="nav-link">Карта</a>
+    <a href="/guild" class="nav-link">Гільдія</a>
+    <a href="/char_tasks" class="nav-link active">Завдання</a>
+    <a href="/castle" class="nav-link">Замок</a>
 </div>
 
+<div class="tasks-container">
+    <h1>Завдання</h1>
+    {% for user_task in user_tasks %}
+    <div class="task-card {% if user_task.is_completed %}completed{% endif %}">
+        <h3>{{ user_task.task.title }}</h3>
+        <p>{{ user_task.task.description }}</p>
+        
+        <div class="task-rewards">
+            <h4>Нагорода:</h4>
+            {% if user_task.task.reward_gold > 0 %}
+            <span class="reward">
+                <img src="../static/images/gold-resource-icon.png" alt="Gold">
+                {{ user_task.task.reward_gold }}
+            </span>
+            {% endif %}
+            {% if user_task.task.reward_wood > 0 %}
+            <span class="reward">
+                <img src="../static/images/wood-resource-icon.png" alt="Wood">
+                {{ user_task.task.reward_wood }}
+            </span>
+            {% endif %}
+            {% if user_task.task.reward_stone > 0 %}
+            <span class="reward">
+                <img src="../static/images/stone-resourse-icon.png" alt="Stone">
+                {{ user_task.task.reward_stone }}
+            </span>
+            {% endif %}
+            {% if user_task.task.reward_exp > 0 %}
+            <span class="reward">
+                <img src="../static/images/exp-icon.png" alt="Experience">
+                {{ user_task.task.reward_exp }}
+            </span>
+            {% endif %}
+        </div>
+        
+        {% if not user_task.is_completed %}
+            {% if user_task.task.id == 1 %}
+                {% if has_visited_guild %}
+                <form action="/complete-task/{{ user_task.task.id }}" method="POST">
+                    <button type="submit" class="complete-btn">Завершити завдання</button>
+                </form>
+                {% else %}
+                <div class="task-hint">
+                    Щоб виконати це завдання, відвідайте <a href="/guild">гільдію авантюристів</a>
+                </div>
+                {% endif %}
+            {% else %}
+            <form action="/complete-task/{{ user_task.task.id }}" method="POST">
+                <button type="submit" class="complete-btn">Завершити завдання</button>
+            </form>
+            {% endif %}
+        {% else %}
+            <span class="completed-badge">Завершено</span>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.navigation-panel {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-link {
+    padding: 8px 16px;
+    color: #333;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover, .nav-link.active {
+    background: #e9ecef;
+    color: #007bff;
+}
+
+.nav-link.active {
+    background: #007bff;
+    color: white;
+}
+
+.task-card {
+    background: white;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.task-rewards {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.reward {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.reward img {
+    width: 20px;
+    height: 20px;
+}
+
+.completed-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    background: #28a745;
+    color: white;
+    border-radius: 4px;
+}
+
+.complete-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.complete-btn:hover {
+    background: #0056b3;
+}
+
+.task-hint {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.task-hint a {
+    color: #533f03;
+    text-decoration: underline;
+}
+</style>
 {% endblock %}

@@ -54,13 +54,13 @@
             <div class="stats-grid">
                 <div class="stat-item expenses">
                     <h4>Витрати</h4>
-                    {% set hourly_salary_cost = enterprise.workers_count * enterprise.salary * 60 %}
+                    {% set hourly_salary_cost = enterprise.workers_count * enterprise.salary %}
                     <p>Витрати на зарплати за годину: {{ hourly_salary_cost }} монет</p>
                     <p>Витрати на зарплати за зміну (8 годин): {{ hourly_salary_cost * 8 }} монет</p>
                 </div>
                 <div class="stat-item income">
                     <h4>Доходи</h4>
-                    {% set hourly_production = enterprise.workers_count * 60 * (1 + (enterprise.workers_count // 25) * 0.01) %}
+                    {% set hourly_production = enterprise.workers_count * enterprise.area * (1 + (enterprise.workers_count // 25) * 0.01) %}
                     {% set hourly_income = (hourly_production|round(0)) * enterprise.item_price %}
                     <p>Виробництво ресурсів за годину: {{ hourly_production|round(0) }}</p>
                     <p>Потенційний дохід за годину: {{ hourly_income|round(0) }} монет</p>

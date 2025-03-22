@@ -102,23 +102,29 @@ class TaskHelper:
     
 
 class TaskRoutes(TaskHelper):
-    @router.get("/char_tasks", response_class=HTMLResponse)
-    async def get_tasks_page(
+    @router.get("/char_tasks")
+    async def get_tasks(
         request: Request,
-        db: Session = Depends(database.get_db)
+        db: Session = Depends(database.get_db),
+        current_user: models.User = Depends(database.get_current_user)
     ):
-        user_session_id = request.cookies.get("session_id")
-        if not user_session_id:
-            raise HTTPException(status_code=401, detail="Not logged in")
+        if not current_user:
+            return RedirectResponse(url="/login")
         
-        user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        # tasks = TaskHelper.get_all_tasks(db)
-        user_tasks = TaskHelper.get_available_tasks_for_user(db, user)
-
-        return templates.TemplateResponse("char_tasks.html", {"request": request, "user": user, "user_tasks": user_tasks})
+        user_tasks = TaskHelper.get_available_tasks_for_user(db, current_user)
+        
+        # Перевіряємо чи відвідував користувач гільдію
+        has_visited_guild = request.cookies.get("visited_guild", "false") == "true"
+        
+        return templates.TemplateResponse(
+            "char_tasks.html",
+            {
+                "request": request,
+                "user": current_user,
+                "user_tasks": user_tasks,
+                "has_visited_guild": has_visited_guild
+            }
+        )
 
     @router.post("/char_tasks/add", response_class=RedirectResponse)
     async def add_task(
@@ -148,20 +154,49 @@ class TaskRoutes(TaskHelper):
 
         return RedirectResponse(url="/char_tasks", status_code=303)
 
-    @router.post("/char_tasks/complete", response_class=RedirectResponse) 
-    async def complete_task( 
-            request: Request, 
-            task_id: int = Form(...), 
-            db: Session = Depends(database.get_db) 
-        ): 
-        user_session_id = request.cookies.get("session_id") 
-        if not user_session_id: 
-            raise HTTPException(status_code=401, detail="Not logged in") 
-        user = db.query(models.User).filter(models.User.session_id == user_session_id).first() 
-        if not user: 
-            raise HTTPException(status_code=404, detail="User not found") 
-        TaskHelper.update_task_completion(db, user.id, task_id, True) 
-
-        user_tasks = TaskHelper.get_available_tasks_for_user(db, user) 
-        return templates.TemplateResponse("char_tasks.html", {"request": request, "user": user, "user_tasks": user_tasks})
-        # return RedirectResponse(url="/char_tasks", status_code=303)
+    @router.post("/complete-task/{task_id}")
+    async def complete_task(
+        task_id: int,
+        db: Session = Depends(database.get_db),
+        current_user: models.User = Depends(database.get_current_user)
+    ):
+        if not current_user:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        
+        # Отримуємо завдання користувача
+        user_task = db.query(models.UserTask).filter(
+            models.UserTask.user_id == current_user.id,
+            models.UserTask.task_id == task_id,
+            models.UserTask.is_completed == False
+        ).first()
+        
+        if not user_task:
+            raise HTTPException(status_code=404, detail="Task not found or already completed")
+        
+        # Виконуємо завдання та видаємо нагороду
+        task = db.query(models.Task).filter(models.Task.id == task_id).first()
+        user_task.is_completed = True
+        current_user.gold += task.reward_gold
+        current_user.wood += task.reward_wood
+        current_user.stone += task.reward_stone
+        current_user.experience += task.reward_exp
+        
+        db.commit()
+        
+        # Якщо це перше завдання, даємо досягнення
+        if task_id == 1:
+            # Перевіряємо чи немає вже цього досягнення
+            existing_achievement = db.query(models.UserAchievement).filter(
+                models.UserAchievement.user_id == current_user.id,
+                models.UserAchievement.achievement_id == 1
+            ).first()
+            
+            if not existing_achievement:
+                user_achievement = models.UserAchievement(
+                    user_id=current_user.id,
+                    achievement_id=1
+                )
+                db.add(user_achievement)
+                db.commit()
+        
+        return RedirectResponse(url="/char_tasks", status_code=303)

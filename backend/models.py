@@ -1,6 +1,7 @@
 from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from .db_base import Base
+from datetime import datetime
 
 
 class User(Base):
@@ -41,8 +42,9 @@ class User(Base):
 
     units = relationship("UserUnit", back_populates="user")
 
-    tasks = relationship("Task", back_populates="user")
     user_tasks = relationship("UserTask", back_populates="user")
+
+    achievements = relationship("UserAchievement", back_populates="user")
 
 
 class UnitType(Base):
@@ -70,19 +72,18 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
+    scenario_id = Column(Integer, ForeignKey("quest_scenarios.id"))
+    title = Column(String)
     description = Column(String)
-    is_completed = Column(Boolean, default=False)
+    level_required = Column(Integer, default=1)
+    order_in_scenario = Column(Integer, default=0)
     reward_gold = Column(Integer, default=0)
-    reward_wood = Column(Integer, default=0) 
-    reward_stone = Column(Integer, default=0) 
-    reward_exp = Column(Integer, default=0) 
-    # level_required = Column(Integer, ForeignKey("users.level"), default=1)
-    level_required = Column(Integer, ForeignKey("users.id"), default=1)  # TODO remove this fields? $1
+    reward_wood = Column(Integer, default=0)
+    reward_stone = Column(Integer, default=0)
+    reward_exp = Column(Integer, default=0)
 
-
-    user = relationship("User", back_populates="tasks")   # TODO remove this fields? $1
     user_tasks = relationship("UserTask", back_populates="task")
+    scenario = relationship("QuestScenario", back_populates="tasks")
 
 class UserTask(Base): 
     __tablename__ = "user_tasks" 
@@ -103,10 +104,42 @@ class Enterprise(Base):
     sector = Column(String, default="Castle")  # Додаємо поле для сектора
     resource_type = Column(String)  # Тип ресурсу (wood, stone, etc.)
     resource_stored = Column(Integer, default=0)  # Кількість ресурсу на складі
+    area = Column(Integer, default=100)  # Площа підприємства в умовних одиницях
     last_production_time = Column(DateTime, nullable=True)  # Час останнього виробництва
     workers_count = Column(Integer, default=0)  # Кількість працівників
     max_workers = Column(Integer, default=10)  # Максимальна кількість працівників
     max_storage = Column(Integer, default=666)  # Максимальна кількість ресурсу на складі
-    salary = Column(Integer, default=3)  # Зарплата за хвилину
+    salary = Column(Integer, default=30)  # Зарплата за годину
     item_price = Column(Integer, default=11)  # Ціна за одиницю ресурсу
     balance = Column(Integer, default=1000)  # Додаємо поле балансу
+    storage_multiplier = Column(Integer, default=40)  # Коефіцієнт для розміру складу
+    production_type = Column(String, default="factory")  # factory або mine
+
+class QuestScenario(Base):
+    __tablename__ = "quest_scenarios"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)  # Назва сценарію
+    description = Column(String)  # Опис сценарію
+    min_level = Column(Integer, default=1)  # Мінімальний рівень для доступу
+    is_active = Column(Boolean, default=True)  # Чи активний сценарій
+    tasks = relationship("Task", back_populates="scenario")
+
+class Achievement(Base):
+    __tablename__ = "achievements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    description = Column(String)
+    icon_url = Column(String, nullable=True)
+
+class UserAchievement(Base):
+    __tablename__ = "user_achievements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    achievement_id = Column(Integer, ForeignKey("achievements.id"))
+    obtained_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="achievements")
+    achievement = relationship("Achievement")
