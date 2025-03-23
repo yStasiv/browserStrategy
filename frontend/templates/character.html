@@ -27,12 +27,14 @@
         <!-- Характеристики персонажа --> 
          <div class="character-attributes"> 
             <h3>Характеристики:</h3> 
-            <p><img src="../static/images/strengh-attributes-icon.png" alt="Strength Icon" class="attribute-icon">Сила: {{ user.strength }}
-            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('strength')">+</button> {% endif %}</p> 
-            <p><img src="../static/images/armor-attributes-icon.png" alt="armor Icon" class="attribute-icon">Захист: {{ user.armor }}
-            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('armor')">+</button> {% endif %}</p> 
-            <p><img src="../static/images/initiative-attributes-icon.jpg" alt="Initiative Icon" class="attribute-icon">Ініціатива: {{ user.initiative }}
-            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('initiative')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/stamina.png" alt="stamina Icon" class="attribute-icon">Stamina: {{ user.stamina }}
+            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('stamina')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/energy.png" alt="energy Icon" class="attribute-icon">Energy: {{ user.energy }}
+            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('energy')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/agility.png" alt="agility Icon" class="attribute-icon">Agility: {{ user.agility }}
+            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('agility')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/mind.png" alt="mind Icon" class="attribute-icon">Mind: {{ user.mind }}
+            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('mind')">+</button> {% endif %}</p> 
         </div>
         <!-- Форма для вибору параметра --> 
         <!-- {% if user.pending_attribute_points > 0 %} 

@@ -126,6 +126,21 @@
     background: #95a5a6;
     cursor: not-allowed;
 }
+
+/* Загальні стилі для зображень предметів (працюватимуть і в інвентарі, і в магазині) */
+.item-image,
+.shop-item img,
+.inventory-item img,
+.equipment-slot img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    padding: 5px;
+    justify-content: center;
+    align-items: center;
+}
 </style>
 
 <script>

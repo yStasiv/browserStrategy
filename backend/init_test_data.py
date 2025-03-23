@@ -1,11 +1,15 @@
 from sqlalchemy.orm import Session
+
 from . import models
+
 
 def init_test_data(db: Session):
     """Ініціалізує тестові дані при запуску сервера"""
-    
+
     # Перевіряємо чи існує сценарій з ID=1
-    scenario = db.query(models.QuestScenario).filter(models.QuestScenario.id == 1).first()
+    scenario = (
+        db.query(models.QuestScenario).filter(models.QuestScenario.id == 1).first()
+    )
     if not scenario:
         # Створюємо тестовий сценарій
         scenario = models.QuestScenario(
@@ -13,7 +17,7 @@ def init_test_data(db: Session):
             title="Початкові завдання",
             description="Базові завдання для нових гравців",
             min_level=1,
-            is_active=True
+            is_active=True,
         )
         db.add(scenario)
         db.flush()
@@ -27,7 +31,7 @@ def init_test_data(db: Session):
                 description="Ознайомтесь з гільдією авантюристів",
                 level_required=1,
                 order_in_scenario=1,
-                reward_exp=50
+                reward_exp=50,
             ),
             models.Task(
                 id=2,
@@ -37,7 +41,7 @@ def init_test_data(db: Session):
                 level_required=1,
                 order_in_scenario=2,
                 reward_gold=10,
-                reward_exp=30
+                reward_exp=30,
             ),
             models.Task(
                 id=3,
@@ -47,10 +51,10 @@ def init_test_data(db: Session):
                 level_required=1,
                 order_in_scenario=3,
                 reward_gold=20,
-                reward_exp=40
-            )
+                reward_exp=40,
+            ),
         ]
-        
+
         for task in tasks:
             db.add(task)
 
@@ -60,7 +64,7 @@ def init_test_data(db: Session):
             title="Завдання досвідченого авантюриста",
             description="Завдання для досвідчених гравців",
             min_level=2,
-            is_active=True
+            is_active=True,
         )
         db.add(advanced_scenario)
         db.flush()
@@ -75,7 +79,7 @@ def init_test_data(db: Session):
                 level_required=2,
                 order_in_scenario=1,
                 reward_gold=30,
-                reward_exp=60
+                reward_exp=60,
             ),
             models.Task(
                 id=5,
@@ -86,10 +90,10 @@ def init_test_data(db: Session):
                 order_in_scenario=2,
                 reward_gold=40,
                 reward_stone=5,
-                reward_exp=80
-            )
+                reward_exp=80,
+            ),
         ]
-        
+
         for task in advanced_tasks:
             db.add(task)
 
@@ -108,11 +112,13 @@ def init_test_data(db: Session):
         db.commit()
         print("Тестові дані успішно створено")
 
+
 def init_test_admin(db: Session):
     """Створює тестового адміністратора, якщо його ще немає"""
     admin = db.query(models.User).filter(models.User.id == 1).first()
     if not admin:
         from backend.routers.auth import hash_password
+
         admin = models.User(
             id=1,
             username="1",
@@ -125,4 +131,4 @@ def init_test_admin(db: Session):
         )
         db.add(admin)
         db.commit()
-        print("Створено тестового адміністратора (login: 1, password: 1)") 
+        print("Створено тестового адміністратора (login: 1, password: 1)")
