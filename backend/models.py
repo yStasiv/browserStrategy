@@ -1,7 +1,67 @@
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, DateTime
-from sqlalchemy.orm import relationship
-from .db_base import Base
 from datetime import datetime
+from enum import Enum
+
+from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
+                        String)
+from sqlalchemy.orm import relationship
+
+from .db_base import Base
+
+
+class ItemType(str, Enum):
+    WEAPON_1H = "one_handed_weapon"
+    WEAPON_2H = "two_handed_weapon"
+    JEWELRY = "jewelry"
+    HELMET = "helmet"
+    ARMOR = "armor"
+    BOOTS = "boots"
+    BACK = "back"
+
+
+class Item(Base):
+    __tablename__ = "items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    description = Column(String)
+    item_type = Column(String)  # Використовуємо значення з ItemType
+    image_url = Column(String)
+    stats = Column(JSON)  # Зберігаємо характеристики предмета у JSON
+    is_equipped = Column(Boolean, default=False)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    durability = Column(Integer)  # Поточна міцність
+    max_durability = Column(Integer)  # Максимальна міцність
+
+    owner = relationship("User", back_populates="inventory_items")
+
+
+class EquippedItems(Base):
+    __tablename__ = "equipped_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    helmet_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    armor_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    boots_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    right_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    left_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    back_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_1_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_2_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_3_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_4_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+
+    user = relationship("User", back_populates="equipped_items")
+    helmet = relationship("Item", foreign_keys=[helmet_id])
+    armor = relationship("Item", foreign_keys=[armor_id])
+    boots = relationship("Item", foreign_keys=[boots_id])
+    right_hand = relationship("Item", foreign_keys=[right_hand_id])
+    left_hand = relationship("Item", foreign_keys=[left_hand_id])
+    back = relationship("Item", foreign_keys=[back_id])
+    jewelry_1 = relationship("Item", foreign_keys=[jewelry_1_id])
+    jewelry_2 = relationship("Item", foreign_keys=[jewelry_2_id])
+    jewelry_3 = relationship("Item", foreign_keys=[jewelry_3_id])
+    jewelry_4 = relationship("Item", foreign_keys=[jewelry_4_id])
 
 
 class User(Base):
@@ -10,20 +70,39 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password = Column(String)
-    avatar_url = Column(String, nullable=True) # user img path
+    avatar_url = Column(String, nullable=True)  # user img path
     fraction = Column(String, default="Elfe")
 
-    pending_attribute_points =  Column(Integer, default=1)
-    strength = Column(Integer, default=0)
-    defense = Column(Integer, default=0)
-    initiative = Column(Integer, default=0)
+    pending_attribute_points = Column(Integer, default=1)
+    # Основні характеристики
+    stamina = Column(Integer, default=0)  # Здоров'я
+    energy = Column(Integer, default=0)  # Енергія
+    agility = Column(Integer, default=0)  # Спритність
+    mind = Column(Integer, default=0)  # Розум
+
+    # Додаткові характеристики
+    melee_attack = Column(Integer, default=0)  # Атака в ближньому бою
+    ranged_attack = Column(Integer, default=0)  # Атака в дальньому бою
+    magic_power = Column(Integer, default=0)  # Магічний потенціал
+    physical_defense = Column(Integer, default=0)  # Захист від фізичних атак
+    magic_resistance = Column(Integer, default=0)  # Стійкість до магії
+
+    # Бонуси до шкоди
+    bonus_melee_damage = Column(Integer, default=0)
+    bonus_ranged_damage = Column(Integer, default=0)
+    bonus_magic_damage = Column(Integer, default=0)
+
+    # Бонуси до захисту
+    bonus_melee_defense = Column(Integer, default=0)
+    bonus_ranged_defense = Column(Integer, default=0)
+    bonus_magic_defense = Column(Integer, default=0)
 
     experience = Column(Integer, default=1)
 
-    level = Column(Integer, default=1)  
-    gold = Column(Integer, default=0) 
-    wood = Column(Integer, default=0)  
-    stone = Column(Integer, default=0) 
+    level = Column(Integer, default=1)
+    gold = Column(Integer, default=0)
+    wood = Column(Integer, default=0)
+    stone = Column(Integer, default=0)
     session_id = Column(String, unique=True, nullable=True)
 
     map_sector = Column(String, default="Castle")  # Сектор карти
@@ -46,6 +125,9 @@ class User(Base):
 
     achievements = relationship("UserAchievement", back_populates="user")
 
+    inventory_items = relationship("Item", back_populates="owner")
+    equipped_items = relationship("EquippedItems", back_populates="user", uselist=False)
+
 
 class UnitType(Base):
     __tablename__ = "unit_types"
@@ -57,6 +139,7 @@ class UnitType(Base):
     max_quantity = Column(Integer)
     icon_url = Column(String)
 
+
 class UserUnit(Base):
     __tablename__ = "user_units"
 
@@ -67,6 +150,7 @@ class UserUnit(Base):
 
     user = relationship("User", back_populates="units")
     unit_type = relationship("UnitType")
+
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -85,16 +169,18 @@ class Task(Base):
     user_tasks = relationship("UserTask", back_populates="task")
     scenario = relationship("QuestScenario", back_populates="tasks")
 
-class UserTask(Base): 
-    __tablename__ = "user_tasks" 
-    
-    id = Column(Integer, primary_key=True, index=True) 
-    user_id = Column(Integer, ForeignKey("users.id")) 
-    task_id = Column(Integer, ForeignKey("tasks.id")) 
-    is_completed = Column(Boolean, default=False) 
 
-    user = relationship("User", back_populates="user_tasks") 
+class UserTask(Base):
+    __tablename__ = "user_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    task_id = Column(Integer, ForeignKey("tasks.id"))
+    is_completed = Column(Boolean, default=False)
+
+    user = relationship("User", back_populates="user_tasks")
     task = relationship("Task", back_populates="user_tasks")
+
 
 class Enterprise(Base):
     __tablename__ = "enterprises"
@@ -108,22 +194,26 @@ class Enterprise(Base):
     last_production_time = Column(DateTime, nullable=True)  # Час останнього виробництва
     workers_count = Column(Integer, default=0)  # Кількість працівників
     max_workers = Column(Integer, default=10)  # Максимальна кількість працівників
-    max_storage = Column(Integer, default=666)  # Максимальна кількість ресурсу на складі
+    max_storage = Column(
+        Integer, default=666
+    )  # Максимальна кількість ресурсу на складі
     salary = Column(Integer, default=30)  # Зарплата за годину
     item_price = Column(Integer, default=11)  # Ціна за одиницю ресурсу
     balance = Column(Integer, default=1000)  # Додаємо поле балансу
     storage_multiplier = Column(Integer, default=40)  # Коефіцієнт для розміру складу
     production_type = Column(String, default="factory")  # factory або mine
 
+
 class QuestScenario(Base):
     __tablename__ = "quest_scenarios"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String)  # Назва сценарію
     description = Column(String)  # Опис сценарію
     min_level = Column(Integer, default=1)  # Мінімальний рівень для доступу
     is_active = Column(Boolean, default=True)  # Чи активний сценарій
     tasks = relationship("Task", back_populates="scenario")
+
 
 class Achievement(Base):
     __tablename__ = "achievements"
@@ -132,6 +222,7 @@ class Achievement(Base):
     title = Column(String)
     description = Column(String)
     icon_url = Column(String, nullable=True)
+
 
 class UserAchievement(Base):
     __tablename__ = "user_achievements"
@@ -143,3 +234,15 @@ class UserAchievement(Base):
 
     user = relationship("User", back_populates="achievements")
     achievement = relationship("Achievement")
+
+
+class ShopItem(Base):
+    __tablename__ = "shop_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_template_id = Column(Integer, ForeignKey("items.id"))
+    price = Column(Integer, nullable=False)
+    quantity = Column(Integer, default=-1)  # -1 означає необмежену кількість
+    level_required = Column(Integer, default=1)
+
+    item_template = relationship("Item")

@@ -1,5 +1,7 @@
 """File containe calcs for game mechanics"""
-class CalsculateExpForNextLvl():
+
+
+class CalsculateExpForNextLvl:
 
     def experience_needed_for_next_level(level: int) -> int:
         """Обчислює необхідний досвід для досягнення наступного рівня."""

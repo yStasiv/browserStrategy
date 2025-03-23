@@ -1,16 +1,20 @@
-from passlib.context import CryptContext
 import logging
+
 import colorlog
+from passlib.context import CryptContext
 
 # Ініціалізуємо контекст для хешування з використанням bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def hash_password(password: str) -> str:
 
     return pwd_context.hash(password)
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
 
 def setup_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
@@ -22,26 +26,26 @@ def setup_logger(name: str) -> logging.Logger:
 
     # Set log format
     console_formatter = colorlog.ColoredFormatter(
-        '%(log_color)s%(asctime)s:%(levelname)s - %(filename)s:%(lineno)d %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
+        "%(log_color)s%(asctime)s:%(levelname)s - %(filename)s:%(lineno)d %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
         log_colors={
-            'DEBUG': 'white',
-            'INFO': 'green',
-            'WARNING': 'yellow',
-            'ERROR': 'red',
-            'CRITICAL': 'bold_red',
-        }
+            "DEBUG": "white",
+            "INFO": "green",
+            "WARNING": "yellow",
+            "ERROR": "red",
+            "CRITICAL": "bold_red",
+        },
     )
     console_handler.setFormatter(console_formatter)
 
     # Create file hendler
-    file_handler = logging.FileHandler('game.log')
+    file_handler = logging.FileHandler("game.log")
     file_handler.setLevel(logging.DEBUG)
 
     # Set formatters for file
     file_formatter = logging.Formatter(
-        '%(asctime)s:%(levelname)s - %(filename)s:%(lineno)d %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s:%(levelname)s - %(filename)s:%(lineno)d %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     file_handler.setFormatter(file_formatter)
 
