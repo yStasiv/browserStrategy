@@ -1,13 +1,16 @@
 # backend/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, Depends
 from fastapi.staticfiles import StaticFiles
 import uvicorn
+import asyncio
 
 from backend import database, utils
 from .routers import (
     auth, character, castle, char_tasks, upload, 
-    enterprise, map, admin, help, adventure_guild
+    enterprise, map, admin, help, adventure_guild, inventory, shop
 )
+from backend.tasks import check_workers
+from backend.websockets import manager
 
 logger = utils.setup_logger(__name__)
 
@@ -39,6 +42,10 @@ app.include_router(help.router)
 logger.info("Help router registered")
 app.include_router(adventure_guild.router)
 logger.info("Adventure Guild router registered")
+app.include_router(inventory.router)
+logger.info("Inventory router registered")
+app.include_router(shop.router)
+logger.info("Shop router registered")
 
 
 # TODO: Run this just one time when app start
@@ -50,10 +57,21 @@ async def startup_event():
         # Виклик методу під час запуску 
         auth.AuthHelper.add_unit_types(db)
         logger.info("Unit types added successfully.") 
+        # Запускаємо фоновий процес перевірки працівників
+        asyncio.create_task(check_workers())
     except Exception as e: 
         logger.error(f"An error occurred while adding unit types: {e}") 
     finally: 
         db.close()
+
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    await manager.connect(websocket, user_id)
+    try:
+        while True:
+            data = await websocket.receive_text()
+    except:
+        await manager.disconnect(websocket, user_id)
 
 if __name__ == "__main__": 
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -44,8 +44,8 @@
                     <span>Сила: {{ character.strength }}</span>
                 </div>
                 <div class="stat-row">
-                    <img src="../static/images/defense-icon.png" alt="Defense" class="stat-icon">
-                    <span>Захист: {{ character.defense }}</span>
+                    <img src="../static/images/armor-icon.png" alt="armor" class="stat-icon">
+                    <span>Захист: {{ character.armor }}</span>
                 </div>
                 <div class="stat-row">
                     <img src="../static/images/initiative-icon.png" alt="Initiative" class="stat-icon">
@@ -97,6 +97,121 @@
             {% else %}
             <p class="no-achievements">У вас поки немає досягнень</p>
             {% endif %}
+        </div>
+
+        <!-- Додаємо блок спорядження -->
+        <div class="character-equipment">
+            <div class="equipment-grid">
+                <!-- Верхній ряд -->
+                <div class="equipment-row top">
+                    <div class="equipment-slot helmet">
+                        <div class="slot-label">Шолом</div>
+                        {% if equipped_items.get('Шолом') %}
+                            {% set item = equipped_items.get('Шолом') %}
+                            <div class="equipped-item">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                            </div>
+                        {% else %}
+                            <div class="empty-slot">
+                                <img src="/static/images/items/empty_helmet.svg" alt="Empty">
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="equipment-slot back">
+                        <div class="slot-label">Спина</div>
+                        {% if equipped_items.get('Спина') %}
+                            {% set item = equipped_items.get('Спина') %}
+                            <div class="equipped-item">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                            </div>
+                        {% else %}
+                            <div class="empty-slot">
+                                <img src="/static/images/items/empty_back.svg" alt="Empty">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Середній ряд -->
+                <div class="equipment-row middle">
+                    <div class="equipment-slot weapon-left">
+                        <div class="slot-label">Ліва рука</div>
+                        {% if equipped_items.get('Ліва рука') %}
+                            {% set item = equipped_items.get('Ліва рука') %}
+                            <div class="equipped-item">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                            </div>
+                        {% else %}
+                            <div class="empty-slot">
+                                <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="equipment-slot armor">
+                        <div class="slot-label">Броня</div>
+                        {% if equipped_items.get('Броня') %}
+                            {% set item = equipped_items.get('Броня') %}
+                            <div class="equipped-item">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                            </div>
+                        {% else %}
+                            <div class="empty-slot">
+                                <img src="/static/images/items/empty_armor.svg" alt="Empty">
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="equipment-slot weapon-right">
+                        <div class="slot-label">Права рука</div>
+                        {% if equipped_items.get('Права рука') %}
+                            {% set item = equipped_items.get('Права рука') %}
+                            <div class="equipped-item">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                            </div>
+                        {% else %}
+                            <div class="empty-slot">
+                                <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Нижній ряд -->
+                <div class="equipment-slot boots">
+                    <div class="slot-label">Чоботи</div>
+                    {% if equipped_items.get('Чоботи') %}
+                        {% set item = equipped_items.get('Чоботи') %}
+                        <div class="equipped-item">
+                            <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_boots.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Прикраси -->
+                <div class="jewelry-slots">
+                    {% for i in range(1, 5) %}
+                    <div class="equipment-slot jewelry">
+                        <div class="slot-label">Прикраса {{ i }}</div>
+                        {% if equipped_items.get('Прикраса ' ~ i) %}
+                            {% set item = equipped_items.get('Прикраса ' ~ i) %}
+                            <div class="equipped-item">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                            </div>
+                        {% else %}
+                            <div class="empty-slot">
+                                <img src="/static/images/items/empty_jewelry.svg" alt="Empty">
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
 
         <div class="navigation-buttons">
@@ -196,6 +311,91 @@
     color: #7f8c8d;
     font-style: italic;
     padding: 20px;
+}
+
+.character-equipment {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.equipment-grid {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+}
+
+.equipment-row {
+    display: flex;
+    gap: 10px;
+}
+
+.equipment-slot {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #666;
+    border-radius: 5px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slot-label {
+    position: absolute;
+    top: -20px;
+    font-size: 12px;
+    color: #aaa;
+}
+
+.equipped-item {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.equipped-item img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+
+.empty-slot {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-slot img {
+    opacity: 0.3;
+    max-width: 60%;
+    max-height: 60%;
+}
+
+.jewelry-slots {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.equipment-row.top {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.equipment-slot.back {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #666;
 }
 </style>
 {% endblock %} 

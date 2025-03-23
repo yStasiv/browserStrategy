@@ -117,7 +117,11 @@ def init_test_admin(db: Session):
             id=1,
             username="1",
             password=hash_password("1"),
-            fraction="Admin"
+            fraction="Admin",
+            gold=1000000,
+            wood=1000000,
+            stone=1000000,
+            level=100,
         )
         db.add(admin)
         db.commit()

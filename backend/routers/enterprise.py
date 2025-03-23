@@ -55,16 +55,16 @@ def update_resources(db: Session):
             if worker.work_start_time:
                 hours_worked = (current_time - worker.work_start_time).total_seconds() / 3600
                 
-                # Якщо пройшло 8 годин, нараховуємо зарплату і звільняємо
-                if hours_worked >= 8:
-                    # Нараховуємо зарплату за 8 годин
-                    gold_earned = int(8 * enterprise.salary)  # 8 годин * ставка за годину
+                # Якщо пройшла година, нараховуємо зарплату і звільняємо
+                if hours_worked >= 1:
+                    # Нараховуємо зарплату за годину
+                    gold_earned = enterprise.salary
                     worker.gold += gold_earned
+                    enterprise.balance -= gold_earned
                     
                     # Звільняємо працівника
                     worker.workplace = None
                     worker.work_start_time = None
-                    worker.last_quit_time = current_time
                     enterprise.workers_count -= 1
     
     db.commit()
@@ -118,10 +118,6 @@ async def start_work(enterprise_id: int, request: Request, db: Session = Depends
     
     current_time = datetime.now()
     
-    # Перевіряємо, чи працював сьогодні
-    if user.last_work_day and user.last_work_day.date() == current_time.date():
-        raise HTTPException(status_code=400, detail="You can only work once per day!")
-    
     if user.workplace:
         raise HTTPException(status_code=400, detail="Already working somewhere")
     
@@ -132,33 +128,18 @@ async def start_work(enterprise_id: int, request: Request, db: Session = Depends
     if user.map_sector != enterprise.sector:
         raise HTTPException(status_code=400, detail="You must be in the same sector as the enterprise")
     
-    # Розраховуємо кількість ресурсів, які будуть вироблені за зміну
-    productivity_bonus = 1 + (enterprise.workers_count // 25) * 0.01
-    resources_per_shift = int(8 * productivity_bonus)  # 8 годин бонус продуктивності
-    
-    # Перевіряємо, чи вистачить місця на складі
-    space_needed = resources_per_shift
-    space_available = enterprise.max_storage - enterprise.resource_stored
-    
-    if space_needed > space_available:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"На складі недостатньо місця. Потрібно: {space_needed}, доступно: {space_available}"
-        )
-    
-    # Розраховуємо зарплату за зміну
-    salary_for_shift = 8 * enterprise.salary  # 8 годин * ставка за годину
+    # Розраховуємо зарплату за годину
+    salary_for_hour = enterprise.salary
     
     # Перевіряємо, чи вистачає балансу на зарплату
-    if enterprise.balance < salary_for_shift:
+    if enterprise.balance < salary_for_hour:
         raise HTTPException(status_code=400, detail="Enterprise doesn't have enough money to pay salary")
     
     # Знімаємо зарплату з балансу підприємства одразу
-    enterprise.balance -= salary_for_shift
+    enterprise.balance -= salary_for_hour
     
     user.workplace = f"enterprise_{enterprise.id}"
     user.work_start_time = current_time
-    user.last_work_day = current_time
     enterprise.workers_count += 1
     
     db.commit()

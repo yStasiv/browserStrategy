@@ -8,10 +8,15 @@ connection = engine.connect()
 metadata = MetaData()
 
 
-connection.execute(text('ALTER TABLE tasks ADD COLUMN is_initial BOOLEAN DEFAULT FALSE'))  # add column
+connection.execute(text('ALTER TABLE users ADD COLUMN dexterity INTEGER DEFAULT 0'))  # add column
+connection.execute(text('ALTER TABLE users ADD COLUMN intelligence INTEGER DEFAULT 0'))  # add column
+connection.execute(text('ALTER TABLE users ADD COLUMN stamina INTEGER DEFAULT 0'))  # add column
+connection.execute(text('ALTER TABLE users ADD COLUMN armor INTEGER DEFAULT 0'))  # add column
+connection.execute(text('ALTER TABLE users ADD COLUMN attack INTEGER DEFAULT 0'))  # add column
 # connection.execute(text('ALTER TABLE enterprises ADD COLUMN production_type STRING DEFAULT "mine"'))  # add column
 # connection.execute(text('ALTER TABLE users DROP COLUMN map_н'))  # drop column
 # connection.execute(text("UPDATE users SET map_x = :value"), {"value": 50})  # update column
+
 
 
 

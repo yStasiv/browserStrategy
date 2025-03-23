@@ -1,8 +1,62 @@
-from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Boolean, Column, Integer, String, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship
 from .db_base import Base
 from datetime import datetime
+from enum import Enum
 
+
+class ItemType(str, Enum):
+    WEAPON_1H = "one_handed_weapon"
+    WEAPON_2H = "two_handed_weapon"
+    JEWELRY = "jewelry"
+    HELMET = "helmet"
+    ARMOR = "armor"
+    BOOTS = "boots"
+    BACK = "back"
+
+class Item(Base):
+    __tablename__ = "items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    description = Column(String)
+    item_type = Column(String)  # Використовуємо значення з ItemType
+    image_url = Column(String)
+    stats = Column(JSON)  # Зберігаємо характеристики предмета у JSON
+    is_equipped = Column(Boolean, default=False)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    durability = Column(Integer)  # Поточна міцність
+    max_durability = Column(Integer)  # Максимальна міцність
+    
+    owner = relationship("User", back_populates="inventory_items")
+
+class EquippedItems(Base):
+    __tablename__ = "equipped_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    helmet_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    armor_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    boots_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    right_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    left_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    back_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_1_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_2_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_3_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_4_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    
+    user = relationship("User", back_populates="equipped_items")
+    helmet = relationship("Item", foreign_keys=[helmet_id])
+    armor = relationship("Item", foreign_keys=[armor_id])
+    boots = relationship("Item", foreign_keys=[boots_id])
+    right_hand = relationship("Item", foreign_keys=[right_hand_id])
+    left_hand = relationship("Item", foreign_keys=[left_hand_id])
+    back = relationship("Item", foreign_keys=[back_id])
+    jewelry_1 = relationship("Item", foreign_keys=[jewelry_1_id])
+    jewelry_2 = relationship("Item", foreign_keys=[jewelry_2_id])
+    jewelry_3 = relationship("Item", foreign_keys=[jewelry_3_id])
+    jewelry_4 = relationship("Item", foreign_keys=[jewelry_4_id])
 
 class User(Base):
     __tablename__ = "users"
@@ -15,8 +69,12 @@ class User(Base):
 
     pending_attribute_points =  Column(Integer, default=1)
     strength = Column(Integer, default=0)
-    defense = Column(Integer, default=0)
     initiative = Column(Integer, default=0)
+    dexterity = Column(Integer, default=0)
+    intelligence = Column(Integer, default=0)
+    stamina = Column(Integer, default=0)
+    armor = Column(Integer, default=0)
+    attack = Column(Integer, default=0)
 
     experience = Column(Integer, default=1)
 
@@ -45,6 +103,9 @@ class User(Base):
     user_tasks = relationship("UserTask", back_populates="user")
 
     achievements = relationship("UserAchievement", back_populates="user")
+
+    inventory_items = relationship("Item", back_populates="owner")
+    equipped_items = relationship("EquippedItems", back_populates="user", uselist=False)
 
 
 class UnitType(Base):
@@ -143,3 +204,14 @@ class UserAchievement(Base):
 
     user = relationship("User", back_populates="achievements")
     achievement = relationship("Achievement")
+
+class ShopItem(Base):
+    __tablename__ = "shop_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    item_template_id = Column(Integer, ForeignKey("items.id"))
+    price = Column(Integer, nullable=False)
+    quantity = Column(Integer, default=-1)  # -1 означає необмежену кількість
+    level_required = Column(Integer, default=1)
+    
+    item_template = relationship("Item")

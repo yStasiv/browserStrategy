@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from fastapi.templating import Jinja2Templates
 from backend import models, database, utils
+from backend.auth import get_current_user
 
 logger = utils.setup_logger(__name__)
 
@@ -52,38 +53,75 @@ async def view_character(
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
     
+    # Отримуємо всі вдягнені предмети
+    equipped_items = {}
+    if character.equipped_items:
+        slots = {
+            'helmet_id': 'Шолом',
+            'armor_id': 'Броня',
+            'boots_id': 'Чоботи',
+            'right_hand_id': 'Права рука',
+            'left_hand_id': 'Ліва рука',
+            'back_id': 'Спина',
+            'jewelry_1_id': 'Прикраса 1',
+            'jewelry_2_id': 'Прикраса 2',
+            'jewelry_3_id': 'Прикраса 3',
+            'jewelry_4_id': 'Прикраса 4'
+        }
+        
+        for slot_id, slot_name in slots.items():
+            item_id = getattr(character.equipped_items, slot_id)
+            if item_id:
+                item = db.query(models.Item).filter(models.Item.id == item_id).first()
+                if item:
+                    equipped_items[slot_name] = item
+    
     return templates.TemplateResponse(
         "character_view.html",
         {
             "request": request,
-            "character": character
+            "character": character,
+            "equipped_items": equipped_items
         }
     )
 
 class CharRotes(CharacterHelper):
 
     @router.get("/character")
-    async def character(
-        request: Request,
-        db: Session = Depends(database.get_db)
-    ):
-        user_session_id = request.cookies.get("session_id")
-        if not user_session_id:
-            raise HTTPException(status_code=401, detail="Not logged in")
-        
-        user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
+    async def character_page(request: Request, db: Session = Depends(database.get_db)):
+        user = await get_current_user(request, db)
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=401, detail="Not authenticated")
         
-        CharacterHelper().update_user_level(user, db)
-        next_level_exp = CharacterHelper().experience_needed_for_next_level(user.level)
+        # Отримуємо всі вдягнені предмети
+        equipped_items = {}
+        if user.equipped_items:
+            slots = {
+                'helmet_id': 'Шолом',
+                'armor_id': 'Броня',
+                'boots_id': 'Чоботи',
+                'right_hand_id': 'Права рука',
+                'left_hand_id': 'Ліва рука',
+                'back_id': 'Спина',
+                'jewelry_1_id': 'Прикраса 1',
+                'jewelry_2_id': 'Прикраса 2',
+                'jewelry_3_id': 'Прикраса 3',
+                'jewelry_4_id': 'Прикраса 4'
+            }
+            
+            for slot_id, slot_name in slots.items():
+                item_id = getattr(user.equipped_items, slot_id)
+                if item_id:
+                    item = db.query(models.Item).filter(models.Item.id == item_id).first()
+                    if item:
+                        equipped_items[slot_name] = item
         
         return templates.TemplateResponse(
             "character.html",
             {
                 "request": request,
                 "user": user,
-                "next_level_exp": next_level_exp
+                "equipped_items": equipped_items
             }
         )
 
@@ -106,7 +144,7 @@ class CharRotes(CharacterHelper):
         
         attribute_update = { 
             "strength": lambda u: setattr(u, "strength", u.strength + 1), 
-            "defense": lambda u: setattr(u, "defense", u.defense + 1), 
+            "armor": lambda u: setattr(u, "armor", u.armor + 1), 
             "initiative": lambda u: setattr(u, "initiative", u.initiative + 1) 
             } 
         update_func = attribute_update.get(attribute, None) 
@@ -117,8 +155,8 @@ class CharRotes(CharacterHelper):
 
         # if attribute == "strength":
         #     user.strength += 1
-        # elif attribute == "defense":
-        #     user.defense += 1
+        # elif attribute == "armor":
+        #     user.armor += 1
         # elif attribute == "initiative":
         #     user.initiative += 1
         else:
