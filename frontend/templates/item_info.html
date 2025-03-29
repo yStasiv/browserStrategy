@@ -11,16 +11,12 @@
     <a href="/castle" class="nav-link">Замок</a>
 </div>
 
-<div class="item-container">
-    <div class="item-view-container">
+<div class="item-container" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
+    <div class="item-info">
         <div class="item-header">
             <h2>{{ item.name }}</h2>
         </div>
-
-        <div class="item-info">
-            <div class="item-details">
         <p class="item-description">{{ item.description }}</p>
-
         <div class="item-meta">
             <p><strong>Тип:</strong>
                 {% if item.item_type == 'armor' %}Броня
@@ -32,27 +28,30 @@
             <p><strong>Міцність:</strong> {{ item.durability }} / {{ item.max_durability }}</p>
             <p><strong>Необхідний рівень:</strong> {{ item.required_level }}</p>
             <p><strong>Вартість предмета:</strong> {{ item.price }}</p>
-            <p><a href="/shop?filter={{ item.name }}" class="shop-link">Переглянути в магазині</a></p>
         </div>
-
-        {% if item.image_url %}
-            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="item-image">
-        {% endif %}
-
         <div class="item-stats">
             <h3>Характеристики:</h3>
             <ul>
                 {% for key, value in item.stats.items() %}
                     <li>
                         {% if key == 'melee_attack' %}⚔
-                        {% elif key == 'defense' %}🛡
-                        {% elif key == 'speed' %}⏳
+                        {% elif key == 'physical_defense' %}🛡
+                        {% elif key == 'initiative' %}⏳
                         {% elif key == 'luck' %}🍀
                         {% endif %}
                         <strong>{{ key }}:</strong> {{ value }}
                     </li>
                 {% endfor %}
             </ul>
-
         </div>
+    </div>
+
+<div class="item-image-container" style="text-align: center;">
+        {% if item.image_url %}
+            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="item-image" style="width: 100px; height: 100px;">
+        {% endif %}
+        <p><a href="/shop?filter={{ item.name }}" class="shop-link">Переглянути в магазині</a></p>
+</div>
+
+</div>
 {% endblock %}
