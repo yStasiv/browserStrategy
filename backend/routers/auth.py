@@ -190,7 +190,7 @@ class AuthRotes:
         if not user or not verify_password(password, user.password):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        response = RedirectResponse(url="/character", status_code=303)
+        response = RedirectResponse(url="/player", status_code=303)
 
         session_id = str(uuid.uuid4())
         response.set_cookie(key="session_id", value=session_id)

@@ -2,7 +2,7 @@
 import asyncio
 
 import uvicorn
-from fastapi import Depends, FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket
 from fastapi.staticfiles import StaticFiles
 
 from backend import database, utils
@@ -10,8 +10,8 @@ from backend.tasks import check_workers
 from backend.websockets import manager
 
 from .routers import (admin, adventure_guild, auth, castle, char_tasks,
-                      character, enterprise, help, inventory, map, shop,
-                      upload)
+                      enterprise, help, inventory, map, shop, player,
+                      upload, item)
 
 logger = utils.setup_logger(__name__)
 
@@ -27,8 +27,8 @@ logger.info("Starting application...")
 logger.info("Registering routers...")
 app.include_router(auth.router)
 logger.info("Auth router registered")
-app.include_router(character.router)
-logger.info("Character router registered")
+app.include_router(player.router)
+logger.info("Player router registered")
 app.include_router(castle.router)
 logger.info("Castle router registered")
 app.include_router(char_tasks.router)
@@ -49,6 +49,8 @@ app.include_router(inventory.router)
 logger.info("Inventory router registered")
 app.include_router(shop.router)
 logger.info("Shop router registered")
+app.include_router(item.router)
+logger.info("Item router registered")
 
 
 # TODO: Run this just one time when app start

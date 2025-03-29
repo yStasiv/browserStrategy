@@ -13,11 +13,13 @@
         {% for shop_item in shop_items %}
         <div class="shop-item {% if shop_item.level_required > user.level %}locked{% endif %}">
             <div class="item-image">
+                <a href="/art_info?id={{ shop_item.id }}">
                 {% if shop_item.item_template and shop_item.item_template.image_url %}
                     <img src="{{ shop_item.item_template.image_url }}" alt="{{ shop_item.item_template.name }}">
                 {% else %}
                     <img src="/static/images/default_item.png" alt="Default item">
                 {% endif %}
+                </a>
             </div>
             <div class="item-info">
                 <h3>{{ shop_item.item_template.name if shop_item.item_template else 'Unknown Item' }}</h3>

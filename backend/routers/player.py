@@ -14,7 +14,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
 
 
-class CharacterHelper:
+class PlayerHelper:
 
     @staticmethod
     def get_equiped_items(
@@ -64,18 +64,10 @@ class CharacterHelper:
         }
         return int(exp_requirements.get(level, 1))
 
-    # @staticmethod
-    # def experience_needed_for_next_level(level: int) -> int:
-    #     """Обчислює необхідний досвід для досягнення наступного рівня."""
-    #     if level >= 8:
-    #         return None  # Гравець досяг максимального рівня
-    #     base_experience = 1000
-    #     return int(base_experience * (1.3 ** (level - 1)))
-
     @staticmethod
     def update_user_level(user: models.User, db: Session) -> None:
         """Get user exp, check if lvl is correct and up lvl if needed"""
-        next_level_exp = CharacterHelper.experience_needed_for_next_level(user.level)
+        next_level_exp = PlayerHelper.experience_needed_for_next_level(user.level)
 
         if next_level_exp is None:
             # Якщо досягнуто максимальний рівень, нічого не робимо
@@ -85,7 +77,7 @@ class CharacterHelper:
         while int(user.experience) >= int(next_level_exp) and int(user.level) < 8:
             user.level += 1  # Підвищуємо рівень
             # user.experience -= next_level_exp  # Віднімаємо досвід для наступного рівня
-            next_level_exp = CharacterHelper.experience_needed_for_next_level(
+            next_level_exp = PlayerHelper.experience_needed_for_next_level(
                 user.level
             )  # Обчислюємо досвід для наступного рівня
             if next_level_exp is None:
@@ -96,51 +88,51 @@ class CharacterHelper:
             db.commit()  # Зберігаємо зміни в базі даних
 
 
-@router.get("/view-character")
-async def view_character(
-    character_id: int, request: Request, db: Session = Depends(database.get_db)
+@router.get("/player_info")
+async def player_info(
+    id: int, request: Request, db: Session = Depends(database.get_db)
 ):
-    character = db.query(models.User).filter(models.User.id == character_id).first()
-    if not character:
+    player = db.query(models.User).filter(models.User.id == id).first()
+    if not player:
         raise HTTPException(status_code=404, detail="Character not found")
 
     # Отримуємо всі вдягнені предмети
 
-    equipped_items: dict = CharacterHelper().get_equiped_items(
-        pl_equipped_items=character.equipped_items, db=db
+    equipped_items: dict = PlayerHelper().get_equiped_items(
+        pl_equipped_items=player.equipped_items, db=db
     )
 
     return templates.TemplateResponse(
-        "character_view.html",
+        "payer_info.html",
         {
             "request": request,
-            "character": character,
+            "player": player,
             "equipped_items": equipped_items if equipped_items else {},
         },
     )
 
 
-class CharRotes(CharacterHelper):
+class PlayerRotes(PlayerHelper):
 
-    @router.get("/character")
+    @router.get("/player")
     async def character_page(request: Request, db: Session = Depends(database.get_db)):
         user = await get_current_user(request, db)
         if not user:
             raise HTTPException(status_code=401, detail="Not authenticated")
 
-        CharacterHelper().update_user_level(user, db)
-        next_level_exp = CharacterHelper().experience_needed_for_next_level(user.level)
+        PlayerHelper().update_user_level(user, db)
+        next_level_exp = PlayerHelper().experience_needed_for_next_level(user.level)
 
         # Отримуємо всі вдягнені предмети
-        equipped_items: dict = CharacterHelper().get_equiped_items(
+        equipped_items: dict = PlayerHelper().get_equiped_items(
             pl_equipped_items=user.equipped_items, db=db
         )
 
         return templates.TemplateResponse(
-            "character.html",
+            "player.html",
             {
                 "request": request,
-                "user": user,
+                "player": user,
                 "next_level_exp": next_level_exp,
                 "equipped_items": equipped_items if equipped_items else {},
             },
@@ -184,7 +176,7 @@ class CharRotes(CharacterHelper):
         else:
             logger.error(HTTPException(status_code=400, detail="Invalid attribute"))
 
-        return RedirectResponse(url="/character", status_code=303)
+        return RedirectResponse(url="/player", status_code=303)
 
     # @router.get("/map", response_class=HTMLResponse)
     # async def map_page(
