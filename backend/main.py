@@ -12,6 +12,7 @@ from backend.websockets import manager
 from .routers import (admin, adventure_guild, auth, castle, char_tasks,
                       enterprise, help, inventory, map, shop, player,
                       upload, item)
+from .routers.battles import battle
 
 logger = utils.setup_logger(__name__)
 
@@ -51,6 +52,8 @@ app.include_router(shop.router)
 logger.info("Shop router registered")
 app.include_router(item.router)
 logger.info("Item router registered")
+app.include_router(battle.router)
+logger.info("Battle router registered")
 
 
 # TODO: Run this just one time when app start

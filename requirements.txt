@@ -29,3 +29,5 @@ alembic==1.12.1
 
 
 # $ uvicorn backend.main:app --reload
+
+# python -m "scripts.add_shop_items"
