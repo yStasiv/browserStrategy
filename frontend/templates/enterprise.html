@@ -76,7 +76,7 @@
             {% if workers %}
                 <div class="workers-preview">
                     {% for worker in workers[:20] %}
-                        <a href="/view-character?character_id={{ worker.id }}" class="worker-link">{{ worker.username }}</a>
+                        <a href="/player_info?id={{ worker.id }}" class="worker-link">{{ worker.username }}</a>
                     {% endfor %}
                     
                     {% if workers|length > 20 %}
@@ -93,7 +93,7 @@
                         <h3>Всі працівники</h3>
                         <div class="full-workers-list">
                             {% for worker in workers %}
-                                <a href="/view-character?character_id={{ worker.id }}" class="worker-link">{{ worker.username }}</a>
+                                <a href="/player_info?id={{ worker.id }}" class="worker-link">{{ worker.username }}</a>
                             {% endfor %}
                         </div>
                     </div>

@@ -51,4 +51,4 @@ async def upload_avatar(
         )
         pass
 
-    return RedirectResponse(url="/character", status_code=303)
+    return RedirectResponse(url="/player", status_code=303)

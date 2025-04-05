@@ -4,25 +4,25 @@
 
 {% block body %}
 <div class="navigation-panel">
-    <a href="/character" class="nav-link">Мій персонаж</a>
+    <a href="/player" class="nav-link">Мій персонаж</a>
     <a href="/map" class="nav-link">Карта</a>
     <a href="/guild" class="nav-link">Гільдія</a>
     <a href="/char_tasks" class="nav-link">Завдання</a>
     <a href="/castle" class="nav-link">Замок</a>
 </div>
 
-<div class="character-container">
-    <div class="character-view-container">
-        <div class="character-header">
-            <h2>{{ character.username }}</h2>
-            <p class="fraction">Фракція: {{ character.fraction }}</p>
+<div class="player-container">
+    <div class="player-view-container">
+        <div class="player-header">
+            <h2>{{ player.username }}</h2>
+            <p class="fraction">Фракція: {{ player.fraction }}</p>
         </div>
 
-        <div class="character-info">
+        <div class="player-info">
             <!-- Аватар -->
-            <div class="character-avatar">
-                {% if character.avatar_url %}
-                    <img src="{{ character.avatar_url }}" alt="Avatar" class="avatar-img">
+            <div class="player-avatar">
+                {% if player.avatar_url %}
+                    <img src="{{ player.avatar_url }}" alt="Avatar" class="avatar-img">
                 {% else %}
                     <img src="../static/images/default_avatar.png" alt="Default Avatar" class="avatar-img">
                 {% endif %}
@@ -30,65 +30,65 @@
 
             <!-- Характеристики -->
 
-            <div class="character-stats">
+            <div class="player-stats">
                 <h3>Характеристики</h3>
                 <div class="stat-row">
                     <img src="../static/images/level-icon.png" alt="Level" class="stat-icon">
-                    <span>Рівень: {{ character.level }}</span>
+                    <span>Рівень: {{ player.level }}</span>
                 </div>
                 <div class="stat-row">
                     <img src="../static/images/exp-icon.png" alt="Experience" class="stat-icon">
-                    <span>Досвід: {{ character.experience }}</span>
+                    <span>Досвід: {{ player.experience }}</span>
                 </div>
                 <div class="stat-row">
                     <img src="../static/images/attributes/stamina.png" alt="Stamina" class="stat-icon">
-                    <span>Stamina: {{ character.stamina }}</span>
+                    <span>Stamina: {{ player.stamina }}</span>
                 </div>
                 <div class="stat-row">
                     <img src="../static/images/attributes/energy.png" alt="energy" class="stat-icon">
-                    <span>Energy: {{ character.energy }}</span>
+                    <span>Energy: {{ player.energy }}</span>
                 </div>
                 <div class="stat-row">
                     <img src="../static/images/attributes/agility.png" alt="agility" class="stat-icon">
-                    <span>Agility: {{ character.agility }}</span>
+                    <span>Agility: {{ player.agility }}</span>
                 </div>
                 <div class="stat-row">
                     <img src="../static/images/attributes/mind.png" alt="mind" class="stat-icon">
-                    <span>Mind: {{ character.mind }}</span>
+                    <span>Mind: {{ player.mind }}</span>
                 </div>
             </div>
 
             <!-- Ресурси -->
-            <div class="character-resources">
+            <div class="player-resources">
                 <h3>Ресурси</h3>
                 <div class="resource-row">
                     <img src="../static/images/gold-resource-icon.png" alt="Gold" class="resource-icon">
-                    <span>Золото: {{ character.gold }}</span>
+                    <span>Золото: {{ player.gold }}</span>
                 </div>
                 <div class="resource-row">
                     <img src="../static/images/wood-resource-icon.png" alt="Wood" class="resource-icon">
-                    <span>Дерево: {{ character.wood }}</span>
+                    <span>Дерево: {{ player.wood }}</span>
                 </div>
                 <div class="resource-row">
                     <img src="../static/images/stone-resourse-icon.png" alt="Stone" class="resource-icon">
-                    <span>Камінь: {{ character.stone }}</span>
+                    <span>Камінь: {{ player.stone }}</span>
                 </div>
             </div>
 
             <!-- Місце роботи -->
-            {% if character.workplace %}
+            {% if player.workplace %}
                 <div class="workplace-info">
                     <h3>Місце роботи</h3>
-                    <p>{{ character.workplace.replace('enterprise_', 'Підприємство #') }}</p>
+                    <p>{{ player.workplace.replace('enterprise_', 'Підприємство #') }}</p>
                 </div>
             {% endif %}
         </div>
 
         <div class="achievements-section">
             <h2>Досягнення</h2>
-            {% if character.achievements %}
+            {% if player.achievements %}
             <div class="achievements-grid">
-                {% for user_achievement in character.achievements %}
+                {% for user_achievement in player.achievements %}
                 <div class="achievement-card">
                     {% if user_achievement.achievement.icon_url %}
                     <img src="{{ user_achievement.achievement.icon_url }}" alt="{{ user_achievement.achievement.title }}">
@@ -105,7 +105,7 @@
         </div>
 
         <!-- Додаємо блок спорядження -->
-        <div class="character-equipment">
+        <div class="player-equipment">
             <div class="equipment-grid">
                 <!-- Верхній ряд -->
                 <div class="equipment-row top">
@@ -114,7 +114,9 @@
                         {% if equipped_items.get('Шолом') %}
                             {% set item = equipped_items.get('Шолом') %}
                             <div class="equipped-item">
-                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                <a href="/art_info?id={{ item.id }}">
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                </a>
                             </div>
                         {% else %}
                             <div class="empty-slot">
@@ -128,7 +130,9 @@
                         {% if equipped_items.get('Спина') %}
                             {% set item = equipped_items.get('Спина') %}
                             <div class="equipped-item">
-                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                <a href="/art_info?id={{ item.id }}">
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                </a>
                             </div>
                         {% else %}
                             <div class="empty-slot">
@@ -145,7 +149,9 @@
                         {% if equipped_items.get('Ліва рука') %}
                             {% set item = equipped_items.get('Ліва рука') %}
                             <div class="equipped-item">
-                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                <a href="/art_info?id={{ item.id }}">
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                </a>
                             </div>
                         {% else %}
                             <div class="empty-slot">
@@ -159,7 +165,9 @@
                         {% if equipped_items.get('Броня') %}
                             {% set item = equipped_items.get('Броня') %}
                             <div class="equipped-item">
-                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                <a href="/art_info?id={{ item.id }}">
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                </a>
                             </div>
                         {% else %}
                             <div class="empty-slot">
@@ -173,7 +181,9 @@
                         {% if equipped_items.get('Права рука') %}
                             {% set item = equipped_items.get('Права рука') %}
                             <div class="equipped-item">
+                                <a href="/art_info?id={{ item.id }}">
                                 <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                </a>
                             </div>
                         {% else %}
                             <div class="empty-slot">
@@ -189,7 +199,9 @@
                     {% if equipped_items.get('Чоботи') %}
                         {% set item = equipped_items.get('Чоботи') %}
                         <div class="equipped-item">
-                            <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                            </a>
                         </div>
                     {% else %}
                         <div class="empty-slot">
@@ -206,7 +218,9 @@
                         {% if equipped_items.get('Прикраса ' ~ i) %}
                             {% set item = equipped_items.get('Прикраса ' ~ i) %}
                             <div class="equipped-item">
-                                <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                <a href="/art_info?id={{ item.id }}">
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" title="{{ item.name }}">
+                                </a>
                             </div>
                         {% else %}
                             <div class="empty-slot">
@@ -250,7 +264,7 @@
     color: #007bff;
 }
 
-.character-container {
+.player-container {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
@@ -318,7 +332,7 @@
     padding: 20px;
 }
 
-.character-equipment {
+.player-equipment {
     background: rgba(0, 0, 0, 0.8);
     padding: 20px;
     border-radius: 10px;

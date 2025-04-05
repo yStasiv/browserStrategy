@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from backend import database, models, utils
-from backend.routers.character import CharacterHelper
+from backend.routers.player import PlayerHelper
 
 logger = utils.setup_logger(__name__)
 
@@ -112,7 +112,7 @@ class TaskHelper:
                         db.query(models.User).filter(models.User.id == user_id).first()
                     )
                     if user:
-                        CharacterHelper.update_user_level(user, db)
+                        CharacterHelper().update_user_level(user, db)
 
             return user_task
         else:

@@ -7,37 +7,37 @@
     <!-- Ресурси -->
     <div class="character-resources">
         <span class="resource">
-            <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ user.gold }}
+            <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ player.gold }}
         </span>
         <span class="resource">
-            <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Дерево: {{ user.wood }}
+            <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Дерево: {{ player.wood }}
         </span>
         <span class="resource">
-            <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Камінь: {{ user.stone }}
+            <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Камінь: {{ player.stone }}
         </span>
     </div>
 
     <div class="character-info">
         <!-- Іконка персонажа -->
         <div class="avatar">
-            <img src="{{ user.avatar_url or '../static/images/simple-elfe.png' }}" alt="Avatar" class="avatar-img">
-            <span class="avatar-caption"><a href="/view-character?character_id={{ user.id }}">{{ user.username }}</a></span>
+            <img src="{{ player.avatar_url or '../static/images/simple-elfe.png' }}" alt="Avatar" class="avatar-img">
+            <span class="avatar-caption"><a href="/player_info?id={{ player.id }}">{{ player.username }}</a></span>
         </div>
 
         <!-- Характеристики персонажа --> 
          <div class="character-attributes"> 
             <h3>Характеристики:</h3> 
-            <p><img src="../static/images/attributes/stamina.png" alt="stamina Icon" class="attribute-icon">Stamina: {{ user.stamina }}
-            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('stamina')">+</button> {% endif %}</p> 
-            <p><img src="../static/images/attributes/energy.png" alt="energy Icon" class="attribute-icon">Energy: {{ user.energy }}
-            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('energy')">+</button> {% endif %}</p> 
-            <p><img src="../static/images/attributes/agility.png" alt="agility Icon" class="attribute-icon">Agility: {{ user.agility }}
-            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('agility')">+</button> {% endif %}</p> 
-            <p><img src="../static/images/attributes/mind.png" alt="mind Icon" class="attribute-icon">Mind: {{ user.mind }}
-            {% if user.pending_attribute_points > 0 %} <button onclick="updateAttribute('mind')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/stamina.png" alt="stamina Icon" class="attribute-icon">Stamina: {{ player.stamina }}
+            {% if player.pending_attribute_points > 0 %} <button onclick="updateAttribute('stamina')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/energy.png" alt="energy Icon" class="attribute-icon">Energy: {{ player.energy }}
+            {% if player.pending_attribute_points > 0 %} <button onclick="updateAttribute('energy')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/agility.png" alt="agility Icon" class="attribute-icon">Agility: {{ player.agility }}
+            {% if player.pending_attribute_points > 0 %} <button onclick="updateAttribute('agility')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/mind.png" alt="mind Icon" class="attribute-icon">Mind: {{ player.mind }}
+            {% if player.pending_attribute_points > 0 %} <button onclick="updateAttribute('mind')">+</button> {% endif %}</p> 
         </div>
         <!-- Форма для вибору параметра --> 
-        <!-- {% if user.pending_attribute_points > 0 %} 
+        <!-- {% if player.pending_attribute_points > 0 %} 
         <div class="attribute-selection"> 
             <h3>Виберіть параметр для підвищення:</h3> 
             <form action="/update-attribute" method="post"> 
@@ -64,26 +64,26 @@
 
         <div class="character-level-experience">
             {% if next_level_exp %}
-            <span>Рівень: {{ user.level }} ({{ ((user.experience / next_level_exp) * 100) | round(0) }}%)</span>
+            <span>Рівень: {{ player.level }} ({{ ((player.experience / next_level_exp) * 100) | round(0) }}%)</span>
             <img src="../static/images/exp-icon.png" alt="Exp Icon" class="exp-icon">
             <div class="experience-bar">
-                <div class="experience-filled" style="width: {{ (user.experience / next_level_exp) * 100 }}%"></div>
+                <div class="experience-filled" style="width: {{ (player.experience / next_level_exp) * 100 }}%"></div>
                 <span class="experience-text">
-                    Поточний досвід: {{ user.experience }} / {{ next_level_exp }}
+                    Поточний досвід: {{ player.experience }} / {{ next_level_exp }}
                 </span>
             </div>
             {% else %}
-            <span>Рівень: {{ user.level }} ({{ user.experience }})</span>
+            <span>Рівень: {{ player.level }} ({{ player.experience }})</span>
             <span class="max-lvl-text">Максимальний рівень досягнуто!</span>
             {% endif %}
         </div>
 
-        {% if user.has_adventurer_card %}
+        {% if player.has_adventurer_card %}
         <div class="adventurer-card">
             <h3>Картка авантюриста</h3>
             <p>Статус: Активна</p>
-            <p>Власник: {{ user.username }}</p>
-            <p>Рівень: {{ user.level }}</p>
+            <p>Власник: {{ player.playername }}</p>
+            <p>Рівень: {{ player.level }}</p>
         </div>
         {% endif %}
     </div>
@@ -135,7 +135,9 @@
                     {% if equipped_items.get('Шолом') %}
                         {% set item = equipped_items.get('Шолом') %}
                         <div class="equipped-item">
-                            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
                         </div>
                     {% else %}
                         <div class="empty-slot">
@@ -143,13 +145,15 @@
                         </div>
                     {% endif %}
                 </div>
-                
+
                 <div class="equipment-slot back">
                     <div class="slot-label">Спина</div>
                     {% if equipped_items.get('Спина') %}
                         {% set item = equipped_items.get('Спина') %}
                         <div class="equipped-item">
-                            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
                         </div>
                     {% else %}
                         <div class="empty-slot">
@@ -166,7 +170,9 @@
                     {% if equipped_items.get('Ліва рука') %}
                         {% set item = equipped_items.get('Ліва рука') %}
                         <div class="equipped-item">
-                            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
                         </div>
                     {% else %}
                         <div class="empty-slot">
@@ -180,7 +186,9 @@
                     {% if equipped_items.get('Броня') %}
                         {% set item = equipped_items.get('Броня') %}
                         <div class="equipped-item">
-                            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
                         </div>
                     {% else %}
                         <div class="empty-slot">
@@ -194,7 +202,9 @@
                     {% if equipped_items.get('Права рука') %}
                         {% set item = equipped_items.get('Права рука') %}
                         <div class="equipped-item">
-                            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
                         </div>
                     {% else %}
                         <div class="empty-slot">
@@ -210,7 +220,9 @@
                 {% if equipped_items.get('Чоботи') %}
                     {% set item = equipped_items.get('Чоботи') %}
                     <div class="equipped-item">
-                        <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                        <a href="/art_info?id={{ item.id }}">
+                            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                        </a>
                     </div>
                 {% else %}
                     <div class="empty-slot">
@@ -227,7 +239,9 @@
                     {% if equipped_items.get('Прикраса ' ~ i) %}
                         {% set item = equipped_items.get('Прикраса ' ~ i) %}
                         <div class="equipped-item">
-                            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
                         </div>
                     {% else %}
                         <div class="empty-slot">
@@ -243,8 +257,8 @@
     <div class="character-menu">
         <a href="/inventory" class="menu-button">Інвентар</a>
         <a href="/shop" class="menu-button">Магазин</a>
-        {% if user.enterprise %}
-            <a href="/enterprise/{{ user.enterprise.split('_')[1] }}" class="menu-button">Моє підприємство</a>
+        {% if player.enterprise %}
+            <a href="/enterprise/{{ player.enterprise.split('_')[1] }}" class="menu-button">Моє підприємство</a>
         {% endif %}
     </div>
 </div>
