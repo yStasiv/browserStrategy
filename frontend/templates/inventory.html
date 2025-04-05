@@ -1,0 +1,979 @@
+{% extends 'base.html' %}
+
+{% block title %}Інвентар{% endblock %}
+
+{% block body %}
+<div class="page-container">
+    <!-- Додаємо блок характеристик -->
+    <div class="character-info">
+        <div class="stats-block">
+            <h3>Характеристики</h3>
+            
+            <!-- Основні характеристики -->
+            <div class="stats-section">
+                <div class="stats-section-title">Основні характеристики</div>
+            <div class="stats-list">
+                    <div class="stat-row" data-stat="stamina">
+                        <img src="../static/images/attributes/stamina.png" alt="mind Icon" class="attribute-icon">
+                        <span class="stat-value">{{ user.stamina or 0 }}</span>
+                        {% if user.stamina_bonus %}<span class="stat-bonus">(+{{ user.stamina_bonus }})</span>{% endif %}
+                    </div>
+                    <div class="stat-row" data-stat="energy">
+                        <img src="../static/images/attributes/energy.png" alt="mind Icon" class="attribute-icon">
+                        <span class="stat-value">{{ user.energy or 0 }}</span>
+                        {% if user.energy_bonus %}<span class="stat-bonus">(+{{ user.energy_bonus }})</span>{% endif %}
+                </div>
+                    <div class="stat-row" data-stat="agility">
+                        <img src="../static/images/attributes/agility.png" alt="mind Icon" class="attribute-icon">
+                        <span class="stat-value">{{ user.agility or 0 }}</span>
+                        {% if user.agility_bonus %}<span class="stat-bonus">(+{{ user.agility_bonus }})</span>{% endif %}
+                    </div>
+                    <div class="stat-row" data-stat="mind">
+                        <img src="../static/images/attributes/mind.png" alt="mind Icon" class="attribute-icon">
+                        <span class="stat-value">{{ user.mind or 0 }}</span>
+                        {% if user.mind_bonus %}<span class="stat-bonus">(+{{ user.mind_bonus }})</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Бойові характеристики -->
+            <div class="stats-section">
+                <div class="stats-section-title">Бойові характеристики</div>
+                <div class="stats-list">
+                    <div class="stat-row" data-stat="melee_attack">
+                        <span class="stat-name">Ближній бій</span>
+                        <span class="stat-value">{{ user.melee_attack or 0 }}</span>
+                        {% if user.melee_attack_bonus %}<span class="stat-bonus">(+{{ user.melee_attack_bonus }})</span>{% endif %}
+                    </div>
+                    <div class="stat-row" data-stat="ranged_attack">
+                        <span class="stat-name">Дальній бій</span>
+                        <span class="stat-value">{{ user.ranged_attack or 0 }}</span>
+                        {% if user.ranged_attack_bonus %}<span class="stat-bonus">(+{{ user.ranged_attack_bonus }})</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Захист -->
+            <div class="stats-section">
+                <div class="stats-section-title">Захист</div>
+                <div class="stats-list">
+                    <div class="stat-row" data-stat="physical_defense">
+                        <span class="stat-name">Фізичний захист</span>
+                        <span class="stat-value">{{ user.physical_defense or 0 }}</span>
+                        {% if user.physical_defense_bonus %}<span class="stat-bonus">(+{{ user.physical_defense_bonus }})</span>{% endif %}
+                    </div>
+                    <div class="stat-row" data-stat="magic_resistance">
+                        <span class="stat-name">Стійкість до магії</span>
+                        <span class="stat-value">{{ user.magic_resistance or 0 }}</span>
+                        {% if user.magic_resistance_bonus %}<span class="stat-bonus">(+{{ user.magic_resistance_bonus }})</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+        
+
+            <!-- Бонуси з випадаючими характеристиками -->
+            <div class="stats-section">
+                <div class="stats-section-title">Бонуси</div>
+                <div class="stats-list">
+                    <div class="stat-row expandable" data-stat="combat_bonus">
+                        <span class="stat-name">Бонуси</span>
+                        <div class="expanded-stats">
+                            <span class="stat-name">Бонуси атаки</span>
+                            <div class="sub-stat">
+                                <span class="sub-stat-name">Бонус ближнього бою:</span>
+                                <span class="sub-stat-value">{{ user.bonus_melee_damage or 0 }}</span>
+                                {% if user.bonus_melee_damage_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_melee_damage_bonus }})</span>{% endif %}
+                            </div>
+                            <div class="sub-stat">
+                                <span class="sub-stat-name">Бонус дальнього бою:</span>
+                                <span class="sub-stat-value">{{ user.bonus_ranged_damage or 0 }}</span>
+                                {% if user.bonus_ranged_damage_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_ranged_damage_bonus }})</span>{% endif %}
+                            </div>
+                            <div class="sub-stat">
+                                <span class="sub-stat-name">Бонус магічної шкоди:</span>
+                                <span class="sub-stat-value">{{ user.bonus_magic_damage or 0 }}</span>
+                                {% if user.bonus_magic_damage_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_magic_damage_bonus }})</span>{% endif %}
+                            </div>
+                            <span class="stat-name">Бонуси захтсту</span>
+                            <div class="sub-stat">
+                                <span class="sub-stat-name">Захист від ближнього бою:</span>
+                                <span class="sub-stat-value">{{ user.bonus_melee_defense or 0 }}</span>
+                                {% if user.bonus_melee_defense_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_melee_defense_bonus }})</span>{% endif %}
+                            </div>
+                            <div class="sub-stat">
+                                <span class="sub-stat-name">Захист від дальнього бою:</span>
+                                <span class="sub-stat-value">{{ user.bonus_ranged_defense or 0 }}</span>
+                                {% if user.bonus_ranged_defense_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_ranged_defense_bonus }})</span>{% endif %}
+                </div>
+                            <div class="sub-stat">
+                                <span class="sub-stat-name">Магічний захист:</span>
+                                <span class="sub-stat-value">{{ user.bonus_magic_defense or 0 }}</span>
+                                {% if user.bonus_magic_defense_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_magic_defense_bonus }})</span>{% endif %}
+                </div>
+                </div>
+                        
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="character-equipment">
+        <div class="equipment-grid">
+            <!-- Верхній ряд -->
+            <div class="equipment-row top">
+                <div class="equipment-slot helmet">
+                    <div class="slot-label">Шолом</div>
+                    {% if equipped_items.get('Шолом') %}
+                        {% set item = equipped_items.get('Шолом') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                            <button onclick="unequipItem({{ item.id }})">Зняти</button>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_helmet.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Додаємо слот для спини -->
+                <div class="equipment-slot back">
+                    <div class="slot-label">Спина</div>
+                    {% if equipped_items.get('Спина') %}
+                        {% set item = equipped_items.get('Спина') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                            <button onclick="unequipItem({{ item.id }})">Зняти</button>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_back.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Середній ряд -->
+            <div class="equipment-row middle">
+                <div class="equipment-slot weapon-left">
+                    <div class="slot-label">Ліва рука</div>
+                    {% if equipped_items.get('Ліва рука') %}
+                        {% set item = equipped_items.get('Ліва рука') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                            <button onclick="unequipItem({{ item.id }})">Зняти</button>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="equipment-slot armor">
+                    <div class="slot-label">Броня</div>
+                    {% if equipped_items.get('Броня') %}
+                        {% set item = equipped_items.get('Броня') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                            <button onclick="unequipItem({{ item.id }})">Зняти</button>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_armor.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="equipment-slot weapon-right">
+                    <div class="slot-label">Права рука</div>
+                    {% if equipped_items.get('Права рука') %}
+                        {% set item = equipped_items.get('Права рука') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                            <button onclick="unequipItem({{ item.id }})">Зняти</button>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Нижній ряд -->
+            <div class="equipment-slot boots">
+                <div class="slot-label">Чоботи</div>
+                {% if equipped_items.get('Чоботи') %}
+                    {% set item = equipped_items.get('Чоботи') %}
+                    <div class="equipped-item">
+                        <a href="/art_info?id={{ item.id }}">
+                            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                        </a>
+                        <button onclick="unequipItem({{ item.id }})">Зняти</button>
+                    </div>
+                {% else %}
+                    <div class="empty-slot">
+                        <img src="/static/images/items/empty_boots.svg" alt="Empty">
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Прикраси -->
+            <div class="jewelry-slots">
+                {% for i in range(1, 5) %}
+                <div class="equipment-slot jewelry">
+                    <div class="slot-label">Прикраса {{ i }}</div>
+                    {% if equipped_items.get('Прикраса ' ~ i) %}
+                        {% set item = equipped_items.get('Прикраса ' ~ i) %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                            <button onclick="unequipItem({{ item.id }})">Зняти</button>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_jewelry.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="inventory-grid">
+        <h2>Інвентар ({{ inventory_items|length }}/{{ max_items }})</h2>
+        <div class="items-grid">
+            {% for item in inventory_items %}
+            <div class="inventory-item {% if item.is_equipped %}equipped{% endif %}" data-item-id="{{ item.id }}">
+                <a href="/art_info?id={{ item.id }}">
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                </a>
+                <div class="item-info">
+                    <span class="item-name">{{ item.name }}</span>
+                    {% if item.durability is not none and item.max_durability is not none %}
+                    <div class="durability-bar">
+                            <div class="durability-fill" style="width: {{ (item.durability / item.max_durability * 100)|round }}%"></div>
+                            <span class="durability-text">{{ item.durability }}/{{ item.max_durability }}</span>
+                    </div>
+                        {% endif %}
+                    </div>
+                    
+                <!-- Спливаючий хінт -->
+                <div class="item-hint">
+                    <div class="hint-content">
+                        {% for stat, value in item.stats.items() %}
+                            {% if value != 0 %}
+                            <div class="hint-stat">
+                                <span class="stat-label">{{ stat }}:</span>
+                                <span class="stat-value {% if value > 0 %}positive{% else %}negative{% endif %}">
+                                    {% if value > 0 %}+{% endif %}{{ value }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                    
+                <div class="item-actions">
+                    {% if not item.is_equipped and (item.durability is none or item.durability > 0) %}
+                        <button onclick="equipItem({{ item.id }})" class="equip-btn">Вдягнути</button>
+                    {% elif item.is_equipped %}
+                        <button onclick="unequipItem({{ item.id }})" class="unequip-btn">Зняти</button>
+                    {% endif %}
+                    <button onclick="destroyItem({{ item.id }})" class="destroy-btn">Знищити</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+.page-container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+}
+
+.character-info {
+    min-width: 250px;
+}
+
+.stats-block {
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.stats-block h3 {
+    color: #ffd700;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 1.2em;
+}
+
+.stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+}
+
+.stat-name {
+    flex: 1;
+    color: #aaa;
+}
+
+.stat-value {
+    margin: 0 10px;
+    color: #fff;
+    font-weight: bold;
+}
+
+.stat-bonus {
+    color: #4CAF50;
+    font-size: 0.9em;
+    margin-left: 5px;
+}
+
+.inventory-container {
+    flex: 1;
+}
+
+.inventory-container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+}
+
+.character-stats {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    min-width: 250px;
+    height: fit-content;
+}
+
+.stats-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.stat-label {
+    color: #aaa;
+}
+
+.inventory-grid {
+    flex: 1;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+}
+
+.inventory-grid h2 {
+    color: #ffd700;
+    margin-bottom: 20px;
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 10px;
+}
+
+.inventory-item {
+    position: relative;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.inventory-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.inventory-item img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+
+.item-info {
+    width: 100%;
+    text-align: center;
+}
+
+.item-name {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.durability-bar {
+    width: 100%;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    margin: 8px 0;
+    position: relative;
+}
+
+.durability-fill {
+    height: 100%;
+    background: #4CAF50;
+    border-radius: 2px;
+    transition: width 0.3s;
+}
+
+.durability-text {
+    font-size: 12px;
+    color: #666;
+    position: absolute;
+    top: -15px;
+    right: 0;
+}
+
+.item-stats {
+    margin: 8px 0;
+    font-size: 12px;
+    color: #666;
+}
+
+.stat {
+    display: inline-block;
+    margin: 2px 4px;
+    padding: 2px 6px;
+    background: rgba(33, 150, 243, 0.1);
+    border-radius: 4px;
+    color: #2196F3;
+}
+
+.item-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.equip-btn, .unequip-btn, .destroy-btn {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.equip-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+.unequip-btn {
+    background: #2196F3;
+    color: white;
+}
+
+.destroy-btn {
+    background: #f44336;
+    color: white;
+}
+
+.equipped {
+    background: rgba(76, 175, 80, 0.1);
+    border: 2px solid #4CAF50;
+}
+
+/* Адаптивність для мобільних пристроїв */
+@media (max-width: 768px) {
+    .items-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+
+    .inventory-item img {
+        width: 80px;
+        height: 80px;
+    }
+
+    .item-tooltip {
+        left: 50%;
+        top: 100%;
+        transform: translateX(-50%);
+        margin-top: 10px;
+    }
+
+    .item-tooltip::before {
+        left: 50%;
+        top: -6px;
+        transform: translateX(-50%);
+        border-color: transparent transparent rgba(0, 0, 0, 0.9) transparent;
+    }
+}
+
+.character-equipment {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.equipment-grid {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+}
+
+.equipment-row {
+    display: flex;
+    gap: 10px;
+}
+
+.equipment-slot {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #666;
+    border-radius: 5px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slot-label {
+    position: absolute;
+    top: -20px;
+    font-size: 12px;
+    color: #aaa;
+}
+
+.equipped-item {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.equipped-item img {
+    max-width: 90%;
+    max-height: 60%;
+    object-fit: contain;
+}
+
+.equipped-item button {
+    margin-top: 5px;
+    padding: 2px 5px;
+    font-size: 12px;
+}
+
+.empty-slot {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-slot img {
+    opacity: 0.3;
+    max-width: 60%;
+    max-height: 60%;
+}
+
+.jewelry-slots {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Додаємо стилі для верхнього ряду */
+.equipment-row.top {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.equipment-slot.back {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #666;
+}
+
+/* Стилі для випадаючих бонусів */
+.expandable {
+    cursor: pointer;
+    position: relative;
+}
+
+.expandable::after {
+    content: '▼';
+    font-size: 0.8em;
+    color: #666;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.3s ease;
+}
+
+.expandable:hover::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.expanded-stats {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 100;
+    padding: 10px;
+    margin-top: 5px;
+}
+
+.expandable:hover .expanded-stats {
+    display: block;
+}
+
+.sub-stat {
+    display: flex;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.sub-stat:last-child {
+    border-bottom: none;
+}
+
+.sub-stat-name {
+    flex: 1;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.sub-stat-value {
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 5px;
+}
+
+.sub-stat-bonus {
+    color: #27ae60;
+    font-size: 0.9em;
+    min-width: 45px;
+    text-align: right;
+}
+
+/* Анімація появи */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.expanded-stats {
+    animation: slideDown 0.2s ease-out;
+}
+
+/* Стилі для мобільних пристроїв */
+@media (max-width: 768px) {
+    .expanded-stats {
+        position: static;
+        margin-top: 10px;
+        box-shadow: none;
+        border: 1px solid #eee;
+    }
+    
+    .expandable::after {
+        right: 5px;
+    }
+}
+
+/* Стилі для зображень предметів */
+.inventory-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain; /* зберігає пропорції зображення */
+    background-color: rgba(255, 255, 255, 0.8); /* світлий фон для прозорих зображень */
+    border-radius: 8px; /* закруглені кути */
+    padding: 5px; /* відступ від країв */
+}
+
+/* Якщо потрібно також встановити розмір контейнера */
+.inventory-item {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 5px;
+}
+
+/* Якщо зображення в таблиці */
+.inventory-table img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+}
+
+/* Якщо зображення в слотах спорядження */
+.equipment-slot img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+}
+
+.item-tooltip {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    min-width: 200px;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Стрілочка для tooltip */
+.item-tooltip::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent rgba(0, 0, 0, 0.9) transparent transparent;
+}
+
+.inventory-item:hover .item-tooltip {
+    display: block;
+}
+
+.tooltip-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 14px;
+}
+
+.stat-label {
+    color: #aaa;
+}
+
+.stat-value {
+    font-weight: bold;
+}
+
+.stat-value.positive {
+    color: #4CAF50;
+}
+
+.stat-value.negative {
+    color: #f44336;
+}
+
+/* Стилі для хінта */
+.item-hint {
+    display: none;
+    position: absolute; /* Змінюємо з fixed на absolute */
+    left: 100%; /* Розміщуємо справа від предмета */
+    top: 0;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 10px;
+    color: white;
+    min-width: 200px;
+    margin-left: 10px; /* Відступ від предмета */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 10000;
+}
+
+.inventory-item:hover {
+    z-index: 9999; /* Підвищуємо z-index для предмета при наведенні */
+}
+
+.inventory-item:hover .item-hint {
+    display: block;
+}
+
+/* Стрілочка для хінта */
+.item-hint::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 10px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent rgba(0, 0, 0, 0.95) transparent transparent;
+}
+
+/* Стилі для мобільних пристроїв */
+@media (max-width: 768px) {
+    .item-hint {
+        left: 50%;
+        top: 100%;
+        transform: translateX(-50%);
+        margin-left: 0;
+        margin-top: 10px;
+    }
+
+    .item-hint::before {
+        left: 50%;
+        top: -6px;
+        transform: translateX(-50%);
+        border-color: transparent transparent rgba(0, 0, 0, 0.95) transparent;
+    }
+}
+</style>
+
+<script>
+async function equipItem(itemId) {
+    try {
+        const response = await fetch(`/inventory/equip/${itemId}`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            await updateStats();
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            alert(error.detail);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function unequipItem(itemId) {
+    try {
+        const response = await fetch(`/inventory/unequip/${itemId}`, {
+            method: 'POST'
+        });
+        if (response.ok) {
+            await updateStats();
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function destroyItem(itemId) {
+    if (!confirm('Ви впевнені, що хочете знищити цей предмет?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/inventory/destroy/${itemId}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            alert(error.detail);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function updateStats() {
+    try {
+        const response = await fetch('/inventory/stats');
+        const stats = await response.json();
+        
+        for (const [stat, value] of Object.entries(stats)) {
+            const statElement = document.querySelector(`.stat-value[data-stat="${stat}"]`);
+            if (statElement) {
+                const oldValue = parseInt(statElement.textContent);
+                statElement.textContent = value;
+                
+                if (oldValue !== value) {
+                    statElement.parentElement.classList.add('stat-updated');
+                    setTimeout(() => {
+                        statElement.parentElement.classList.remove('stat-updated');
+                    }, 1000);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error updating stats:', error);
+    }
+}
+
+setInterval(updateStats, 5000);
+
+document.addEventListener('DOMContentLoaded', updateStats);
+
+// Додаємо обробник для кращої роботи на мобільних пристроях
+document.querySelectorAll('.expandable').forEach(item => {
+    item.addEventListener('click', (e) => {
+        const expanded = item.querySelector('.expanded-stats');
+        if (window.innerWidth <= 768) {
+            if (expanded.style.display === 'block') {
+                expanded.style.display = 'none';
+            } else {
+                expanded.style.display = 'block';
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

@@ -4,7 +4,7 @@
 
 {% block body %}
 <div class="navigation-panel">
-    <a href="/character" class="nav-link">Мій персонаж</a>
+    <a href="/player" class="nav-link">Мій персонаж</a>
     <a href="/map" class="nav-link">Карта</a>
     <a href="/guild" class="nav-link">Гільдія</a>
     <a href="/char_tasks" class="nav-link active">Завдання</a>
@@ -48,7 +48,7 @@
         
         {% if not user_task.is_completed %}
             {% if user_task.task.id == 1 %}
-                {% if has_visited_guild %}
+                {% if not has_visited_guild %}
                 <form action="/complete-task/{{ user_task.task.id }}" method="POST">
                     <button type="submit" class="complete-btn">Завершити завдання</button>
                 </form>

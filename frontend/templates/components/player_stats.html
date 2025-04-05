@@ -1,0 +1,215 @@
+<div class="character-stats">
+    <div class="stats-section">
+        <h3>Основні характеристики</h3>
+        <div class="stat-row">
+            <div class="stat-item">
+                <div class="stat-header">
+                    <img src="../static/images/stamina-attributes-icon.png" alt="Stamina Icon" class="attribute-icon">
+                    <span class="stat-label">Витривалість:</span>
+                </div>
+                <div class="stat-value-container">
+                    <span class="stat-value">{{ user.stamina }} {% if user.stamina_bonus %}(+{{ user.stamina_bonus }}){% endif %}</span>
+                    {% if user.pending_attribute_points and user.pending_attribute_points > 0 %}
+                        <button onclick="updateAttribute('stamina')" class="attribute-button">+</button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-header">
+                    <img src="../static/images/energy-attributes-icon.png" alt="Energy Icon" class="attribute-icon">
+                    <span class="stat-label">Енергія:</span>
+                </div>
+                <div class="stat-value-container">
+                    <span class="stat-value">{{ user.energy }} {% if user.energy_bonus %}(+{{ user.energy_bonus }}){% endif %}</span>
+                    {% if user.pending_attribute_points and user.pending_attribute_points > 0 %}
+                        <button onclick="updateAttribute('energy')" class="attribute-button">+</button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-header">
+                    <img src="../static/images/agility-attributes-icon.png" alt="Agility Icon" class="attribute-icon">
+                    <span class="stat-label">Спритність:</span>
+                </div>
+                <div class="stat-value-container">
+                    <span class="stat-value">{{ user.agility }} {% if user.agility_bonus %}(+{{ user.agility_bonus }}){% endif %}</span>
+                    {% if user.pending_attribute_points and user.pending_attribute_points > 0 %}
+                        <button onclick="updateAttribute('agility')" class="attribute-button">+</button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-header">
+                    <img src="../static/images/mind-attributes-icon.png" alt="Mind Icon" class="attribute-icon">
+                    <span class="stat-label">Розум:</span>
+                </div>
+                <div class="stat-value-container">
+                    <span class="stat-value">{{ user.mind }} {% if user.mind_bonus %}(+{{ user.mind_bonus }}){% endif %}</span>
+                    {% if user.pending_attribute_points and user.pending_attribute_points > 0 %}
+                        <button onclick="updateAttribute('mind')" class="attribute-button">+</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-section">
+        <h3>Бойові характеристики</h3>
+        <div class="stat-row">
+            <div class="stat-item">
+                <div class="stat-header">
+                    <img src="../static/images/melee-attributes-icon.png" alt="Melee Icon" class="attribute-icon">
+                    <span class="stat-label">Ближній бій:</span>
+                </div>
+                <div class="stat-value-container">
+                    <span class="stat-value">{{ user.melee_attack }} {% if user.melee_attack_bonus %}(+{{ user.melee_attack_bonus }}){% endif %}</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-header">
+                    <img src="../static/images/ranged-attributes-icon.png" alt="Ranged Icon" class="attribute-icon">
+                    <span class="stat-label">Дальній бій:</span>
+                </div>
+                <div class="stat-value-container">
+                    <span class="stat-value">{{ user.ranged_attack }} {% if user.ranged_attack_bonus %}(+{{ user.ranged_attack_bonus }}){% endif %}</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-header">
+                    <img src="../static/images/magic-attributes-icon.png" alt="Magic Icon" class="attribute-icon">
+                    <span class="stat-label">Магічна сила:</span>
+                </div>
+                <div class="stat-value-container">
+                    <span class="stat-value">{{ user.magic_power }} {% if user.magic_power_bonus %}(+{{ user.magic_power_bonus }}){% endif %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-section">
+        <h3>Захист</h3>
+        <div class="stat-row">
+            <div class="stat-item">
+                <div class="stat-header">
+                    <img src="../static/images/physical-defense-icon.png" alt="Physical Defense Icon" class="attribute-icon">
+                    <span class="stat-label">Фізичний захист:</span>
+                </div>
+                <div class="stat-value-container">
+                    <span class="stat-value">{{ user.physical_defense }} {% if user.physical_defense_bonus %}(+{{ user.physical_defense_bonus }}){% endif %}</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-header">
+                    <img src="../static/images/magic-resistance-icon.png" alt="Magic Resistance Icon" class="attribute-icon">
+                    <span class="stat-label">Магічний захист:</span>
+                </div>
+                <div class="stat-value-container">
+                    <span class="stat-value">{{ user.magic_resistance }} {% if user.magic_resistance_bonus %}(+{{ user.magic_resistance_bonus }}){% endif %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.character-stats {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.stats-section {
+    margin-bottom: 1.5rem;
+}
+
+.stats-section h3 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid #3498db;
+}
+
+.stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.stat-item {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.stat-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.attribute-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.stat-label {
+    font-weight: 500;
+    color: #34495e;
+}
+
+.stat-value-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.attribute-button {
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.attribute-button:hover {
+    background: #2980b9;
+}
+</style>
+
+<script>
+function updateAttribute(attributeName) {
+    fetch(`/player/update_attribute/${attributeName}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Помилка при оновленні характеристики');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script> 

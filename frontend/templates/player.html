@@ -1,0 +1,440 @@
+{% extends 'base.html' %}
+
+{% block title %}Персонаж{% endblock %}
+
+{% block body %}
+<div class="character-container">
+    <!-- Ресурси -->
+    <div class="character-resources">
+        <span class="resource">
+            <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ player.gold }}
+        </span>
+        <span class="resource">
+            <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Дерево: {{ player.wood }}
+        </span>
+        <span class="resource">
+            <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Камінь: {{ player.stone }}
+        </span>
+    </div>
+
+    <div class="character-info">
+        <!-- Іконка персонажа -->
+        <div class="avatar">
+            <img src="{{ player.avatar_url or '../static/images/simple-elfe.png' }}" alt="Avatar" class="avatar-img">
+            <span class="avatar-caption"><a href="/player_info?id={{ player.id }}">{{ player.username }}</a></span>
+        </div>
+
+        <!-- Характеристики персонажа --> 
+         <div class="character-attributes"> 
+            <h3>Характеристики:</h3> 
+            <p><img src="../static/images/attributes/stamina.png" alt="stamina Icon" class="attribute-icon">Stamina: {{ player.stamina }}
+            {% if player.pending_attribute_points > 0 %} <button onclick="updateAttribute('stamina')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/energy.png" alt="energy Icon" class="attribute-icon">Energy: {{ player.energy }}
+            {% if player.pending_attribute_points > 0 %} <button onclick="updateAttribute('energy')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/agility.png" alt="agility Icon" class="attribute-icon">Agility: {{ player.agility }}
+            {% if player.pending_attribute_points > 0 %} <button onclick="updateAttribute('agility')">+</button> {% endif %}</p> 
+            <p><img src="../static/images/attributes/mind.png" alt="mind Icon" class="attribute-icon">Mind: {{ player.mind }}
+            {% if player.pending_attribute_points > 0 %} <button onclick="updateAttribute('mind')">+</button> {% endif %}</p> 
+        </div>
+        <!-- Форма для вибору параметра --> 
+        <!-- {% if player.pending_attribute_points > 0 %} 
+        <div class="attribute-selection"> 
+            <h3>Виберіть параметр для підвищення:</h3> 
+            <form action="/update-attribute" method="post"> 
+                <label> <input type="radio" name="attribute" value="strength"> Сила </label> 
+                <label> <input type="radio" name="attribute" value="armor"> Захист </label> 
+                <label> <input type="radio" name="attribute" value="initiative"> Ініціатива </label> 
+                <button type="submit">Застосувати</button> 
+            </form> 
+        </div> 
+        {% endif %} -->
+        <!-- Кнопка для оновлення зображення -->
+        <button id="update-avatar-button" onclick="showUploadForm()">Оновити зображення</button>
+
+         <!-- Кнопка для скасування оновлення зображення -->
+         <button id="update-cancel-avatar-button" style="display: none;" onclick="hideUploadForm()">Скасувати</button>
+
+        <!-- Форма для завантаження зображення, спочатку прихована -->
+        <form id="upload-avatar-form" action="/upload-avatar" method="post" enctype="multipart/form-data" style="display: none;">
+            <label for="avatar">Завантажити зображення (150x150 пікселів):</label>
+            <input type="file" id="avatar" name="avatar" accept="image/*" onchange="showFileName()">
+            <span id="file-name"></span> <!-- Елемент для відображення імені файлу -->
+            <button type="submit">Завантажити</button>
+        </form>
+
+        <div class="character-level-experience">
+            {% if next_level_exp %}
+            <span>Рівень: {{ player.level }} ({{ ((player.experience / next_level_exp) * 100) | round(0) }}%)</span>
+            <img src="../static/images/exp-icon.png" alt="Exp Icon" class="exp-icon">
+            <div class="experience-bar">
+                <div class="experience-filled" style="width: {{ (player.experience / next_level_exp) * 100 }}%"></div>
+                <span class="experience-text">
+                    Поточний досвід: {{ player.experience }} / {{ next_level_exp }}
+                </span>
+            </div>
+            {% else %}
+            <span>Рівень: {{ player.level }} ({{ player.experience }})</span>
+            <span class="max-lvl-text">Максимальний рівень досягнуто!</span>
+            {% endif %}
+        </div>
+
+        {% if player.has_adventurer_card %}
+        <div class="adventurer-card">
+            <h3>Картка авантюриста</h3>
+            <p>Статус: Активна</p>
+            <p>Власник: {{ player.playername }}</p>
+            <p>Рівень: {{ player.level }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Додайте цей блок перед кнопкою замку -->
+    <div class="map-btn">
+        <form action="/map" method="get">
+            <button type="submit">Перейти до карти</button>
+        </form>
+    </div>
+
+    <!-- Кнопка замку -->
+    <div class="castle-btn">
+        <form action="/castle" method="get">
+            <button type="submit">Перейти до замку</button>
+        </form>
+    </div>
+
+    <!-- Кнопка завдання -->
+    <div class="task-btn">
+        <form action="/char_tasks" method="get">
+            <button type="submit">Активні завдання</button>
+        </form>
+    </div>
+
+    <!-- Кнопка виходу -->
+    <div class="logout-btn">
+        <form action="/logout" method="POST">
+            <button type="submit">Вийти</button>
+        </form>
+    </div>
+
+    <div class="character-actions">
+        <!-- ... існуючі кнопки ... -->
+        <div class="action-btn">
+            <form action="/inventory" method="get">
+                <button type="submit" class="inventory-btn">Інвентар</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Додаємо блок спорядження -->
+    <div class="character-equipment">
+        <div class="equipment-grid">
+            <!-- Верхній ряд -->
+            <div class="equipment-row top">
+                <div class="equipment-slot helmet">
+                    <div class="slot-label">Шолом</div>
+                    {% if equipped_items.get('Шолом') %}
+                        {% set item = equipped_items.get('Шолом') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_helmet.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="equipment-slot back">
+                    <div class="slot-label">Спина</div>
+                    {% if equipped_items.get('Спина') %}
+                        {% set item = equipped_items.get('Спина') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_back.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Середній ряд -->
+            <div class="equipment-row middle">
+                <div class="equipment-slot weapon-left">
+                    <div class="slot-label">Ліва рука</div>
+                    {% if equipped_items.get('Ліва рука') %}
+                        {% set item = equipped_items.get('Ліва рука') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="equipment-slot armor">
+                    <div class="slot-label">Броня</div>
+                    {% if equipped_items.get('Броня') %}
+                        {% set item = equipped_items.get('Броня') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_armor.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="equipment-slot weapon-right">
+                    <div class="slot-label">Права рука</div>
+                    {% if equipped_items.get('Права рука') %}
+                        {% set item = equipped_items.get('Права рука') %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Нижній ряд -->
+            <div class="equipment-slot boots">
+                <div class="slot-label">Чоботи</div>
+                {% if equipped_items.get('Чоботи') %}
+                    {% set item = equipped_items.get('Чоботи') %}
+                    <div class="equipped-item">
+                        <a href="/art_info?id={{ item.id }}">
+                            <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="empty-slot">
+                        <img src="/static/images/items/empty_boots.svg" alt="Empty">
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Прикраси -->
+            <div class="jewelry-slots">
+                {% for i in range(1, 5) %}
+                <div class="equipment-slot jewelry">
+                    <div class="slot-label">Прикраса {{ i }}</div>
+                    {% if equipped_items.get('Прикраса ' ~ i) %}
+                        {% set item = equipped_items.get('Прикраса ' ~ i) %}
+                        <div class="equipped-item">
+                            <a href="/art_info?id={{ item.id }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="empty-slot">
+                            <img src="/static/images/items/empty_jewelry.svg" alt="Empty">
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="character-menu">
+        <a href="/inventory" class="menu-button">Інвентар</a>
+        <a href="/shop" class="menu-button">Магазин</a>
+        {% if player.enterprise %}
+            <a href="/enterprise/{{ player.enterprise.split('_')[1] }}" class="menu-button">Моє підприємство</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Додавання JavaScript для відображення імені файлу та форми завантаження -->
+<script>
+    function showUploadForm() {
+        document.getElementById('upload-avatar-form').style.display = 'block';
+        document.getElementById('update-avatar-button').style.display = 'none';
+        document.getElementById('update-cancel-avatar-button').style.display = 'block';
+
+    }
+
+    function hideUploadForm() {
+        document.getElementById('upload-avatar-form').style.display = 'none';
+        document.getElementById('update-avatar-button').style.display = 'block';
+        document.getElementById('update-cancel-avatar-button').style.display = 'none';
+
+    }
+
+    function showFileName() {
+        const input = document.getElementById('avatar');
+        const fileName = input.files[0].name;
+        document.getElementById('file-name').textContent = "Вибрано файл: " + fileName;
+    }
+
+    function updateAttribute(attribute) { 
+        const form = document.createElement('form'); 
+        form.method = 'post'; 
+        form.action = '/update-attribute'; 
+        const input = document.createElement('input'); 
+        input.type = 'hidden'; 
+        input.name = 'attribute'; 
+        input.value = attribute; 
+        form.appendChild(input); 
+        document.body.appendChild(form); 
+        form.submit(); 
+        }
+</script>
+
+<style>
+/* ... існуючі стилі ... */
+
+.adventurer-card {
+    background: linear-gradient(45deg, #ffd700, #ffa500);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    color: #333;
+}
+
+.adventurer-card h3 {
+    margin: 0 0 10px 0;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+.inventory-btn {
+    background-color: #9c27b0;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.inventory-btn:hover {
+    background-color: #7b1fa2;
+}
+
+.character-equipment {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.equipment-grid {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+}
+
+.equipment-row {
+    display: flex;
+    gap: 10px;
+}
+
+.equipment-slot {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #666;
+    border-radius: 5px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slot-label {
+    position: absolute;
+    top: -20px;
+    font-size: 12px;
+    color: #aaa;
+}
+
+.equipped-item {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.equipped-item img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+
+.empty-slot {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-slot img {
+    opacity: 0.3;
+    max-width: 60%;
+    max-height: 60%;
+}
+
+.jewelry-slots {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.equipment-row.top {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.equipment-slot.back {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #666;
+}
+
+.character-menu {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.menu-button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.menu-button:hover {
+    background-color: #45a049;
+}
+</style>
+
+{% endblock %}

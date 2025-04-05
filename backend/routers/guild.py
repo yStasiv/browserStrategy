@@ -24,28 +24,28 @@
 # ):
 #     if not current_user:
 #         return RedirectResponse(url="/")
-    
+
 #     # Отримуємо доступні сценарії для рівня користувача
 #     scenarios = db.query(QuestScenario).filter(
 #         QuestScenario.min_level <= current_user.level,
 #         QuestScenario.is_active == True
 #     ).all()
-    
+
 #     # Отримуємо завдання обраного сценарію
 #     available_tasks = []
 #     if scenario_id:
 #         available_tasks = db.query(Task).filter(
 #             Task.scenario_id == scenario_id
 #         ).order_by(Task.order_in_scenario).all()
-    
+
 #     # Отримуємо завдання користувача
 #     user_tasks = db.query(UserTask).filter(
 #         UserTask.user_id == current_user.id
 #     ).all()
-    
+
 #     completed_task_ids = [ut.task_id for ut in user_tasks if ut.is_completed]
 #     in_progress_task_ids = [ut.task_id for ut in user_tasks if not ut.is_completed]
-    
+
 #     # Визначаємо статуси сценаріїв
 #     completed_scenarios = set()
 #     active_scenarios = set()
@@ -55,7 +55,7 @@
 #             completed_scenarios.add(scenario.id)
 #         elif any(task_id in in_progress_task_ids for task_id in scenario_tasks):
 #             active_scenarios.add(scenario.id)
-    
+
 #     return templates.TemplateResponse(
 #         "guild.html",
 #         {
@@ -69,4 +69,4 @@
 #             "completed_scenarios": completed_scenarios,
 #             "active_scenarios": active_scenarios
 #         }
-#     ) 
+#     )
