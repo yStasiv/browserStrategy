@@ -56,7 +56,6 @@ async def battle_action(
     if not battle_system:
         raise HTTPException(status_code=404, detail="No active battle found")
 
-    
     # Виконуємо дію відповідно до запиту
     if action == "move":
         if not direction:
@@ -71,25 +70,24 @@ async def battle_action(
     else:
         raise HTTPException(status_code=400, detail="Invalid action")
     
+    # Змінюємо хід
+    battle_system.battle_state.turn += 1
+    
+    # Логіка для ворога
+    # if not result["winner"]:
+    #     enemy_result = battle_system.enemy_decision()
+    #     if enemy_result["error"]:
+    #         raise HTTPException(status_code=400, detail=enemy_result["error"])
+    #     result.update(enemy_result)  # Додаємо результат дії ворога до результату
+    
     # Перевіряємо, чи є помилка в результаті
     if result["error"] is not None:
         raise HTTPException(status_code=400, detail=result["error"])
     
-    # Логіка для ворога
-
-
-    # if not result["winner"] and battle_system.enemy_moves > 0:
-    #     enemy_result = battle_system.enemy_decision()
-    #     if enemy_result["error"]:
-    #         raise HTTPException(status_code=400, detail=enemy_result["error"])
-        
     # Якщо битва закінчена, видаляємо її з активних
     if result["winner"]:
         del active_battles[user.id]
 
-    
-
-    
     return result
 
 @router.get("/battle/state")

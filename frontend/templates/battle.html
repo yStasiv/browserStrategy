@@ -81,6 +81,7 @@
         <p>HP гравця: <span id="player-hp">{{ battle_state.player_hp }}</span></p>
         <p>HP ворога: <span id="enemy-hp">{{ battle_state.enemy_hp }}</span></p>
         <p>Залишилось ходів: <span id="player-moves">{{ battle_state.player_moves }}</span></p>
+        <p>Чий хід: <span id="current-turn">{% if battle_state.turn == 'player' %}Гравець{% else %}Ворог{% endif %}</span></p>
     </div>
     
     <div class="battle-field" id="battle-field">

@@ -81,16 +81,21 @@ class BattleSystem:
                 "player_moves": self.battle_state.player_moves,
                 "enemy_moves": self.battle_state.enemy_moves,
                 "player_position": self.battle_state.player_position,
-                "enemy_position": self.battle_state.enemy_position
+                "enemy_position": self.battle_state.enemy_position,
+                "turn": "player" if self.battle_state.turn % 2 != 0 else "enemy"
             }
         else:
             return self.battle_state
+    
+    def _recalculete_moves(self, is_player: bool = True):
+        if is_player:
+            self.battle_state.player_moves -= 1
+
     
     def move(self, direction: str) -> Dict[str, Any]:
         """Переміщення гравця"""
         if self.battle_state.winner:
             return {"error": "Битва вже закінчена"}
-        
         if self.battle_state.player_moves <= 0:
             return {"error": "Закінчились ходи для руху"}
         
@@ -113,7 +118,7 @@ class BattleSystem:
             return {"error": "Ця клітинка зайнята ворогом"}
         
         self.battle_state.player_position = new_position
-        self.battle_state.player_moves -= 1
+        self._recalculete_moves(is_player=True)
         
         # Зберігаємо стан в базу даних
         if self.db:
@@ -127,6 +132,8 @@ class BattleSystem:
         """Атака гравця"""
         if self.battle_state.winner:
             return {"error": "Битва вже закінчена"}
+        if self.battle_state.player_moves <= 0:
+            return {"error": "Закінчились ходи для руху"}
         
         # Перевіряємо дистанцію до ворога
         distance = self._calculate_distance(
@@ -147,7 +154,7 @@ class BattleSystem:
         
         # Перевіряємо чи битва закінчена
         self._check_battle_end()
-        
+        self._recalculete_moves(is_player=True)
         # Зберігаємо стан в базу даних
         if self.db:
             self.db.commit()
@@ -158,7 +165,10 @@ class BattleSystem:
         """Захист гравця"""
         if self.battle_state.winner:
             return {"error": "Битва вже закінчена"}
+        if self.battle_state.player_moves <= 0:
+            return {"error": "Закінчились ходи для руху"}
         
+        self._recalculete_moves(is_player=True)
         # Зберігаємо стан в базу даних
         if self.db:
             self.db.commit()
@@ -169,6 +179,8 @@ class BattleSystem:
         """Спеціальна атака гравця"""
         if self.battle_state.winner:
             return {"error": "Битва вже закінчена"}
+        if self.battle_state.player_moves <= 0:
+            return {"error": "Закінчились ходи для руху"}
         
         # Перевіряємо дистанцію до ворога
         distance = self._calculate_distance(
@@ -189,6 +201,7 @@ class BattleSystem:
         
         # Перевіряємо чи битва закінчена
         self._check_battle_end()
+        self._recalculete_moves(is_player=True)
         
         # Зберігаємо стан в базу даних
         if self.db:
