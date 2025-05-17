@@ -18,19 +18,19 @@ active_battles = {}
 
 @router.get("/battle")
 async def battle_page(request: Request, db: Session = Depends(database.get_db)):
-    user = await get_current_user(request, db)
-    if not user:
+    player = await get_current_user(request, db)
+    if not player:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     # Створюємо нову битву для користувача
-    battle_system = BattleSystem(user=user, db=db)
-    active_battles[user.id] = battle_system
+    battle_system = BattleSystem(user=player, db=db)
+    active_battles[player.id] = battle_system
     
     return templates.TemplateResponse(
         "battle.html",
         {
             "request": request,
-            "player": user,
+            "player": player,
             "battle_state": battle_system.get_state()
         }
     )
@@ -111,21 +111,6 @@ async def attack_creature(
         raise HTTPException(status_code=404, detail="No active battle found")
     
     success, message = battle_system.attack_creature(attacker_id, defender_id)
-    
-    # Якщо бій закінчено і гравець переміг, надаємо винагороду
-    gold_reward, exp_reward = int(random.randint(32, 298)), 50
-    if battle_system.game_state == 'game_over' and f"Гравець {user.username} переміг!" in message:
-        # Надаємо винагороду гравцю
-        user.gold += gold_reward
-        user.experience += exp_reward
-        db.commit()
-        message += f" Ви отримали винагороду: {gold_reward} золота та {exp_reward} досвіду!"
-    else:
-        loose_exp_reward = exp_reward / 5
-        user.experience += loose_exp_reward
-        db.commit()
-        message += f" Ви отримали мотиваційну винагороду: {loose_exp_reward} досвіду!"
-    
     return battle_system.get_state()
 
 @router.post("/battle/end_turn")
@@ -171,23 +156,24 @@ async def get_player_rating(
     request: Request = None,
     db: Session = Depends(database.get_db)
 ):
-    user = await get_current_user(request, db)
-    if not user:
+    player = await get_current_user(request, db)
+    if not player:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     # Отримуємо рейтинг гравця
     player_rating = db.query(models.PlayerRating).filter(
-        models.PlayerRating.user_id == user.id
+        models.PlayerRating.user_id == player.id
     ).first()
     
     if not player_rating:
         # Якщо рейтингу ще немає, створюємо новий
-        player_rating = models.PlayerRating(user_id=user.id)
+        player_rating = models.PlayerRating(user_id=player.id)
         db.add(player_rating)
         db.commit()
         db.refresh(player_rating)
     
     return {
+        "player": player,
         "rating": player_rating.rating,
         "wins": player_rating.wins,
         "losses": player_rating.losses

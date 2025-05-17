@@ -10,7 +10,7 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    {% if user %}
+    {% if player %}
     <!-- Навігаційна панель -->
     <nav class="main-nav">
         <div class="nav-container">
@@ -31,7 +31,7 @@
                     <img src="../static/images/rating-icon.png" alt="Rating" class="nav-icon">
                     Рейтинг
                 </a>
-                {% if user.id == 1 %}
+                {% if player.id == 1 %}
                 <a href="/admin/enterprises" class="nav-link">
                     <img src="../static/images/admin-icon.png" alt="Admin" class="nav-icon">
                     Керування підприємствами
@@ -42,18 +42,18 @@
                 <div class="current-time" id="currentTime"></div>
             </div>
             <div class="nav-right">
-                <div class="user-resources">
+                <div class="player-resources">
                     <span class="resource">
                         <img src="../static/images/gold-resource-icon.png" alt="Gold" class="resource-icon">
-                        {{ user.gold }}
+                        {{ player.gold }}
                     </span>
                     <span class="resource">
                         <img src="../static/images/wood-resource-icon.png" alt="Wood" class="resource-icon">
-                        {{ user.wood }}
+                        {{ player.wood }}
                     </span>
                     <span class="resource">
                         <img src="../static/images/stone-resourse-icon.png" alt="Stone" class="resource-icon">
-                        {{ user.stone }}
+                        {{ player.stone }}
                     </span>
                 </div>
                 <div class="nav-item logout">
@@ -73,7 +73,7 @@
         {% block body %}{% endblock %}
     </div>
 
-    {% if user %}
+    {% if player %}
     <script>
     function updateClock() {
         const now = new Date();

@@ -6,27 +6,27 @@
 <div class="game-layout">
     <div class="map-container">
         <!-- Ресурси -->
-        <div class="character-resources">
+        <!-- <div class="character-resources">
             <span class="resource">
-                <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ user.gold }}
+                <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ player.gold }}
             </span>
             <span class="resource">
-                <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Дерево: {{ user.wood }}
+                <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Дерево: {{ player.wood }}
             </span>
             <span class="resource">
-                <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Камінь: {{ user.stone }}
+                <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Камінь: {{ player.stone }}
             </span>
-        </div>
+        </div> -->
 
         <div class="map-content">
-            <h2>Карта світу - Сектор: {{ user.map_sector }}</h2>
+            <h2>Карта світу - Сектор: {{ player.map_sector }}</h2>
             <div class="world-map">
                 <div class="map-overlay">
                     <img src="../static/images/map_v1.png" alt="World Map" class="map-image">
                     <div class="sector-borders">
-                        <div class="sector sector-1 {% if user.map_sector == "Mountain" %}active{% endif %}" onclick="moveToSector('Mountain')"></div>
-                        <div class="sector sector-2 {% if user.map_sector == "Castle" %}active{% endif %}" onclick="moveToSector('Castle')"></div>
-                        <div class="sector sector-3 {% if user.map_sector == "Forest" %}active{% endif %}" onclick="moveToSector('Forest')"></div>
+                        <div class="sector sector-1 {% if player.map_sector == "Mountain" %}active{% endif %}" onclick="moveToSector('Mountain')"></div>
+                        <div class="sector sector-2 {% if player.map_sector == "Castle" %}active{% endif %}" onclick="moveToSector('Castle')"></div>
+                        <div class="sector sector-3 {% if player.map_sector == "Forest" %}active{% endif %}" onclick="moveToSector('Forest')"></div>
                     </div>
                     <div class="player-position" id="player-marker"></div>
                 </div>
@@ -70,7 +70,7 @@
 
     <!-- Плейсхолдер для підприємств -->
     <div class="buildings-placeholder">
-        <h3>Доступні підприємства в секторі {{ user.map_sector }}</h3>
+        <h3>Доступні підприємства в секторі {{ player.map_sector }}</h3>
         <div class="enterprise-links">
             {% if enterprises %}
                 {% for enterprise in enterprises %}
@@ -96,7 +96,7 @@
             {% endif %}
         </div>
 
-        {% if user.map_sector == "Castle" %}
+        {% if player.map_sector == "Castle" %}
         <div class="guild-section">
             <h3>Гільдія авантюристів</h3>
             <a href="/guild" class="guild-link">
@@ -114,8 +114,8 @@
 <script>
 window.onload = function() {
     const playerMarker = document.getElementById('player-marker');
-    playerMarker.style.left = '{{ user.map_x }}%';
-    playerMarker.style.top = '{{ user.map_y }}%';
+    playerMarker.style.left = '{{ player.map_x }}%';
+    playerMarker.style.top = '{{ player.map_y }}%';
 };
 
 async function move(direction) {

@@ -25,21 +25,21 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 async def get_map(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    player: User = Depends(get_current_user),
 ):
-    if not current_user:
+    if not player:
         return RedirectResponse(url="/")
 
     # Отримуємо тільки підприємства з поточного сектора
     sector_enterprises = (
-        db.query(Enterprise).filter(Enterprise.sector == current_user.map_sector).all()
+        db.query(Enterprise).filter(Enterprise.sector == player.map_sector).all()
     )
 
     return templates.TemplateResponse(
         "map.html",
         {
             "request": request,
-            "user": current_user,
+            "player": player,
             "enterprises": sector_enterprises,  # Передаємо відфільтровані підприємства
         },
     )

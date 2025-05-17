@@ -34,15 +34,15 @@
                 </tr>
             </thead>
             <tbody>
-                {% for player in players %}
-                <tr class="{% if player.id == current_user.id %}current-user{% endif %}">
+                {% for currect_player in players %}
+                <tr class="{% if currect_player.id == player.id %}player{% endif %}">
                     <td>{{ loop.index }}</td>
-                    <td><a href="/player_info?id={{ player.id }}">{{ player.username}} </a></td>
-                    <td>{{ player.rating.rating }}</td>
-                    <td>{{ player.level }}</td>
-                    <td>{{ player.experience }}</td>
-                    <td>{{ player.rating.wins }}</td>
-                    <td>{{ player.rating.losses }}</td>
+                    <td><a href="/player_info?id={{ player.id }}">{{ currect_player.username}} </a></td>
+                    <td>{{ currect_player.rating.rating }}</td>
+                    <td>{{ currect_player.level }}</td>
+                    <td>{{ currect_player.experience }}</td>
+                    <td>{{ currect_player.rating.wins }}</td>
+                    <td>{{ currect_player.rating.losses }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

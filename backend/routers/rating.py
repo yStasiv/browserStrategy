@@ -12,12 +12,28 @@ templates = Jinja2Templates(directory="frontend/templates")
 @router.get("/rating", response_class=HTMLResponse)
 async def rating_page(request: Request, db: Session = Depends(database.get_db)):
     # Отримуємо поточного користувача
-    current_user = await get_current_user(request, db)
+    player = await get_current_user(request, db)
     
-    # Отримуємо всіх гравців з їх рейтингами
-    players = db.query(models.User).join(models.PlayerRating).all()
+    # Отримуємо всіх гравців
+    players = db.query(models.User).all()
     
-    # Сортуємо гравців за рейтингом (за замовчуванням)
+    # Для кожного гравця перевіряємо наявність рейтингу
+    for player in players:
+        player_rating = db.query(models.PlayerRating).filter(
+            models.PlayerRating.user_id == player.id
+        ).first()
+        
+        if not player_rating:
+            # Якщо рейтингу немає, створюємо новий
+            player_rating = models.PlayerRating(user_id=player.id)
+            db.add(player_rating)
+            db.commit()
+            db.refresh(player_rating)
+        
+        # Додаємо рейтинг до об'єкту гравця
+        player.rating = player_rating
+    
+    # Сортуємо гравців за рейтингом
     players.sort(key=lambda x: x.rating.rating, reverse=True)
     
     return templates.TemplateResponse(
@@ -25,6 +41,6 @@ async def rating_page(request: Request, db: Session = Depends(database.get_db)):
         {
             "request": request,
             "players": players,
-            "current_user": current_user
+            "player": player
         }
     ) 

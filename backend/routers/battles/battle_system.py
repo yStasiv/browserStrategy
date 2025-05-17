@@ -136,7 +136,7 @@ class BattleSystem:
         """Записує час завершення бою в базу даних та оновлює рейтинг"""
         print("Write last battle time")
         if not self.db or not self.user:
-            return  # Якщо немає бази даних або користувача, просто виходимо
+            return
 
         # Визначаємо переможця
         player1_creatures = any(c.player == 1 and c.hp > 0 for c in self.creatures.values())
@@ -152,8 +152,34 @@ class BattleSystem:
         # Оновлюємо рейтинг
         is_winner = player1_creatures and not player2_creatures
         self.update_player_rating(is_winner)
-        
-        self.db.commit()
+
+        gold_reward, exp_reward = int(random.randint(32, 298)), 50
+        try:
+            player = self.db.query(models.User).filter(models.User.id == self.user.id).first()
+            if not player:
+                return
+
+            if is_winner:
+                # old_gold = player.gold
+                # old_exp = player.experience
+                player.gold += gold_reward
+                player.experience += exp_reward
+                self.message = f"Перемога! Винагорода: {gold_reward} золота та {exp_reward} досвіду"
+            else:
+                loose_exp_reward = int(exp_reward / 5)
+                # old_exp = player.experience
+                player.experience += loose_exp_reward
+                # print(f"Loser rewards - Old exp: {old_exp}, New exp: {db_user.experience}")
+                self.message = f"Поразка! Винагорода за участь: {loose_exp_reward} досвіду"
+            
+            # Оновлюємо значення в об'єкті користувача
+            self.user.gold = player.gold
+            self.user.experience = player.experience
+            
+            self.db.commit()
+        except Exception as e:
+            print(f"Error updating user: {e}")
+            self.db.rollback()
 
     def start_game(self, mode):
         print(f"Starting game in mode: {mode}")

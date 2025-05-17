@@ -92,17 +92,17 @@ class CastleRotes(CastleHelpers):
         if not user_session_id:
             raise HTTPException(status_code=401, detail="Not logged in")
 
-        user = (
+        player = (
             db.query(models.User)
             .filter(models.User.session_id == user_session_id)
             .first()
         )
         available_units = CastleHelpers.get_available_units(
-            user, db
+            player, db
         )  # Отримуємо доступні юніти
         # Отримуємо вже набрані війська
         user_units = (
-            db.query(models.UserUnit).filter(models.UserUnit.user_id == user.id).all()
+            db.query(models.UserUnit).filter(models.UserUnit.user_id == player.id).all()
         )
         user_units_dict = {unit.unit_type.name: unit.quantity for unit in user_units}
 
@@ -110,7 +110,7 @@ class CastleRotes(CastleHelpers):
             "castle.html",
             {
                 "request": request,
-                "user": user,
+                "player": player,
                 "available_units": available_units,
                 "user_units": user_units_dict,  # Передаємо дані про війська користувача на фронтенд
             },
@@ -122,7 +122,7 @@ class CastleRotes(CastleHelpers):
         user_session_id = request.cookies.get("session_id")
         if not user_session_id:
             raise HTTPException(status_code=401, detail="Not logged in")
-        user = (
+        player = (
             db.query(models.User)
             .filter(models.User.session_id == user_session_id)
             .first()
@@ -144,14 +144,14 @@ class CastleRotes(CastleHelpers):
             )
 
             if unit_type and quantity > 0:
-                CastleHelpers.add_units_to_user(user, unit_type.id, quantity, db)
+                CastleHelpers.add_units_to_user(player, unit_type.id, quantity, db)
 
             available_units = CastleHelpers.get_available_units(
-                user, db
+                player, db
             )  # Отримуємо доступні юніти
 
         user_units = (
-            db.query(models.UserUnit).filter(models.UserUnit.user_id == user.id).all()
+            db.query(models.UserUnit).filter(models.UserUnit.user_id == player.id).all()
         )
         user_units_dict = {unit.unit_type.name: unit.quantity for unit in user_units}
 
@@ -159,7 +159,7 @@ class CastleRotes(CastleHelpers):
             "castle.html",
             {
                 "request": request,
-                "user": user,
+                "player": player,
                 "available_units": available_units,
                 "user_units": user_units_dict,
             },
