@@ -13,6 +13,7 @@ from pydantic import BaseModel # Для валідації даних запит
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 from ... import models
+from datetime import datetime, timedelta
 
 # --- Game Constants ---
 GRID_WIDTH = 10
@@ -80,10 +81,88 @@ class BattleSystem:
         self.player1_deployment_pool = {}
         self.player2_deployment_pool = {}
         self.message = "Виберіть режим гри"
-        print("Game instance created.") # Лог при створенні гри
+        self.battle_history = []  # Список часів завершених боїв
+        print("Game instance created.")
+
+    def can_start_battle(self):
+        """Перевіряє чи гравець може почати новий бій"""
+        if not self.db or not self.user:
+            return True, ""  # Якщо немає бази даних або користувача, дозволяємо всі бої
+
+        current_time = datetime.now()
+        # Отримуємо історію боїв з бази даних
+        recent_battles = self.db.query(models.BattleHistory).filter(
+            models.BattleHistory.user_id == self.user.id,
+            models.BattleHistory.completion_time >= current_time - timedelta(minutes=5)
+        ).all()
+        
+        # Перевіряємо чи не перевищено ліміт боїв
+        if len(recent_battles) >= 3:
+            # Знаходимо найстаріший бій
+            oldest_battle = min(recent_battles, key=lambda x: x.completion_time)
+            # Розраховуємо час до наступної спроби
+            time_passed = current_time - oldest_battle.completion_time
+            time_remaining = timedelta(minutes=5) - time_passed
+            minutes = int(time_remaining.total_seconds() // 60)
+            seconds = int(time_remaining.total_seconds() % 60)
+            return False, f"Ви досягли ліміту боїв (3 бої за 5 хвилин). Спробуйте через {minutes} хв {seconds} сек."
+        return True, ""
+
+    def update_player_rating(self, is_winner):
+        """Оновлює рейтинг гравця після бою"""
+        if not self.db or not self.user:
+            return
+
+        # Отримуємо або створюємо запис рейтингу для гравця
+        player_rating = self.db.query(models.PlayerRating).filter(
+            models.PlayerRating.user_id == self.user.id
+        ).first()
+
+        if not player_rating:
+            player_rating = models.PlayerRating(user_id=self.user.id)
+            self.db.add(player_rating)
+
+        # Оновлюємо статистику
+        if is_winner:
+            player_rating.wins += 1
+            player_rating.rating += 25  # Виграш дає +25 рейтингу
+        else:
+            player_rating.losses += 1
+            player_rating.rating = max(0, player_rating.rating - 15)  # Програш віднімає 15 рейтингу, але не менше 0
+
+        self.db.commit()
+
+    def record_battle_completion(self):
+        """Записує час завершення бою в базу даних та оновлює рейтинг"""
+        print("Write last battle time")
+        if not self.db or not self.user:
+            return  # Якщо немає бази даних або користувача, просто виходимо
+
+        # Визначаємо переможця
+        player1_creatures = any(c.player == 1 and c.hp > 0 for c in self.creatures.values())
+        player2_creatures = any(c.player == AI_PLAYER_NUMBER and c.hp > 0 for c in self.creatures.values())
+        
+        # Записуємо час завершення бою
+        battle_history = models.BattleHistory(
+            user_id=self.user.id,
+            completion_time=datetime.now()
+        )
+        self.db.add(battle_history)
+        
+        # Оновлюємо рейтинг
+        is_winner = player1_creatures and not player2_creatures
+        self.update_player_rating(is_winner)
+        
+        self.db.commit()
 
     def start_game(self, mode):
         print(f"Starting game in mode: {mode}")
+        # Перевіряємо чи можна почати новий бій
+        can_start, message = self.can_start_battle()
+        if not can_start:
+            self.message = message
+            return self.get_state()
+
         self.game_mode = mode
         self.game_state = 'deployment'
         self.current_player = 1
@@ -276,7 +355,10 @@ class BattleSystem:
 
         # Перевіряємо умови перемоги перед зміною гравця
         win_check = self.check_win_condition()
-        if win_check[0]: return True, win_check[1]
+        if win_check[0]:
+            # Записуємо завершення бою тільки коли гра дійсно закінчена
+            self.record_battle_completion()
+            return True, win_check[1]
 
         print("Ending player turn, switching to AI")
         self.current_player = 2
@@ -329,6 +411,7 @@ class BattleSystem:
                         # Перевіряємо чи гра закінчена
                         win_check = self.check_win_condition()
                         if win_check[0]:
+                            self.record_battle_completion()
                             return
                     continue
 
@@ -378,6 +461,7 @@ class BattleSystem:
                                 # Перевіряємо чи гра закінчена
                                 win_check = self.check_win_condition()
                                 if win_check[0]:
+                                    self.record_battle_completion()
                                     return
                 else:
                     print(f"No valid move found for {creature.type['name']}")
@@ -420,11 +504,14 @@ class BattleSystem:
             self.message = f"{self.get_player_name(1)} переміг!"
             print("Game Over:", self.message)
             return True, self.message
+
         return False, ""
 
     def get_player_name(self, player_number):
         if self.game_mode == 'pve' and player_number == AI_PLAYER_NUMBER:
             return "ШІ"
+        if player_number == 1 and self.user:
+            return self.user.username
         return f"Гравець {player_number}"
 
     def get_state(self):
@@ -437,6 +524,7 @@ class BattleSystem:
             'player1DeploymentPool': self.player1_deployment_pool,
             'player2DeploymentPool': self.player2_deployment_pool,
             'message': self.message,
+            'playerUsername': self.user.username if self.user else "Гравець",
         }
 
 # --- FastAPI App Setup ---

@@ -15,6 +15,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password = Column(String)
+    email = Column(String, unique=True, index=True)
+    is_active = Column(Boolean, default=True)
     avatar_url = Column(String, nullable=True)  # user img path
     fraction = Column(String, default="Elfe")
 
@@ -74,6 +76,10 @@ class User(Base):
     equipped_items = relationship("EquippedItems", back_populates="user", uselist=False)
 
     battles = relationship("BattleState", back_populates="user")
+
+    battle_histories = relationship("BattleHistory", back_populates="user")
+
+    rating = relationship("PlayerRating", back_populates="user", uselist=False)
 
 # INVENTORY - ARTEFACTS - EQUIPMENT
 
@@ -330,6 +336,28 @@ class Enterprise(Base):
     balance = Column(Integer, default=1000)  # Додаємо поле балансу
     storage_multiplier = Column(Integer, default=40)  # Коефіцієнт для розміру складу
     production_type = Column(String, default="factory")  # factory або mine
+
+class BattleHistory(Base):
+    __tablename__ = "battle_histories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    completion_time = Column(DateTime, default=datetime.utcnow)
+    user = relationship("User", back_populates="battle_histories")
+
+class PlayerRating(Base):
+    __tablename__ = "player_ratings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    rating = Column(Integer, default=1000)  # Початковий рейтинг 1000
+    wins = Column(Integer, default=0)
+    losses = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Зв'язки
+    user = relationship("User", back_populates="rating")
 
 
 

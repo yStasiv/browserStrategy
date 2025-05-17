@@ -74,6 +74,20 @@
         <div id="game-grid" class="grid"></div>
         <button id="end-turn-button" class="mt-4" style="display: none;">Завершити хід</button>
          <button id="restart-button" class="mt-2">Почати знову</button>
+         <button id="character-page-button" class="mt-2" style="display: none;">До персонажа</button>
+        <div class="game-info">
+            <h2>Інформація про гру</h2>
+            <p id="current-player">Поточний гравець: <span id="player-name"></span></p>
+            <p id="game-mode">Режим гри: <span id="mode-name"></span></p>
+            <p id="game-state">Стан гри: <span id="state-name"></span></p>
+            <p id="message"></p>
+            <div id="player-rating">
+                <h3>Рейтинг гравця</h3>
+                <p>Рейтинг: <span id="rating-value">1000</span></p>
+                <p>Перемоги: <span id="wins-value">0</span></p>
+                <p>Поразки: <span id="losses-value">0</span></p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -114,6 +128,21 @@
         const deploymentPlayerText = document.getElementById('deployment-player-text');
         const deploymentCreaturesList = document.getElementById('deployment-creatures-list');
 
+        // Ініціалізація після завантаження DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event Listeners for Buttons
+            document.getElementById('pve-button').addEventListener('click', () => handleStartGame('pve'));
+            document.getElementById('pvp-button').addEventListener('click', () => handleStartGame('pvp'));
+            endTurnButton.addEventListener('click', handleEndTurn);
+            restartButton.addEventListener('click', handleRestartGame);
+            document.getElementById('character-page-button').addEventListener('click', () => {
+                window.location.href = '/player';
+            });
+
+            // Initial UI Setup
+            initializeGridDOM(); // Створюємо клітинки сітки один раз при завантаженні
+        });
+
         // --- API Communication ---
         async function fetchApi(endpoint, method = 'GET', body = null) {
             const options = { method, headers: { 'Content-Type': 'application/json' } };
@@ -143,6 +172,12 @@
             deploymentPanel.style.display = state.gameState === 'deployment' ? 'block' : 'none';
             endTurnButton.style.display = state.gameState === 'battle' ? 'inline-block' : 'none';
             endTurnButton.disabled = state.gameState !== 'battle' || (state.gameMode === 'pve' && state.currentPlayer === AI_PLAYER_ID);
+
+            // Показуємо кнопку переходу до персонажа коли гра завершена або коли є обмеження на бої
+            const characterButton = document.getElementById('character-page-button');
+            const shouldShowCharacterButton = state.gameState === 'game_over' || 
+                (state.message && state.message.includes('досягли ліміту боїв'));
+            characterButton.style.display = shouldShowCharacterButton ? 'inline-block' : 'none';
 
             deploymentOverlay.classList.toggle('active', state.gameState === 'deployment');
             if (state.gameState === 'deployment') {
@@ -452,6 +487,7 @@
 
         function getPlayerName(playerNumber) {
             if (currentGameState.gameMode === 'pve' && playerNumber === AI_PLAYER_ID) return "ШІ";
+            if (playerNumber === 1) return currentGameState.playerUsername || "Гравець 1";
             return `Гравець ${playerNumber}`;
         }
 
@@ -470,16 +506,44 @@
             }
         }
 
-        // Event Listeners for Buttons
-        document.getElementById('pve-button').addEventListener('click', () => handleStartGame('pve'));
-        document.getElementById('pvp-button').addEventListener('click', () => handleStartGame('pvp'));
-        endTurnButton.addEventListener('click', handleEndTurn);
-        restartButton.addEventListener('click', handleRestartGame);
+        // Функція для оновлення рейтингу
+        async function updateRating() {
+            try {
+                const response = await fetch('/battle/rating');
+                const data = await response.json();
+                document.getElementById('rating-value').textContent = data.rating;
+                document.getElementById('wins-value').textContent = data.wins;
+                document.getElementById('losses-value').textContent = data.losses;
+            } catch (error) {
+                console.error('Error fetching rating:', error);
+            }
+        }
 
-        // Initial UI Setup
-        initializeGridDOM(); // Створюємо клітинки сітки один раз при завантаженні
-        // Перший запит стану можна зробити тут, якщо гра може починатися не з вибору режиму
-        // fetchApi('/state').then(updateUI);
+        // Оновлюємо рейтинг при завантаженні сторінки
+        document.addEventListener('DOMContentLoaded', () => {
+            updateRating();
+        });
+
+        // Оновлюємо рейтинг після кожного бою
+        async function checkGameState() {
+            try {
+                const response = await fetch('/battle/state');
+                const data = await response.json();
+                
+                // Оновлюємо UI
+                updateUI(data);
+                
+                // Якщо гра закінчена, оновлюємо рейтинг
+                if (data.gameState === 'game_over') {
+                    updateRating();
+                }
+                
+                // Продовжуємо перевіряти стан гри
+                setTimeout(checkGameState, 1000);
+            } catch (error) {
+                console.error('Error checking game state:', error);
+            }
+        }
     </script>
 </body>
 </html>

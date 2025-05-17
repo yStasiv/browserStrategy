@@ -97,10 +97,21 @@ async def player_info(
         raise HTTPException(status_code=404, detail="Character not found")
 
     # Отримуємо всі вдягнені предмети
-
     equipped_items: dict = PlayerHelper().get_equiped_items(
         pl_equipped_items=player.equipped_items, db=db
     )
+
+    # Отримуємо рейтинг гравця
+    player_rating = db.query(models.PlayerRating).filter(
+        models.PlayerRating.user_id == player.id
+    ).first()
+
+    if not player_rating:
+        # Якщо рейтингу ще немає, створюємо новий
+        player_rating = models.PlayerRating(user_id=player.id)
+        db.add(player_rating)
+        db.commit()
+        db.refresh(player_rating)
 
     return templates.TemplateResponse(
         "payer_info.html",
@@ -108,6 +119,7 @@ async def player_info(
             "request": request,
             "player": player,
             "equipped_items": equipped_items if equipped_items else {},
+            "player_rating": player_rating
         },
     )
 

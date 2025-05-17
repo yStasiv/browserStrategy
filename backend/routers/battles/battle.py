@@ -48,6 +48,9 @@ async def start_battle(
     if not battle_system:
         battle_system = BattleSystem(user=user, db=db)
         active_battles[user.id] = battle_system
+    else:
+        # Оновлюємо сесію бази даних для існуючого екземпляра
+        battle_system.db = db
     
     state = battle_system.start_game(mode)
     return state
@@ -128,6 +131,9 @@ async def end_turn_api(request: Request = None, db: Session = Depends(database.g
     if not battle_system:
         raise HTTPException(status_code=404, detail="No active battle found")
     
+    # Оновлюємо сесію бази даних
+    battle_system.db = db
+    
     success, message = battle_system.end_turn()
     response = battle_system.get_state()
     response['actionSuccess'] = success
@@ -148,7 +154,37 @@ async def get_battle_state(
     if not battle_system:
         raise HTTPException(status_code=404, detail="No active battle found")
     
+    # Оновлюємо сесію бази даних
+    battle_system.db = db
+    
     return battle_system.get_state()
+
+@router.get("/battle/rating")
+async def get_player_rating(
+    request: Request = None,
+    db: Session = Depends(database.get_db)
+):
+    user = await get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Отримуємо рейтинг гравця
+    player_rating = db.query(models.PlayerRating).filter(
+        models.PlayerRating.user_id == user.id
+    ).first()
+    
+    if not player_rating:
+        # Якщо рейтингу ще немає, створюємо новий
+        player_rating = models.PlayerRating(user_id=user.id)
+        db.add(player_rating)
+        db.commit()
+        db.refresh(player_rating)
+    
+    return {
+        "rating": player_rating.rating,
+        "wins": player_rating.wins,
+        "losses": player_rating.losses
+    }
 
 # @router.post("/battle/save-turn")
 # async def save_battle_turn(
