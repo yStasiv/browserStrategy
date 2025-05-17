@@ -1,3 +1,4 @@
+import random
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -112,12 +113,18 @@ async def attack_creature(
     success, message = battle_system.attack_creature(attacker_id, defender_id)
     
     # Якщо бій закінчено і гравець переміг, надаємо винагороду
-    if battle_system.game_state == 'game_over' and "Гравець 1 переміг!" in message:
+    gold_reward, exp_reward = int(random.randint(32, 298)), 50
+    if battle_system.game_state == 'game_over' and f"Гравець {user.username} переміг!" in message:
         # Надаємо винагороду гравцю
-        user.gold += 100  # Наприклад, 100 золота
-        user.experience += 50  # Наприклад, 50 досвіду
+        user.gold += gold_reward
+        user.experience += exp_reward
         db.commit()
-        message += f" Ви отримали винагороду: 100 золота та 50 досвіду!"
+        message += f" Ви отримали винагороду: {gold_reward} золота та {exp_reward} досвіду!"
+    else:
+        loose_exp_reward = exp_reward / 5
+        user.experience += loose_exp_reward
+        db.commit()
+        message += f" Ви отримали мотиваційну винагороду: {loose_exp_reward} досвіду!"
     
     return battle_system.get_state()
 
