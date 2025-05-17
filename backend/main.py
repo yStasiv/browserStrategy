@@ -97,6 +97,9 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
     except:
         await manager.disconnect(websocket, user_id)
 
+@app.get("/")
+async def root():
+    return {"message": "Service is running"}
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
