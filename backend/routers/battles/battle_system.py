@@ -1,254 +1,563 @@
-from datetime import datetime
-import json
-import os
+# --- Conceptual Python Backend using FastAPI ---
+# NOTE: This code requires FastAPI and Uvicorn (`pip install fastapi uvicorn python-multipart fastapi-cors`)
+# and needs to be run locally using `uvicorn main:app --reload` (assuming the file is named main.py).
+# It cannot run directly in this environment.
+
+import random
+from fastapi import FastAPI, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.templating import Jinja2Templates
+
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel # Для валідації даних запиту
+from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
-from typing import Dict, Any, Union, Optional
 from ... import models
+
+# --- Game Constants ---
+GRID_WIDTH = 10
+GRID_HEIGHT = 8
+DEPLOYMENT_COLUMNS = 3
+AI_PLAYER_NUMBER = 2
+
+# --- Creature Types Data ---
+creature_types_data = {
+    'knight': {'name': 'knight', 'emoji': '♘', 'maxHp': 20, 'attack': 5, 'movement': 3, 'range': 1},
+    'archer': {'name': 'archer', 'emoji': '🏹', 'maxHp': 12, 'attack': 4, 'movement': 2, 'range': 4},
+    'skeleton': {'name': 'skeleton', 'emoji': '💀', 'maxHp': 15, 'attack': 3, 'movement': 2, 'range': 1},
+    'goblin': {'name': 'goblin', 'emoji': '👺', 'maxHp': 10, 'attack': 2, 'movement': 4, 'range': 1},
+}
+
+initial_army_data = { 'knight': 1, 'archer': 1, 'goblin': 1 }
+
+# --- Helper Functions ---
+def generate_id():
+    return ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=7))
+
+def calculate_distance(x1, y1, x2, y2):
+    return abs(x1 - x2) + abs(y1 - y2)
+
+# --- Game Classes (залишаються такими ж) ---
+class Creature:
+    def __init__(self, type_name, player, x, y):
+        type_data = creature_types_data.get(type_name)
+        if not type_data:
+            raise ValueError(f"Unknown creature type: {type_name}")
+        self.id = generate_id()
+        self.type = type_data
+        self.player = player
+        self.x = x
+        self.y = y
+        self.hp = type_data['maxHp']
+        self.can_move = False
+        self.can_attack = False
+        self.retaliated_this_turn = False
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type_name': self.type['name'],
+            'emoji': self.type['emoji'],
+            'player': self.player,
+            'x': self.x,
+            'y': self.y,
+            'hp': self.hp,
+            'maxHp': self.type['maxHp'],
+            'canMove': self.can_move,
+            'canAttack': self.can_attack,
+        }
 
 class BattleSystem:
     def __init__(self, user: models.User, db: Optional[Session] = None):
         self.user = user
         self.db = db
-        self.enemy = self._create_enemy()
+        # self.enemies: list[models.Enemy] = []
+        self.game_state = 'mode_selection'
+        self.game_mode = 'pve'
+        self.current_player = 1
+        self.deployment_player = 1
+        self.creatures = {} # {id: Creature_object}
+        self.player1_deployment_pool = {}
+        self.player2_deployment_pool = {}
+        self.message = "Виберіть режим гри"
+        print("Game instance created.") # Лог при створенні гри
+
+    def start_game(self, mode):
+        print(f"Starting game in mode: {mode}")
+        self.game_mode = mode
+        self.game_state = 'deployment'
+        self.current_player = 1
+        self.deployment_player = 1
+        self.creatures = {}
+        self.player1_deployment_pool = initial_army_data.copy()
+        self.player2_deployment_pool = initial_army_data.copy()
+        self.message = f"Розстановка: Гравець 1"
+        return self.get_state()
+
+    def get_creature_at(self, x, y):
+        for creature in self.creatures.values():
+            if creature.x == x and creature.y == y:
+                return creature
+        return None
+
+    def is_in_deployment_zone(self, x, y, player):
+        start_col = 0 if player == 1 else GRID_WIDTH - DEPLOYMENT_COLUMNS
+        end_col = start_col + DEPLOYMENT_COLUMNS
+        return start_col <= x < end_col and 0 <= y < GRID_HEIGHT
+
+    def place_creature(self, player, type_name, x, y):
+        if self.game_state != 'deployment' or player != self.deployment_player:
+            self.message = "Зараз не ваша черга розставляти!"
+            return False, self.message
+
+        pool = self.player1_deployment_pool if player == 1 else self.player2_deployment_pool
+
+        if not self.is_in_deployment_zone(x, y, player):
+            self.message = "Не можна розмістити тут!"
+            return False, self.message
+        if self.get_creature_at(x, y):
+            self.message = "Клітинка зайнята!"
+            return False, self.message
+        if pool.get(type_name, 0) <= 0:
+            self.message = f"Немає більше {type_name} для розстановки."
+            return False, self.message
+
+        try:
+            new_creature = Creature(type_name, player, x, y)
+            self.creatures[new_creature.id] = new_creature
+            pool[type_name] -= 1
+            self.message = f"Гравець {player} розмістив {type_name}."
+            print(f"Placed {type_name} for P{player} at ({x},{y}). Pool: {pool}")
+
+            if all(count == 0 for count in pool.values()):
+                self.advance_deployment()
+
+            return True, self.message
+        except ValueError as e:
+            self.message = str(e)
+            return False, self.message
+
+    def advance_deployment(self):
+        print(f"Advancing deployment from player {self.deployment_player}")
+        if self.deployment_player == 1:
+            if self.game_mode == 'pvp':
+                self.deployment_player = 2
+                self.message = "Розстановка: Гравець 2"
+            else: # PvE
+                self.deploy_ai_creatures()
+                self.start_battle()
+        else: # Player 2 (PvP) finished
+            self.start_battle()
+
+    def deploy_ai_creatures(self):
+        print("AI deploying...")
+        player = AI_PLAYER_NUMBER
+        pool = self.player2_deployment_pool
+        start_col = GRID_WIDTH - DEPLOYMENT_COLUMNS
+        end_col = GRID_WIDTH
+        available_cells = []
+        for y in range(GRID_HEIGHT):
+            for x in range(start_col, end_col):
+                if not self.get_creature_at(x, y):
+                    available_cells.append({'x': x, 'y': y})
+
+        for type_name, count in pool.items():
+            for _ in range(count):
+                if not available_cells:
+                    print(f"ERROR: No space left for AI to deploy {type_name}")
+                    break
+                cell_index = random.randrange(len(available_cells))
+                cell = available_cells.pop(cell_index)
+                try:
+                    new_creature = Creature(type_name, player, cell['x'], cell['y'])
+                    self.creatures[new_creature.id] = new_creature
+                    print(f"AI placed {type_name} at ({cell['x']},{cell['y']})")
+                except ValueError as e:
+                    print(f"Error creating AI creature: {e}")
+            pool[type_name] = 0
+
+    def start_battle(self):
+        print("Starting battle")
+        self.game_state = 'battle'
+        self.current_player = 1
+        self.message = "Бій розпочато! Хід Гравця 1."
+        for creature in self.creatures.values():
+            creature.retaliated_this_turn = False
+            if creature.player == self.current_player:
+                creature.can_move = True
+                creature.can_attack = True
+            else:
+                creature.can_move = False
+                creature.can_attack = False
+
+    def move_creature(self, creature_id, target_x, target_y):
+        if self.game_state != 'battle': return False, "Зараз не бій"
+        creature = self.creatures.get(creature_id)
+        if not creature or creature.player != self.current_player: return False, "Не ваше створіння"
+        if not creature.can_move: return False, "Вже рухався"
+
+        distance = calculate_distance(creature.x, creature.y, target_x, target_y)
+        if distance == 0 or distance > creature.type['movement']: return False, "Неправильна відстань"
+        if self.get_creature_at(target_x, target_y): return False, "Клітинка зайнята"
+
+        # Зберігаємо старі координати для логування
+        old_x, old_y = creature.x, creature.y
         
-        # Ініціалізуємо стан битви
-        if db:
-            self.battle_state = models.BattleState(
-                user_id=user.id,
-                enemy_id=self.enemy.id,
-                player_position={"x": 0, "y": 0},
-                enemy_position={"x": 19, "y": 9},
-                player_hp=100,
-                enemy_hp=self.enemy.hp,
-                turn=1,
-                player_moves=2,
-                enemy_moves=2,
-                battle_ended=False,
-                winner=None
-            )
-            db.add(self.battle_state)
-            db.commit()
-            db.refresh(self.battle_state)
-        else:
-            self.battle_state = {
-                "player_position": {"x": 0, "y": 0},
-                "enemy_position": {"x": 19, "y": 9},
-                "player_hp": 100,
-                "enemy_hp": self.enemy.hp,
-                "turn": 1,
-                "player_moves": 3,
-                "enemy_moves": 2,
-                "battle_ended": False,
-                "winner": None
-            }
-    
-    def _create_enemy(self) -> Union[models.Enemy, Dict[str, Any]]:
-        """Створює ворога для битви"""
-        if self.db:
-            # Тут можна додати логіку вибору ворога з бази даних
-            enemy = models.Enemy(
-                name="Тестовий ворог",
-                level=1,
-                hp=100,
-                melee_attack=10,
-                physical_defense=5,
-                magic_power=5,
-                magic_resistance=5
-            )
-            self.db.add(enemy)
-            self.db.commit()
-            self.db.refresh(enemy)
-            return enemy
-        else:
-            return {
-                "name": "Тестовий ворог",
-                "level": 1,
-                "hp": 100,
-                "melee_attack": 10,
-                "physical_defense": 5,
-                "magic_power": 5,
-                "magic_resistance": 5
-            }
-    
-    def get_battle_state(self) -> Dict[str, Any]:
-        """Повертає поточний стан битви"""
-        if self.db:
-            return {
-                "player_hp": self.battle_state.player_hp,
-                "enemy_hp": self.battle_state.enemy_hp,
-                "battle_ended": self.battle_state.battle_ended,
-                "winner": self.battle_state.winner,
-                "player_moves": self.battle_state.player_moves,
-                "enemy_moves": self.battle_state.enemy_moves,
-                "player_position": self.battle_state.player_position,
-                "enemy_position": self.battle_state.enemy_position
-            }
-        else:
-            return self.battle_state
-    
-    def move(self, direction: str) -> Dict[str, Any]:
-        """Переміщення гравця"""
-        if self.battle_state.winner:
-            return {"error": "Битва вже закінчена"}
+        creature.x = target_x
+        creature.y = target_y
+        creature.can_move = False
+        self.message = f"{creature.type['emoji']} перемістився з ({old_x}, {old_y}) на ({target_x}, {target_y})."
+        print(f"Creature {creature.type['name']} moved from ({old_x}, {old_y}) to ({target_x}, {target_y})")
+        return True, self.message
+
+    def attack_creature(self, attacker_id, defender_id):
+        if self.game_state != 'battle': return False, "Зараз не бій"
+        attacker = self.creatures.get(attacker_id)
+        defender = self.creatures.get(defender_id)
+
+        if not attacker or attacker.player != self.current_player: return False, "Не ваше створіння для атаки"
+        if not defender or defender.player == self.current_player: return False, "Не можна атакувати своїх"
+        if not attacker.can_attack: return False, "Вже атакував"
+
+        distance = calculate_distance(attacker.x, attacker.y, defender.x, defender.y)
+        if distance > attacker.type['range']: return False, "Ціль занадто далеко"
+
+        damage = attacker.type['attack']
+        defender.hp -= damage
+        attacker.can_attack = False
+        if attacker.type['name'] != 'knight': attacker.can_move = False
+        self.message = f"{attacker.type['emoji']} атакував {defender.type['emoji']} на {damage} шкоди."
+        print(f"Attack: {attacker.id} -> {defender.id}. Defender HP: {defender.hp}")
+
+        defender_defeated = False
+        attacker_defeated = False
+
+        if defender.hp > 0 and not defender.retaliated_this_turn:
+             retaliation_distance = calculate_distance(defender.x, defender.y, attacker.x, attacker.y)
+             if retaliation_distance <= defender.type['range']:
+                 retaliation_damage = defender.type['attack']
+                 attacker.hp -= retaliation_damage
+                 defender.retaliated_this_turn = True
+                 self.message += f" {defender.type['emoji']} контратакував на {retaliation_damage} шкоди."
+                 print(f"Retaliation: {defender.id} -> {attacker.id}. Attacker HP: {attacker.hp}")
+                 if attacker.hp <= 0:
+                     attacker_defeated = True
+
+        if defender.hp <= 0:
+            self.message += f" {defender.type['emoji']} переможено!"
+            defender_defeated = True
+
+        if defender_defeated:
+             # Перевіряємо існування перед видаленням
+             if defender_id in self.creatures:
+                 del self.creatures[defender_id]
+                 print(f"Defender {defender_id} defeated and removed.")
+             else:
+                 print(f"Attempted to remove already removed defender {defender_id}")
+        if attacker_defeated:
+             self.message += f" {attacker.type['emoji']} переможено контратакою!"
+              # Перевіряємо існування перед видаленням
+             if attacker_id in self.creatures:
+                 del self.creatures[attacker_id]
+                 print(f"Attacker {attacker_id} defeated by retaliation and removed.")
+             else:
+                  print(f"Attempted to remove already removed attacker {attacker_id}")
+
+
+        if self.check_win_condition()[0]:
+             return True, self.message
+
+        return True, self.message
+
+
+    def end_turn(self):
+        if self.game_state != 'battle': return False, "Зараз не бій"
+        if self.current_player != 1: return False, "Не ваша черга"
+
+        # Перевіряємо умови перемоги перед зміною гравця
+        win_check = self.check_win_condition()
+        if win_check[0]: return True, win_check[1]
+
+        print("Ending player turn, switching to AI")
+        self.current_player = 2
+        self.message = "Хід ШІ."
+
+        # Оновлюємо можливості створінь для ШІ
+        for creature in self.creatures.values():
+            creature.retaliated_this_turn = False
+            if creature.player == self.current_player:
+                creature.can_move = True
+                creature.can_attack = True
+            else:
+                creature.can_move = False
+                creature.can_attack = False
+
+        # Якщо це PvE і хід ШІ, виконуємо хід ШІ
+        if self.game_mode == 'pve':
+            print("Executing AI turn")
+            self.execute_ai_turn()
+            print("AI turn completed")
+
+        return True, self.message
+
+    def execute_ai_turn(self):
+        print("AI turn started")
+        ai_creatures = [c for c in self.creatures.values() if c.player == AI_PLAYER_NUMBER]
         
-        if self.battle_state.player_moves <= 0:
-            return {"error": "Закінчились ходи для руху"}
-        
-        new_position = self.battle_state.player_position.copy()
-        
-        if direction == "up":
-            new_position["y"] = max(0, new_position["y"] - 1)
-        elif direction == "down":
-            new_position["y"] = min(9, new_position["y"] + 1)
-        elif direction == "left":
-            new_position["x"] = max(0, new_position["x"] - 1)
-        elif direction == "right":
-            new_position["x"] = min(19, new_position["x"] + 1)
-        else:
-            return {"error": "Невідомий напрямок руху"}
-        
-        # Перевіряємо, чи не зайнята клітинка ворогом
-        if (new_position["x"] == self.battle_state.enemy_position["x"] and 
-            new_position["y"] == self.battle_state.enemy_position["y"]):
-            return {"error": "Ця клітинка зайнята ворогом"}
-        
-        self.battle_state.player_position = new_position
-        self.battle_state.player_moves -= 1
-        
-        # Зберігаємо стан в базу даних
-        if self.db:
-            self.db.commit()
-        
-        print(self._create_battle_response())
-        return self._create_battle_response()
-        
-    
-    def attack(self) -> Dict[str, Any]:
-        """Атака гравця"""
-        if self.battle_state.winner:
-            return {"error": "Битва вже закінчена"}
-        
-        # Перевіряємо дистанцію до ворога
-        distance = self._calculate_distance(
-            self.battle_state.player_position,
-            self.battle_state.enemy_position
-        )
-        
-        if distance > 1:
-            return {"error": "Ворог занадто далеко для атаки"}
-        
-        # Розраховуємо пошкодження
-        damage = self._calculate_damage(
-            self.user.melee_attack,
-            self.enemy.physical_defense if isinstance(self.enemy, models.Enemy) else self.enemy["physical_defense"]
-        )
-        
-        self.battle_state.enemy_hp -= damage
-        
-        # Перевіряємо чи битва закінчена
-        self._check_battle_end()
-        
-        # Зберігаємо стан в базу даних
-        if self.db:
-            self.db.commit()
-        
-        return self._create_battle_response()
-    
-    def defend(self) -> Dict[str, Any]:
-        """Захист гравця"""
-        if self.battle_state.winner:
-            return {"error": "Битва вже закінчена"}
-        
-        # Зберігаємо стан в базу даних
-        if self.db:
-            self.db.commit()
-        
-        return self._create_battle_response()
-    
-    def special_attack(self) -> Dict[str, Any]:
-        """Спеціальна атака гравця"""
-        if self.battle_state.winner:
-            return {"error": "Битва вже закінчена"}
-        
-        # Перевіряємо дистанцію до ворога
-        distance = self._calculate_distance(
-            self.battle_state.player_position,
-            self.battle_state.enemy_position
-        )
-        
-        if distance > 2:
-            return {"error": "Ворог занадто далеко для спеціальної атаки"}
-        
-        # Розраховуємо пошкодження
-        damage = self._calculate_damage(
-            self.user.magic_power,
-            self.enemy.magic_resistance if isinstance(self.enemy, models.Enemy) else self.enemy["magic_resistance"]
-        )
-        
-        self.battle_state.enemy_hp -= damage
-        
-        # Перевіряємо чи битва закінчена
-        self._check_battle_end()
-        
-        # Зберігаємо стан в базу даних
-        if self.db:
-            self.db.commit()
-        
-        return self._create_battle_response()
-    
-    def _calculate_distance(self, pos1: Dict[str, int], pos2: Dict[str, int]) -> int:
-        """Розраховує відстань між двома точками"""
-        return abs(pos1["x"] - pos2["x"]) + abs(pos1["y"] - pos2["y"])
-    
-    def _calculate_damage(self, attack: int, defense: int) -> int:
-        """Розраховує пошкодження"""
-        base_damage = max(1, attack - defense)
-        return base_damage
-    
-    def _check_battle_end(self) -> None:
-        """Перевіряє чи битва закінчена"""
-        if self.battle_state.player_hp <= 0:
-            self.battle_state.battle_ended = True
-            self.battle_state.winner = "enemy"
-        elif self.battle_state.enemy_hp <= 0:
-            self.battle_state.battle_ended = True
-            self.battle_state.winner = "player"
-    
-    def _create_battle_response(self) -> Dict[str, Any]:
-        """Створює відповідь з поточним станом битви"""
+        for creature in ai_creatures:
+            print(f"Processing AI creature {creature.type['name']} at ({creature.x}, {creature.y})")
+            # Знаходимо найближчу ворожу ціль
+            enemy_creatures = [c for c in self.creatures.values() if c.player != AI_PLAYER_NUMBER]
+            if not enemy_creatures:
+                print("No enemy creatures found")
+                continue
+
+            # Знаходимо найближчу ціль
+            closest_enemy = min(enemy_creatures, 
+                              key=lambda e: calculate_distance(creature.x, creature.y, e.x, e.y))
+            print(f"Closest enemy is {closest_enemy.type['name']} at ({closest_enemy.x}, {closest_enemy.y})")
+            
+            # Перевіряємо чи можемо атакувати
+            if creature.can_attack:
+                distance = calculate_distance(creature.x, creature.y, closest_enemy.x, closest_enemy.y)
+                print(f"Distance to enemy: {distance}, attack range: {creature.type['range']}")
+                if distance <= creature.type['range']:
+                    # Атакуємо
+                    success, message = self.attack_creature(creature.id, closest_enemy.id)
+                    print(f"AI attack: {message}")
+                    if success:
+                        # Перевіряємо чи гра закінчена
+                        win_check = self.check_win_condition()
+                        if win_check[0]:
+                            return
+                    continue
+
+            # Якщо не можемо атакувати, намагаємось наблизитися
+            if creature.can_move:
+                print(f"Trying to move {creature.type['name']} closer to enemy")
+                # Знаходимо найкращу позицію для руху
+                best_move = None
+                best_distance = float('inf')
+                
+                # Перевіряємо всі можливі клітинки в радіусі руху
+                for dx in range(-creature.type['movement'], creature.type['movement'] + 1):
+                    for dy in range(-creature.type['movement'], creature.type['movement'] + 1):
+                        # Перевіряємо чи сума руху не перевищує максимальну дистанцію
+                        if abs(dx) + abs(dy) > creature.type['movement']:
+                            continue
+                            
+                        new_x = creature.x + dx
+                        new_y = creature.y + dy
+                        
+                        # Перевіряємо чи клітинка в межах поля і вільна
+                        if (0 <= new_x < GRID_WIDTH and 
+                            0 <= new_y < GRID_HEIGHT and 
+                            not self.get_creature_at(new_x, new_y)):
+                            
+                            # Перевіряємо чи це покращує нашу позицію
+                            new_distance = calculate_distance(new_x, new_y, closest_enemy.x, closest_enemy.y)
+                            if new_distance < best_distance:
+                                best_distance = new_distance
+                                best_move = (new_x, new_y)
+                                print(f"Found better move: ({new_x}, {new_y}) with distance {new_distance}")
+                
+                # Якщо знайшли хороший хід, рухаємось
+                if best_move:
+                    print(f"Moving to {best_move}")
+                    success, message = self.move_creature(creature.id, best_move[0], best_move[1])
+                    print(f"AI move: {message}")
+                    
+                    # Після руху перевіряємо чи можемо атакувати
+                    if success and creature.can_attack:
+                        distance = calculate_distance(creature.x, creature.y, closest_enemy.x, closest_enemy.y)
+                        print(f"After move - Distance to enemy: {distance}, attack range: {creature.type['range']}")
+                        if distance <= creature.type['range']:
+                            success, message = self.attack_creature(creature.id, closest_enemy.id)
+                            print(f"AI attack after move: {message}")
+                            if success:
+                                # Перевіряємо чи гра закінчена
+                                win_check = self.check_win_condition()
+                                if win_check[0]:
+                                    return
+                else:
+                    print(f"No valid move found for {creature.type['name']}")
+
+        # Перевіряємо умови перемоги після ходу ШІ
+        win_check = self.check_win_condition()
+        if not win_check[0]:
+            # Якщо гра продовжується, повертаємо хід гравцю
+            self.current_player = 1
+            self.message = "Хід Гравця 1."
+            # Оновлюємо можливості створінь для гравця
+            for creature in self.creatures.values():
+                creature.retaliated_this_turn = False
+                if creature.player == self.current_player:
+                    creature.can_move = True
+                    creature.can_attack = True
+                else:
+                    creature.can_move = False
+                    creature.can_attack = False
+
+    def check_win_condition(self):
+        player1_creatures = any(c.player == 1 and c.hp > 0 for c in self.creatures.values())
+        player2_creatures = any(c.player == AI_PLAYER_NUMBER and c.hp > 0 for c in self.creatures.values())
+
+        # Перевіряємо, чи взагалі є створіння у грі
+        if not player1_creatures and not player2_creatures and self.game_state == 'battle':
+             # Можливо, нічия або помилка, якщо бій почався без створінь
+             self.game_state = 'game_over'
+             self.message = "Гру завершено (немає створінь)."
+             print("Game Over: No creatures left.")
+             return True, self.message
+
+        if not player1_creatures and player2_creatures:
+            self.game_state = 'game_over'
+            self.message = f"{self.get_player_name(AI_PLAYER_NUMBER)} переміг!"
+            print("Game Over:", self.message)
+            return True, self.message
+        elif not player2_creatures and player1_creatures:
+            self.game_state = 'game_over'
+            self.message = f"{self.get_player_name(1)} переміг!"
+            print("Game Over:", self.message)
+            return True, self.message
+        return False, ""
+
+    def get_player_name(self, player_number):
+        if self.game_mode == 'pve' and player_number == AI_PLAYER_NUMBER:
+            return "ШІ"
+        return f"Гравець {player_number}"
+
+    def get_state(self):
         return {
-            "player_hp": self.battle_state.player_hp,
-            "enemy_hp": self.battle_state.enemy_hp,
-            "battle_ended": self.battle_state.battle_ended,
-            "winner": self.battle_state.winner,
-            "enemy_position": self.battle_state.enemy_position,
-            "player_position":self.battle_state.player_position, 
-            "player_moves": self.battle_state.player_moves, 
-            "error": None
-        } 
-    
-    def enemy_decision(self):
-        """Розрахунок дії ворога залежно від стану гри."""
-        if self.battle_state.enemy_hp < 20 and self.battle_state.player_hp > self.enemy_hp:
-            return self.defend()  # Захищається при низькому HP
-        elif self.is_player_nearby():
-            return self.attack()  # Атакує, якщо гравець поруч
-        else:
-            return self.move_towards_player()  # Наближається до гравця
+            'gameState': self.game_state,
+            'gameMode': self.game_mode,
+            'currentPlayer': self.current_player,
+            'deploymentPlayer': self.deployment_player,
+            'creatures': [c.to_dict() for c in self.creatures.values()],
+            'player1DeploymentPool': self.player1_deployment_pool,
+            'player2DeploymentPool': self.player2_deployment_pool,
+            'message': self.message,
+        }
 
-    def is_player_nearby(self):
-        """Перевіряє, чи знаходиться гравець поруч із ворогом."""
-        enemy_x, enemy_y = self.battle_state.enemy_position['x'], self.battle_state.enemy_position['y']
-        player_x, player_y = self.battle_state.player_position['x'], self.battle_state.player_position['y']
-        return abs(enemy_x - player_x) <= 1 and abs(enemy_y - player_y) <= 1
+# --- FastAPI App Setup ---
+# app = FastAPI()
 
-    def move_towards_player(self):
-        """Вибирає напрямок руху до гравця."""
-        if self.battle_state.enemy_position['x'] < self.battle_state.player_position['x']:
-            return self.move("right")
-        elif self.battle_state.enemy_position['x'] > self.battle_state.player_position['x']:
-            return self.move("left")
-        elif self.battle_state.enemy_position['y'] < self.battle_state.player_position['y']:
-            return self.move("down")
-        elif self.battle_state.enemy_position['y'] > self.battle_state.player_position['y']:
-            return self.move("up")
+router = APIRouter()
+templates = Jinja2Templates(directory="frontend/templates")
+
+# # Налаштування CORS
+# origins = [
+#     "http://localhost", # Якщо запускаєте HTML локально
+#     "http://127.0.0.1",
+#     "null", # Для локальних файлів (відкритих через file://)
+#     # Додайте сюди інші джерела, якщо потрібно
+# ]
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=True,
+#     allow_methods=["*"], # Дозволити всі методи (GET, POST, etc.)
+#     allow_headers=["*"], # Дозволити всі заголовки
+# )
+
+# --- Глобальний об'єкт гри ---
+# Створюємо екземпляр гри при старті сервера
+
+game: BattleSystem = BattleSystem(user = "")
+
+# --- Pydantic Models for Request Validation ---
+class StartGameRequest(BaseModel):
+    mode: Optional[str] = 'pve'
+
+class DeployRequest(BaseModel):
+    player: int
+    typeName: str
+    x: int
+    y: int
+
+class MoveRequest(BaseModel):
+    creatureId: str
+    targetX: int
+    targetY: int
+
+class AttackRequest(BaseModel):
+    attackerId: str
+    defenderId: str
+
+# --- API Endpoints ---
+
+@router.post("/start")
+async def start_new_game(request_data: StartGameRequest):
+    # Використовуємо глобальний об'єкт game
+    state = game.start_game(request_data.mode)
+    return state # FastAPI автоматично конвертує dict в JSON
+
+@router.get("/state")
+async def get_game_state():
+    return game.get_state()
+
+@router.post("/deploy")
+async def deploy_creature(request_data: DeployRequest):
+    # Використовуємо дані з Pydantic моделі
+    success, message = game.place_creature(
+        request_data.player,
+        request_data.typeName,
+        request_data.x,
+        request_data.y
+    )
+    response = game.get_state()
+    response['actionSuccess'] = success
+    if not success:
+         # Можна повернути помилку, якщо дія не вдалася
+         # raise HTTPException(status_code=400, detail=message)
+         # Або просто передати повідомлення через стан гри
+         pass
+    return response
+
+@router.post("/move")
+async def move_creature_api(request_data: MoveRequest):
+    success, message = game.move_creature(
+        request_data.creatureId,
+        request_data.targetX,
+        request_data.targetY
+    )
+    response = game.get_state()
+    response['actionSuccess'] = success
+    if not success:
+        # raise HTTPException(status_code=400, detail=message)
+        pass
+    return response
+
+@router.post("/attack")
+async def attack_creature_api(request_data: AttackRequest):
+    success, message = game.attack_creature(
+        request_data.attackerId,
+        request_data.defenderId
+    )
+    response = game.get_state()
+    response['actionSuccess'] = success
+    if not success:
+       # raise HTTPException(status_code=400, detail=message)
+       pass
+    return response
+
+@router.post("/end_turn")
+async def end_turn_api():
+    success, message = game.end_turn()
+    response = game.get_state()
+    response['actionSuccess'] = success
+    if not success:
+        # raise HTTPException(status_code=400, detail=message)
+        pass
+    return response
+
+# --- Запуск сервера (для локального тестування) ---
+# Запускати через: uvicorn main:app --reload --port 5000
+# (де main - ім'я вашого python файлу)
+# if __name__ == "__main__":
+#     import uvicorn
+#     # Запуск Uvicorn програмно (альтернатива командному рядку)
+#     # Зазвичай краще запускати з командного рядка
+#     uvicorn.run(router, host="127.0.0.1", port=5000)
+

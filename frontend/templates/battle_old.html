@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Битва</title>
+    <style>
+        .battle-field {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 2px;
+            background-color: #ccc;
+            padding: 10px;
+            margin: 20px;
+            width: 800px;
+            height: 400px;
+        }
+        
+        .cell {
+            background-color: #fff;
+            border: 1px solid #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .player-unit {
+            width: 30px;
+            height: 30px;
+            background-color: blue;
+            border-radius: 50%;
+        }
+        
+        .enemy-unit {
+            width: 30px;
+            height: 30px;
+            background-color: red;
+            border-radius: 50%;
+        }
+        
+        .battle-controls {
+            margin: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .battle-info {
+            margin: 20px;
+        }
+        
+        .battle-log {
+            margin: 20px;
+            padding: 10px;
+            border: 1px solid #999;
+            height: 200px;
+            overflow-y: auto;
+        }
+        
+        .movement-controls {
+            margin: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            width: 150px;
+        }
+        
+        .movement-controls button {
+            padding: 10px;
+        }
+        
+        .movement-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="battle-info">
+        <h2>Битва</h2>
+        <p>HP гравця: <span id="player-hp">{{ battle_state.player_hp }}</span></p>
+        <p>HP ворога: <span id="enemy-hp">{{ battle_state.enemy_hp }}</span></p>
+        <p>Залишилось ходів: <span id="player-moves">{{ battle_state.player_moves }}</span></p>
+    </div>
+    
+    <div class="battle-field" id="battle-field">
+        {% for y in range(10) %}
+            {% for x in range(20) %}
+                <div class="cell" data-x="{{ x }}" data-y="{{ y }}">
+                    {% if x == battle_state.player_position.x and y == battle_state.player_position.y %}
+                        <div class="player-unit"></div>
+                    {% elif x == battle_state.enemy_position.x and y == battle_state.enemy_position.y %}
+                        <div class="enemy-unit"></div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+    
+    <div class="movement-controls">
+        <button id="move-up" onclick="performAction('move', 'up')">↑</button>
+        <button id="move-left" onclick="performAction('move', 'left')">←</button>
+        <button id="move-right" onclick="performAction('move', 'right')">→</button>
+        <button id="move-down" onclick="performAction('move', 'down')">↓</button>
+    </div>
+    
+    <div class="battle-controls">
+        <button onclick="performAction('attack')">Атакувати</button>
+        <button onclick="performAction('defend')">Захищатися</button>
+        <button onclick="performAction('special_attack')">Спеціальна атака</button>
+    </div>
+    
+    <div class="battle-log" id="battle-log"></div>
+    
+    <script>
+        function updateBattleState(state) {
+            console.log(state);
+            document.getElementById('player-hp').textContent = state.player_hp;
+            document.getElementById('enemy-hp').textContent = state.enemy_hp;
+            document.getElementById('player-moves').textContent = state.player_moves;
+            
+            // Оновлюємо позиції юнітів
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+
+                const x = parseInt(cell.dataset.x);
+                const y = parseInt(cell.dataset.y);
+                
+                // Очищаємо клітинку
+                cell.innerHTML = '';
+                
+                // Додаємо юніти
+                if (x === state.player_position.x && y === state.player_position.y) {
+                    cell.innerHTML = '<div class="player-unit"></div>';
+                } else if (x === state.enemy_position.x && y === state.enemy_position.y) {
+                    cell.innerHTML = '<div class="enemy-unit"></div>';
+                }
+            });
+            
+            // Оновлюємо стан кнопок руху
+            updateMovementButtons(state.player_moves);
+            
+            // Перевіряємо чи битва закінчена
+            if (state.battle_ended) {
+                const message = state.winner === 'player' ? 'Ви перемогли!' : 'Ви програли!';
+                alert(message);
+            }
+        }
+        
+        function updateMovementButtons(moves) {
+            const buttons = document.querySelectorAll('.movement-controls button');
+            buttons.forEach(button => {
+                button.disabled = moves <= 0;
+            });
+        }
+        
+        function addBattleLog(message) {
+            const log = document.getElementById('battle-log');
+            const entry = document.createElement('p');
+            entry.textContent = message;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        async function performAction(action, direction = null) {
+            try {
+                const response = await fetch('/battle/action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        direction: direction
+                    })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    // throw new Error('Помилка виконання дії');
+                    console.error(result)
+                    throw new Error(result.detail);
+                }
+                
+                if (result.error) {
+                    alert(result.error);
+                    return;
+                }
+                
+                updateBattleState(result);
+                
+                // Додаємо запис в лог
+                let logMessage = '';
+                if (action === 'move') {
+                    logMessage = `Гравець перемістився ${direction}`;
+                } else if (action === 'attack') {
+                    logMessage = `Гравець атакував ворога`; 
+                } else if (action === 'defend') {
+                    logMessage = `Гравець захищається`;
+                } else if (action === 'special_attack') {
+                    logMessage = `Гравець використав спеціальну атаку`;
+                }
+                addBattleLog(logMessage);
+                
+            } catch (error) {
+                alert('Помилка: ' + error.message);
+            }
+            if (result.enemy_action) {
+    addBattleLog(`Ворог ${result.enemy_action.description}`);
+}
+        }
+        
+        // Ініціалізуємо стан битви
+        const initialState = {{ battle_state|tojson|safe }};
+        updateBattleState(initialState);
+    </script>
+</body>
+</html> 

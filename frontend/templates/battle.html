@@ -3,219 +3,483 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Битва</title>
+    <title>Тактична Битва (Клієнт)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        .battle-field {
-            display: grid;
-            grid-template-columns: repeat(20, 1fr);
-            grid-template-rows: repeat(10, 1fr);
-            gap: 2px;
-            background-color: #ccc;
-            padding: 10px;
-            margin: 20px;
-            width: 800px;
-            height: 400px;
+        body { font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f9ff; }
+        .screen { display: none; flex-direction: column; align-items: center; background-color: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); text-align: center; }
+        .screen.active { display: flex; }
+        #mode-selection-screen h1 { margin-bottom: 1.5rem; }
+        #mode-selection-screen button { margin: 0.5rem; }
+        #game-screen { position: relative; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(200, 200, 200, 0.3); z-index: 50; display: none; justify-content: center; align-items: center; font-size: 1.5rem; color: #333; font-weight: bold; border-radius: 1rem; text-align: center; padding: 1rem; pointer-events: none; }
+        .overlay.active { display: flex; }
+        .grid { display: grid; grid-template-columns: repeat(10, 40px); grid-template-rows: repeat(8, 40px); gap: 1px; background-color: #cbd5e1; border: 1px solid #cbd5e1; margin-bottom: 1rem; position: relative; z-index: 1; }
+        .grid-cell { background-color: #e2e8f0; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; position: relative; cursor: pointer; transition: background-color 0.2s ease; pointer-events: auto; }
+        .ai-turn-overlay.active ~ #game-grid .grid-cell:hover,
+        .deployment-overlay.active ~ #game-grid .grid-cell.deployment-zone:hover { /* Дозволяємо hover для зони розстановки */
+             /* background-color: #e2e8f0; */ /* Не змінюємо фон, якщо це зона розстановки */
+             /* cursor: default; */
         }
-        
-        .cell {
-            background-color: #fff;
-            border: 1px solid #999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+         .ai-turn-overlay.active ~ #game-grid .grid-cell:not(.deployment-zone):hover {
+            background-color: #e2e8f0;
+            cursor: default;
         }
-        
-        .player-unit {
-            width: 30px;
-            height: 30px;
-            background-color: blue;
-            border-radius: 50%;
-        }
-        
-        .enemy-unit {
-            width: 30px;
-            height: 30px;
-            background-color: red;
-            border-radius: 50%;
-        }
-        
-        .battle-controls {
-            margin: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .battle-info {
-            margin: 20px;
-        }
-        
-        .battle-log {
-            margin: 20px;
-            padding: 10px;
-            border: 1px solid #999;
-            height: 200px;
-            overflow-y: auto;
-        }
-        
-        .movement-controls {
-            margin: 20px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            width: 150px;
-        }
-        
-        .movement-controls button {
-            padding: 10px;
-        }
-        
-        .movement-controls button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .grid-cell:hover:not(.deployment-zone) { background-color: #bfdbfe; }
+        .deployment-zone { background-color: rgba(100, 180, 255, 0.2); outline: 1px dashed #60a5fa; }
+        .deployment-zone:hover { background-color: rgba(100, 180, 255, 0.4); }
+        .move-highlight { background-color: rgba(0, 255, 0, 0.3) !important; }
+        .attack-highlight { background-color: rgba(255, 0, 0, 0.3) !important; }
+        .creature { position: absolute; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; cursor: pointer; transition: transform 0.3s ease, top 0.3s ease, left 0.3s ease; z-index: 10; user-select: none; pointer-events: auto; }
+        .creature.selected { transform: scale(1.1); filter: drop-shadow(0 0 5px gold); border: 1px solid gold;}
+        .creature .health { position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.7); color: white; font-size: 0.7rem; padding: 1px 4px; border-radius: 3px; white-space: nowrap; pointer-events: none; }
+        .info-panel { display: flex; justify-content: space-between; width: 100%; max-width: 402px; margin-bottom: 1rem; padding: 0.5rem; background-color: #f1f5f9; border-radius: 0.5rem; position: relative; z-index: 60; }
+        .info-panel span { font-weight: bold; }
+        #deployment-panel { width: 100%; max-width: 402px; margin-bottom: 1rem; padding: 0.5rem; background-color: #e0f2fe; border-radius: 0.5rem; text-align: center; position: relative; z-index: 60; }
+        #deployment-panel h3 { margin-bottom: 0.5rem; font-weight: bold;}
+        #deployment-creatures-list span { font-size: 1.8rem; margin: 0 0.3rem; cursor: pointer; padding: 2px 5px; border-radius: 4px; transition: background-color 0.2s ease; pointer-events: auto; }
+        #deployment-creatures-list span.selected { background-color: #fdba74; }
+        #deployment-creatures-list span:hover { background-color: #fed7aa; }
+        .message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px 20px; border-radius: 5px; z-index: 1000; display: none; font-size: 0.9rem; pointer-events: none; }
+        button { background-color: #3b82f6; color: white; padding: 0.5rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s ease; font-weight: bold; position: relative; z-index: 60; pointer-events: auto; }
+        button:hover:not(:disabled) { background-color: #2563eb; }
+        button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        #restart-button { background-color: #ef4444; }
+        #restart-button:hover:not(:disabled) { background-color: #dc2626; }
     </style>
 </head>
 <body>
-    <div class="battle-info">
-        <h2>Битва</h2>
-        <p>HP гравця: <span id="player-hp">{{ battle_state.player_hp }}</span></p>
-        <p>HP ворога: <span id="enemy-hp">{{ battle_state.enemy_hp }}</span></p>
-        <p>Залишилось ходів: <span id="player-moves">{{ battle_state.player_moves }}</span></p>
+    <div id="mode-selection-screen" class="screen active">
+        <h1 class="text-2xl font-bold">Виберіть режим гри</h1>
+        <button id="pve-button">Гравець проти ШІ</button>
+        <button id="pvp-button">Гравець проти Гравця</button>
     </div>
-    
-    <div class="battle-field" id="battle-field">
-        {% for y in range(10) %}
-            {% for x in range(20) %}
-                <div class="cell" data-x="{{ x }}" data-y="{{ y }}">
-                    {% if x == battle_state.player_position.x and y == battle_state.player_position.y %}
-                        <div class="player-unit"></div>
-                    {% elif x == battle_state.enemy_position.x and y == battle_state.enemy_position.y %}
-                        <div class="enemy-unit"></div>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        {% endfor %}
+
+    <div id="game-screen" class="screen">
+         <div id="deployment-overlay" class="overlay">Розстановка військ...</div>
+         <div id="ai-turn-overlay" class="overlay">Хід ШІ...</div>
+
+        <h1 class="text-2xl font-bold mb-4">Тактична Битва (Клієнт)</h1>
+        <div id="message-box" class="message-box">Повідомлення</div>
+        <div class="info-panel">
+            <div>Хід: <span id="current-player-text">Гравець 1</span></div>
+            <div id="selected-creature-info">Виберіть створіння</div>
+        </div>
+        <div id="deployment-panel" style="display: none;">
+             <h3 id="deployment-player-text">Гравець 1: Розставте свої війська</h3>
+             <div id="deployment-creatures-list"></div>
+             <p class="text-sm mt-2">Виберіть створіння і клікніть на вільну клітинку у вашій зоні.</p>
+        </div>
+        <div id="game-grid" class="grid"></div>
+        <button id="end-turn-button" class="mt-4" style="display: none;">Завершити хід</button>
+         <button id="restart-button" class="mt-2">Почати знову</button>
     </div>
-    
-    <div class="movement-controls">
-        <button id="move-up" onclick="performAction('move', 'up')">↑</button>
-        <button id="move-left" onclick="performAction('move', 'left')">←</button>
-        <button id="move-right" onclick="performAction('move', 'right')">→</button>
-        <button id="move-down" onclick="performAction('move', 'down')">↓</button>
-    </div>
-    
-    <div class="battle-controls">
-        <button onclick="performAction('attack')">Атакувати</button>
-        <button onclick="performAction('defend')">Захищатися</button>
-        <button onclick="performAction('special_attack')">Спеціальна атака</button>
-    </div>
-    
-    <div class="battle-log" id="battle-log"></div>
-    
+
     <script>
-        function updateBattleState(state) {
-            console.log(state);
-            document.getElementById('player-hp').textContent = state.player_hp;
-            document.getElementById('enemy-hp').textContent = state.enemy_hp;
-            document.getElementById('player-moves').textContent = state.player_moves;
-            
-            // Оновлюємо позиції юнітів
-            const cells = document.querySelectorAll('.cell');
-            cells.forEach(cell => {
+        // --- Creature Types Data ---
+        const creature_types_data_client = {
+            'knight': {'name': 'knight', 'emoji': '♘', 'maxHp': 20, 'attack': 5, 'movement': 3, 'range': 1},
+            'archer': {'name': 'archer', 'emoji': '🏹', 'maxHp': 12, 'attack': 4, 'movement': 2, 'range': 4},
+            'skeleton': {'name': 'skeleton', 'emoji': '💀', 'maxHp': 15, 'attack': 3, 'movement': 2, 'range': 1},
+            'goblin': {'name': 'goblin', 'emoji': '👺', 'maxHp': 10, 'attack': 2, 'movement': 4, 'range': 1},
+        };
 
-                const x = parseInt(cell.dataset.x);
-                const y = parseInt(cell.dataset.y);
-                
-                // Очищаємо клітинку
-                cell.innerHTML = '';
-                
-                // Додаємо юніти
-                if (x === state.player_position.x && y === state.player_position.y) {
-                    cell.innerHTML = '<div class="player-unit"></div>';
-                } else if (x === state.enemy_position.x && y === state.enemy_position.y) {
-                    cell.innerHTML = '<div class="enemy-unit"></div>';
-                }
-            });
-            
-            // Оновлюємо стан кнопок руху
-            updateMovementButtons(state.player_moves);
-            
-            // Перевіряємо чи битва закінчена
-            if (state.battle_ended) {
-                const message = state.winner === 'player' ? 'Ви перемогли!' : 'Ви програли!';
-                alert(message);
-            }
-        }
-        
-        function updateMovementButtons(moves) {
-            const buttons = document.querySelectorAll('.movement-controls button');
-            buttons.forEach(button => {
-                button.disabled = moves <= 0;
-            });
-        }
-        
-        function addBattleLog(message) {
-            const log = document.getElementById('battle-log');
-            const entry = document.createElement('p');
-            entry.textContent = message;
-            log.appendChild(entry);
-            log.scrollTop = log.scrollHeight;
-        }
-        
-        async function performAction(action, direction = null) {
+        // --- Frontend Configuration ---
+        const API_BASE_URL = 'http://127.0.0.1:8000/battle';
+        const GRID_WIDTH = 10;
+        const GRID_HEIGHT = 8;
+        const CELL_SIZE = 40;
+        const DEPLOYMENT_COLUMNS = 3;
+        const AI_PLAYER_ID = 2; // Використовуємо для ідентифікації ШІ
+
+        // --- Frontend State ---
+        let currentGameState = {};
+        let localSelectedCreatureId = null;
+        let localSelectedDeploymentType = null;
+        let clientHighlightedCells = []; // Для клієнтської підсвітки ходів/атак
+
+        // --- DOM Elements ---
+        const modeSelectionScreen = document.getElementById('mode-selection-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const gameGridElement = document.getElementById('game-grid');
+        const currentPlayerTextElement = document.getElementById('current-player-text');
+        const selectedCreatureInfoElement = document.getElementById('selected-creature-info');
+        const endTurnButton = document.getElementById('end-turn-button');
+        const restartButton = document.getElementById('restart-button');
+        const messageBox = document.getElementById('message-box');
+        const aiTurnOverlay = document.getElementById('ai-turn-overlay');
+        const deploymentOverlay = document.getElementById('deployment-overlay');
+        const deploymentPanel = document.getElementById('deployment-panel');
+        const deploymentPlayerText = document.getElementById('deployment-player-text');
+        const deploymentCreaturesList = document.getElementById('deployment-creatures-list');
+
+        // --- API Communication ---
+        async function fetchApi(endpoint, method = 'GET', body = null) {
+            const options = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) options.body = JSON.stringify(body);
             try {
-                const response = await fetch('/battle/action', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: action,
-                        direction: direction
-                    })
-                });
-                
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
                 if (!response.ok) {
-                    // throw new Error('Помилка виконання дії');
-                    const data = await response.json();
-                    console.log(data)
-                    throw new Error(data.detail);
-
+                    const errorData = await response.json().catch(() => ({ error: `HTTP error! status: ${response.status}` }));
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
                 }
-                
-                const result = await response.json();
-                
-                if (result.error) {
-                    alert(result.error);
-                    return;
-                }
-                
-                updateBattleState(result);
-                
-                // Додаємо запис в лог
-                let logMessage = '';
-                if (action === 'move') {
-                    logMessage = `Гравець перемістився ${direction}`;
-                } else if (action === 'attack') {
-                    logMessage = `Гравець атакував ворога`; 
-                } else if (action === 'defend') {
-                    logMessage = `Гравець захищається`;
-                } else if (action === 'special_attack') {
-                    logMessage = `Гравець використав спеціальну атаку`;
-                }
-                addBattleLog(logMessage);
-                
+                return await response.json();
             } catch (error) {
-                alert('Помилка: ' + error.message);
+                console.error('API Error:', error);
+                showMessage(`Помилка зв'язку: ${error.message}`, 5000);
+                return currentGameState; // Повертаємо старий стан при помилці
             }
-            if (result.enemy_action) {
-    addBattleLog(`Ворог ${result.enemy_action.description}`);
-}
+        }
+
+        // --- UI Update Functions ---
+        function updateUI(state) {
+            console.log("UI Update with state:", state);
+            currentGameState = state;
+
+            currentPlayerTextElement.textContent = getPlayerName(state.currentPlayer);
+            if (state.message) showMessage(state.message);
+
+            deploymentPanel.style.display = state.gameState === 'deployment' ? 'block' : 'none';
+            endTurnButton.style.display = state.gameState === 'battle' ? 'inline-block' : 'none';
+            endTurnButton.disabled = state.gameState !== 'battle' || (state.gameMode === 'pve' && state.currentPlayer === AI_PLAYER_ID);
+
+            deploymentOverlay.classList.toggle('active', state.gameState === 'deployment');
+            if (state.gameState === 'deployment') {
+                deploymentOverlay.textContent = `Розстановка: ${getPlayerName(state.deploymentPlayer)}`;
+                updateDeploymentPanel(state);
+                highlightDeploymentZone(state.deploymentPlayer);
+            } else {
+                clearClientHighlights(); // Очистити підсвітку зон, якщо не розстановка
+            }
+
+            aiTurnOverlay.classList.toggle('active', state.gameState === 'battle' && state.gameMode === 'pve' && state.currentPlayer === AI_PLAYER_ID);
+
+            renderCreatures(state.creatures);
+            updateSelectedCreatureInfo(); // Оновити інфо про вибране створіння
+            
+            if (state.gameState === 'game_over') {
+                // Додаткові дії при кінці гри, якщо потрібно
+            }
+        }
+
+        function renderCreatures(creaturesData) {
+            // Видаляємо старі елементи створінь
+            gameGridElement.querySelectorAll('.creature').forEach(el => el.remove());
+
+            creaturesData.forEach(creature => {
+                const div = document.createElement('div');
+                div.id = `creature-${creature.id}`;
+                div.classList.add('creature', `player${creature.player}`);
+                if (creature.id === localSelectedCreatureId) {
+                    div.classList.add('selected');
+                }
+                div.textContent = creature.emoji;
+                div.style.left = `${creature.x * CELL_SIZE}px`;
+                div.style.top = `${creature.y * CELL_SIZE}px`;
+                div.dataset.id = creature.id; // Зберігаємо ID
+
+                const healthSpan = document.createElement('span');
+                healthSpan.classList.add('health');
+                healthSpan.textContent = `${creature.hp}/${creature.maxHp}`;
+                div.appendChild(healthSpan);
+
+                div.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    handleCreatureElementClick(creature); // Передаємо дані створіння
+                });
+                gameGridElement.appendChild(div);
+            });
+        }
+
+        function updateDeploymentPanel(state) {
+            deploymentPlayerText.textContent = `${getPlayerName(state.deploymentPlayer)}: Розставте свої війська`;
+            const pool = state.deploymentPlayer === 1 ? state.player1DeploymentPool : state.player2DeploymentPool;
+            deploymentCreaturesList.innerHTML = '';
+            if (!pool) {
+                console.warn("Deployment pool is undefined for player:", state.deploymentPlayer);
+                return;
+            }
+
+            Object.entries(pool).forEach(([typeName, count]) => {
+                if (count > 0) {
+                    // Припускаємо, що creature_types_data доступний на клієнті для emoji
+                    // В реальному додатку, сервер міг би надсилати emoji разом з pool
+                    const emoji = creature_types_data_client[typeName]?.emoji || '?';
+                    const span = document.createElement('span');
+                    span.textContent = emoji;
+                    span.title = `${typeName} (Залишилось: ${count})`;
+                    span.dataset.type = typeName;
+                    span.classList.toggle('selected', typeName === localSelectedDeploymentType);
+                    span.addEventListener('click', () => handleDeploymentCreatureSelect(typeName));
+                    deploymentCreaturesList.appendChild(span);
+                }
+            });
+        }
+
+        function updateSelectedCreatureInfo() {
+            if (currentGameState.gameState === 'battle' && localSelectedCreatureId) {
+                const creature = currentGameState.creatures.find(c => c.id === localSelectedCreatureId);
+                if (creature) {
+                    selectedCreatureInfoElement.textContent = `Вибрано: ${creature.emoji} (HP: ${creature.hp}/${creature.maxHp}, Рух: ${creature.canMove}, Атака: ${creature.canAttack})`;
+                } else {
+                    localSelectedCreatureId = null; // Скинути, якщо створіння більше не існує
+                    selectedCreatureInfoElement.textContent = 'Виберіть створіння';
+                }
+            } else if (currentGameState.gameState === 'deployment') {
+                 selectedCreatureInfoElement.textContent = localSelectedDeploymentType ? `Розмістити: ${creature_types_data_client[localSelectedDeploymentType]?.emoji || '?'}` : 'Виберіть створіння для розміщення';
+            }
+            else {
+                selectedCreatureInfoElement.textContent = 'Виберіть створіння';
+            }
+        }
+
+        // --- Event Handlers ---
+        async function handleStartGame(mode) {
+            const state = await fetchApi('/start', 'POST', { mode });
+            if (state) {
+                showScreen('game-screen');
+                updateUI(state);
+            }
+        }
+
+        function handleDeploymentCreatureSelect(typeName) {
+            console.log("Client selected deployment type:", typeName);
+            localSelectedDeploymentType = typeName;
+            // Оновлюємо тільки панель розстановки для візуального виділення
+            updateDeploymentPanel(currentGameState);
+            updateSelectedCreatureInfo();
+        }
+
+        async function handleCellClick(x, y) {
+            console.log(`Client cell click: (${x}, ${y}), State: ${currentGameState.gameState}`);
+            if (currentGameState.gameState === 'deployment') {
+                if (localSelectedDeploymentType) {
+                    // Надсилаємо ID гравця, що розставляється
+                    const playerToDeploy = currentGameState.deploymentPlayer;
+                    console.log(`Sending deploy request: Player ${playerToDeploy}, Type ${localSelectedDeploymentType}, Pos (${x},${y})`);
+                    const state = await fetchApi(`/deploy?player=${playerToDeploy}&type_name=${localSelectedDeploymentType}&x=${x}&y=${y}`, 'POST');
+                    if (state.actionSuccess) {
+                        localSelectedDeploymentType = null; // Скидаємо вибір після успішного розміщення
+                    }
+                    updateUI(state);
+                } else {
+                    showMessage("Спочатку виберіть створіння для розстановки.");
+                }
+            } else if (currentGameState.gameState === 'battle') {
+                if (localSelectedCreatureId) {
+                    const selected = currentGameState.creatures.find(c => c.id === localSelectedCreatureId);
+                    const targetCreatureOnCell = currentGameState.creatures.find(c => c.x === x && c.y === y);
+
+                    if (targetCreatureOnCell && targetCreatureOnCell.player !== selected.player) {
+                        // Спроба атаки (клік на клітинку з ворогом)
+                        console.log(`Client attempting attack from ${localSelectedCreatureId} to ${targetCreatureOnCell.id}`);
+                         const state = await fetchApi('/attack', 'POST', { attackerId: localSelectedCreatureId, defenderId: targetCreatureOnCell.id });
+                         updateUI(state);
+                         if(state.actionSuccess) localSelectedCreatureId = null; // Скидаємо вибір після атаки
+                    } else if (!targetCreatureOnCell) {
+                        // Спроба руху
+                        console.log(`Client attempting move for ${localSelectedCreatureId} to (${x},${y})`);
+                        const state = await fetchApi(`/move?creature_id=${localSelectedCreatureId}&target_x=${x}&target_y=${y}`, 'POST');
+                        updateUI(state);
+                        // Не скидаємо вибір, якщо рух вдався, але ще можна атакувати (логіка на сервері)
+                        // Краще скидати вибір, якщо дія була успішною і створіння більше не може діяти
+                        if (state.actionSuccess) {
+                             const movedCreature = state.creatures.find(c => c.id === localSelectedCreatureId);
+                             if (movedCreature && !movedCreature.canMove && !movedCreature.canAttack) {
+                                 localSelectedCreatureId = null;
+                             }
+                        }
+                    } else {
+                        // Клік на союзника або на себе - зняти виділення
+                        localSelectedCreatureId = null;
+                        clearClientHighlights();
+                        updateSelectedCreatureInfo();
+                        renderCreatures(currentGameState.creatures); // Перерендерити для зняття .selected
+                    }
+                }
+            }
         }
         
-        // Ініціалізуємо стан битви
-        const initialState = {{ battle_state|tojson|safe }};
-        updateBattleState(initialState);
+        function handleCreatureElementClick(creatureData) {
+            console.log("Client creature element click:", creatureData);
+            if (currentGameState.gameState === 'battle') {
+                // Клік на своє створіння для вибору
+                if (creatureData.player === currentGameState.currentPlayer) {
+                    localSelectedCreatureId = creatureData.id;
+                    console.log("Selected creature ID:", localSelectedCreatureId);
+                    clearClientHighlights(); // Очистити попередні підсвітки
+                    // Тут можна додати клієнтську логіку підсвічування можливих ходів/атак
+                    // Наприклад, на основі даних `creatureData.canMove` та `creatureData.canAttack`
+                    // Це зробить інтерфейс більш відгукливим
+                    highlightPossibleActions(creatureData);
+                    updateSelectedCreatureInfo();
+                    renderCreatures(currentGameState.creatures); // Перерендерити для додавання .selected
+                }
+                // Клік на вороже створіння, якщо наше вибране для атаки
+                else if (localSelectedCreatureId) {
+                    const attacker = currentGameState.creatures.find(c => c.id === localSelectedCreatureId);
+                    if (attacker && attacker.canAttack) {
+                        console.log(`Client attempting direct attack from ${localSelectedCreatureId} to ${creatureData.id}`);
+                        fetchApi(`/attack?attacker_id=${localSelectedCreatureId}&defender_id=${creatureData.id}`, 'POST')
+                            .then(state => {
+                                updateUI(state);
+                                if(state.actionSuccess) localSelectedCreatureId = null;
+                            });
+                    }
+                }
+            }
+        }
+
+        async function handleEndTurn() {
+            if (currentGameState.gameState === 'battle') {
+                localSelectedCreatureId = null; // Скидаємо вибір перед завершенням ходу
+                clearClientHighlights();
+                const state = await fetchApi('/end_turn', 'POST');
+                updateUI(state);
+            }
+        }
+
+        async function handleRestartGame() {
+            localSelectedCreatureId = null;
+            localSelectedDeploymentType = null;
+            clearClientHighlights();
+            // Повертаємось до вибору режиму, сервер скине свій стан при /start
+            showScreen('mode-selection-screen');
+            gameScreen.classList.remove('active'); // Сховати ігровий екран
+            // Очистити сітку і панелі на клієнті
+            deploymentPanel.style.display = 'none';
+            endTurnButton.style.display = 'none';
+            gameGridElement.innerHTML = ''; // Очистити сітку від клітинок
+            initializeGridDOM(); // Перестворити клітинки сітки
+            selectedCreatureInfoElement.textContent = 'Виберіть створіння';
+            currentPlayerTextElement.textContent = 'Гравець 1';
+
+            // Можна також викликати /state, щоб переконатися, що клієнт синхронізований,
+            // але /start має скинути все на сервері.
+            // const state = await fetchApi('/state'); // Опціонально для синхронізації
+            // updateUI(state);
+        }
+
+
+        // --- Helper UI Functions ---
+        let messageTimeout;
+        function showMessage(text, duration = 2500) {
+            clearTimeout(messageTimeout);
+            messageBox.textContent = text;
+            messageBox.style.display = 'block';
+            messageTimeout = setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, duration);
+        }
+
+        function showScreen(screenId) {
+            // Приховуємо всі екрани
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            // Показуємо потрібний екран
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function clearClientHighlights() {
+            clientHighlightedCells.forEach(cell => {
+                cell.classList.remove('move-highlight', 'attack-highlight', 'deployment-zone');
+            });
+            clientHighlightedCells = [];
+        }
+
+        function highlightDeploymentZone(player) {
+            clearClientHighlights();
+            const startCol = (player === 1) ? 0 : GRID_WIDTH - DEPLOYMENT_COLUMNS;
+            const endCol = startCol + DEPLOYMENT_COLUMNS;
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = startCol; x < endCol; x++) {
+                    const cell = gameGridElement.querySelector(`.grid-cell[data-x="${x}"][data-y="${y}"]`);
+                    if (cell) { // Підсвічуємо всі клітинки зони, сервер перевірить чи вільна
+                        cell.classList.add('deployment-zone');
+                        clientHighlightedCells.push(cell);
+                    }
+                }
+            }
+        }
+        
+        // Клієнтська підсвітка можливих дій (для кращого UX)
+        function highlightPossibleActions(creature) {
+            clearClientHighlights(); // Очистити попередні
+            if (!creature) return;
+
+            // Підсвітка ходів
+            if (creature.canMove) {
+                // Проста підсвітка навколо, реальна перевірка на сервері
+                for (let dx = -creature_types_data_client[creature.type_name].movement; dx <= creature_types_data_client[creature.type_name].movement; dx++) {
+                    for (let dy = -creature_types_data_client[creature.type_name].movement; dy <= creature_types_data_client[creature.type_name].movement; dy++) {
+                        if (Math.abs(dx) + Math.abs(dy) > creature_types_data_client[creature.type_name].movement || (dx === 0 && dy === 0)) continue;
+                        const targetX = creature.x + dx;
+                        const targetY = creature.y + dy;
+                        if (targetX >= 0 && targetX < GRID_WIDTH && targetY >= 0 && targetY < GRID_HEIGHT) {
+                            const cell = gameGridElement.querySelector(`.grid-cell[data-x="${targetX}"][data-y="${targetY}"]`);
+                            // Перевіряємо, чи клітинка вільна (на клієнті, для візуалізації)
+                            const isOccupied = currentGameState.creatures.some(c => c.x === targetX && c.y === targetY);
+                            if (cell && !isOccupied) {
+                                cell.classList.add('move-highlight');
+                                clientHighlightedCells.push(cell);
+                            }
+                        }
+                    }
+                }
+            }
+            // Підсвітка атак
+            if (creature.canAttack) {
+                 for (let dx = -creature_types_data_client[creature.type_name].range; dx <= creature_types_data_client[creature.type_name].range; dx++) {
+                    for (let dy = -creature_types_data_client[creature.type_name].range; dy <= creature_types_data_client[creature.type_name].range; dy++) {
+                         if (Math.abs(dx) + Math.abs(dy) > creature_types_data_client[creature.type_name].range || (dx === 0 && dy === 0)) continue;
+                        const targetX = creature.x + dx;
+                        const targetY = creature.y + dy;
+                         if (targetX >= 0 && targetX < GRID_WIDTH && targetY >= 0 && targetY < GRID_HEIGHT) {
+                            const cell = gameGridElement.querySelector(`.grid-cell[data-x="${targetX}"][data-y="${targetY}"]`);
+                            const targetOnCell = currentGameState.creatures.find(c => c.x === targetX && c.y === targetY);
+                            if (cell && targetOnCell && targetOnCell.player !== creature.player) {
+                                cell.classList.add('attack-highlight');
+                                clientHighlightedCells.push(cell);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        function getPlayerName(playerNumber) {
+            if (currentGameState.gameMode === 'pve' && playerNumber === AI_PLAYER_ID) return "ШІ";
+            return `Гравець ${playerNumber}`;
+        }
+
+        // --- Initial Setup ---
+        function initializeGridDOM() {
+            gameGridElement.innerHTML = ''; // Очистити, якщо вже є клітинки
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.addEventListener('click', () => handleCellClick(x, y));
+                    gameGridElement.appendChild(cell);
+                }
+            }
+        }
+
+        // Event Listeners for Buttons
+        document.getElementById('pve-button').addEventListener('click', () => handleStartGame('pve'));
+        document.getElementById('pvp-button').addEventListener('click', () => handleStartGame('pvp'));
+        endTurnButton.addEventListener('click', handleEndTurn);
+        restartButton.addEventListener('click', handleRestartGame);
+
+        // Initial UI Setup
+        initializeGridDOM(); // Створюємо клітинки сітки один раз при завантаженні
+        // Перший запит стану можна зробити тут, якщо гра може починатися не з вибору режиму
+        // fetchApi('/state').then(updateUI);
     </script>
 </body>
-</html> 
+</html>

@@ -4,6 +4,7 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI, WebSocket
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend import database, utils
 from backend.tasks import check_workers
@@ -17,6 +18,16 @@ from .routers.battles import battle
 logger = utils.setup_logger(__name__)
 
 app = FastAPI()
+
+# Налаштування CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Дозволяємо всі джерела
+    allow_credentials=True,
+    allow_methods=["*"],  # Дозволяємо всі методи
+    allow_headers=["*"],  # Дозволяємо всі заголовки
+)
+
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 app.mount(
     "/avatars", StaticFiles(directory="frontend/user_resourses/avatars"), name="avatars"
