@@ -7,62 +7,7 @@ from sqlalchemy.orm import relationship
 
 from .db_base import Base
 
-
-class ItemType(str, Enum):
-    WEAPON_1H = "one_handed_weapon"
-    WEAPON_2H = "two_handed_weapon"
-    JEWELRY = "jewelry"
-    HELMET = "helmet"
-    ARMOR = "armor"
-    BOOTS = "boots"
-    BACK = "back"
-
-
-class Item(Base):
-    __tablename__ = "items"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    description = Column(String)
-    item_type = Column(String)  # Використовуємо значення з ItemType
-    image_url = Column(String)
-    stats = Column(JSON)  # Зберігаємо характеристики предмета у JSON
-    is_equipped = Column(Boolean, default=False)
-    owner_id = Column(Integer, ForeignKey("users.id"))
-    durability = Column(Integer)  # Поточна міцність
-    max_durability = Column(Integer)  # Максимальна міцність
-
-    owner = relationship("User", back_populates="inventory_items")
-
-
-class EquippedItems(Base):
-    __tablename__ = "equipped_items"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    helmet_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    armor_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    boots_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    right_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    left_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    back_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    jewelry_1_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    jewelry_2_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    jewelry_3_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-    jewelry_4_id = Column(Integer, ForeignKey("items.id"), nullable=True)
-
-    user = relationship("User", back_populates="equipped_items")
-    helmet = relationship("Item", foreign_keys=[helmet_id])
-    armor = relationship("Item", foreign_keys=[armor_id])
-    boots = relationship("Item", foreign_keys=[boots_id])
-    right_hand = relationship("Item", foreign_keys=[right_hand_id])
-    left_hand = relationship("Item", foreign_keys=[left_hand_id])
-    back = relationship("Item", foreign_keys=[back_id])
-    jewelry_1 = relationship("Item", foreign_keys=[jewelry_1_id])
-    jewelry_2 = relationship("Item", foreign_keys=[jewelry_2_id])
-    jewelry_3 = relationship("Item", foreign_keys=[jewelry_3_id])
-    jewelry_4 = relationship("Item", foreign_keys=[jewelry_4_id])
-
+# USER
 
 class User(Base):
     __tablename__ = "users"
@@ -70,6 +15,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password = Column(String)
+    email = Column(String, unique=True, index=True)
+    is_active = Column(Boolean, default=True)
     avatar_url = Column(String, nullable=True)  # user img path
     fraction = Column(String, default="Elfe")
 
@@ -128,6 +75,82 @@ class User(Base):
     inventory_items = relationship("Item", back_populates="owner")
     equipped_items = relationship("EquippedItems", back_populates="user", uselist=False)
 
+    battles = relationship("BattleState", back_populates="user")
+
+    battle_histories = relationship("BattleHistory", back_populates="user")
+
+    rating = relationship("PlayerRating", back_populates="user", uselist=False)
+
+# INVENTORY - ARTEFACTS - EQUIPMENT
+
+class ItemType(str, Enum):
+    WEAPON_1H = "one_handed_weapon"
+    WEAPON_2H = "two_handed_weapon"
+    JEWELRY = "jewelry"
+    HELMET = "helmet"
+    ARMOR = "armor"
+    BOOTS = "boots"
+    BACK = "back"
+
+
+class Item(Base):
+    __tablename__ = "items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    description = Column(String)
+    item_type = Column(String)  # Використовуємо значення з ItemType
+    image_url = Column(String)
+    stats = Column(JSON)  # Зберігаємо характеристики предмета у JSON
+    is_equipped = Column(Boolean, default=False)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    durability = Column(Integer)  # Поточна міцність
+    max_durability = Column(Integer)  # Максимальна міцність
+
+    owner = relationship("User", back_populates="inventory_items")
+
+
+class EquippedItems(Base):
+    __tablename__ = "equipped_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    helmet_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    armor_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    boots_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    right_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    left_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    back_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_1_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_2_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_3_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    jewelry_4_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+
+    user = relationship("User", back_populates="equipped_items")
+    helmet = relationship("Item", foreign_keys=[helmet_id])
+    armor = relationship("Item", foreign_keys=[armor_id])
+    boots = relationship("Item", foreign_keys=[boots_id])
+    right_hand = relationship("Item", foreign_keys=[right_hand_id])
+    left_hand = relationship("Item", foreign_keys=[left_hand_id])
+    back = relationship("Item", foreign_keys=[back_id])
+    jewelry_1 = relationship("Item", foreign_keys=[jewelry_1_id])
+    jewelry_2 = relationship("Item", foreign_keys=[jewelry_2_id])
+    jewelry_3 = relationship("Item", foreign_keys=[jewelry_3_id])
+    jewelry_4 = relationship("Item", foreign_keys=[jewelry_4_id])
+
+class ShopItem(Base):
+    __tablename__ = "shop_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_template_id = Column(Integer, ForeignKey("items.id"))
+    price = Column(Integer, nullable=False)
+    quantity = Column(Integer, default=-1)  # -1 означає необмежену кількість
+    level_required = Column(Integer, default=1)
+
+    item_template = relationship("Item")
+
+
+# ARMY
 
 class UnitType(Base):
     __tablename__ = "unit_types"
@@ -151,6 +174,85 @@ class UserUnit(Base):
     user = relationship("User", back_populates="units")
     unit_type = relationship("UnitType")
 
+# BATTLES
+
+class BattleState(Base):
+    __tablename__ = "battle_state"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    enemy_id = Column(Integer, ForeignKey("enemies.id"))
+    player_position = Column(JSON)  # Позиція героя на полі бою
+    enemy_position = Column(JSON)  # Позиція ворога на полі бою
+    player_hp = Column(Integer, default=100)
+    enemy_hp = Column(Integer, default=100)
+    turn = Column(Integer, default=1)
+    player_moves = Column(Integer, default=3)  # Кількість ходів руху за хід
+    enemy_moves = Column(Integer, default=2)  # Кількість ходів руху за хід
+    battle_ended = Column(Boolean, default=False)
+    winner = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Зв'язки
+    user = relationship("User", back_populates="battles")
+    enemy = relationship("Enemy", back_populates="battles")
+    battle_logs = relationship("BattleLog", back_populates="battle", cascade="all, delete-orphan")
+
+class BattleLog(Base):
+    __tablename__ = "battle_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    battle_id = Column(Integer, ForeignKey("battle_state.id"))
+    turn = Column(Integer)
+    player_action = Column(String)  # move, attack, defend, special_attack
+    player_hp = Column(Integer)
+    enemy_hp = Column(Integer)
+    player_damage = Column(Integer, default=0)
+    enemy_damage = Column(Integer, default=0)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    
+    # Зв'язки
+    battle = relationship("BattleState", back_populates="battle_logs")
+
+class Enemy(Base):
+    __tablename__ = "enemies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    level = Column(Integer, default=1)
+    image_url = Column(String, default="../static/images/enemy.svg")
+    
+    # Основні характеристики
+    hp = Column(Integer, default=100)
+    melee_attack = Column(Integer, default=10)
+    physical_defense = Column(Integer, default=5)
+    magic_power = Column(Integer, default=0)
+    magic_resistance = Column(Integer, default=0)
+    
+    # Додаткові характеристики
+    ranged_attack = Column(Integer, default=0)
+    agility = Column(Integer, default=0)
+    mind = Column(Integer, default=0)
+    
+    # Бонуси до шкоди
+    bonus_melee_damage = Column(Integer, default=0)
+    bonus_ranged_damage = Column(Integer, default=0)
+    bonus_magic_damage = Column(Integer, default=0)
+    
+    # Бонуси до захисту
+    bonus_melee_defense = Column(Integer, default=0)
+    bonus_ranged_defense = Column(Integer, default=0)
+    bonus_magic_defense = Column(Integer, default=0)
+    
+    # Нагороди за перемогу
+    exp_reward = Column(Integer, default=10)
+    gold_reward = Column(Integer, default=5)
+    
+    # Зв'язки
+    battles = relationship("BattleState", back_populates="enemy")
+
+# TASKS - QUESTS
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -180,29 +282,6 @@ class UserTask(Base):
 
     user = relationship("User", back_populates="user_tasks")
     task = relationship("Task", back_populates="user_tasks")
-
-
-class Enterprise(Base):
-    __tablename__ = "enterprises"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)  # Назва підприємства (sawmill, mine, etc.)
-    sector = Column(String, default="Castle")  # Додаємо поле для сектора
-    resource_type = Column(String)  # Тип ресурсу (wood, stone, etc.)
-    resource_stored = Column(Integer, default=0)  # Кількість ресурсу на складі
-    area = Column(Integer, default=100)  # Площа підприємства в умовних одиницях
-    last_production_time = Column(DateTime, nullable=True)  # Час останнього виробництва
-    workers_count = Column(Integer, default=0)  # Кількість працівників
-    max_workers = Column(Integer, default=10)  # Максимальна кількість працівників
-    max_storage = Column(
-        Integer, default=666
-    )  # Максимальна кількість ресурсу на складі
-    salary = Column(Integer, default=30)  # Зарплата за годину
-    item_price = Column(Integer, default=11)  # Ціна за одиницю ресурсу
-    balance = Column(Integer, default=1000)  # Додаємо поле балансу
-    storage_multiplier = Column(Integer, default=40)  # Коефіцієнт для розміру складу
-    production_type = Column(String, default="factory")  # factory або mine
-
 
 class QuestScenario(Base):
     __tablename__ = "quest_scenarios"
@@ -235,14 +314,52 @@ class UserAchievement(Base):
     user = relationship("User", back_populates="achievements")
     achievement = relationship("Achievement")
 
+# ENTERPRISES - STORES - BUILDINGS
 
-class ShopItem(Base):
-    __tablename__ = "shop_items"
+class Enterprise(Base):
+    __tablename__ = "enterprises"
 
     id = Column(Integer, primary_key=True, index=True)
-    item_template_id = Column(Integer, ForeignKey("items.id"))
-    price = Column(Integer, nullable=False)
-    quantity = Column(Integer, default=-1)  # -1 означає необмежену кількість
-    level_required = Column(Integer, default=1)
+    name = Column(String, index=True)  # Назва підприємства (sawmill, mine, etc.)
+    sector = Column(String, default="Castle")  # Додаємо поле для сектора
+    resource_type = Column(String)  # Тип ресурсу (wood, stone, etc.)
+    resource_stored = Column(Integer, default=0)  # Кількість ресурсу на складі
+    area = Column(Integer, default=100)  # Площа підприємства в умовних одиницях
+    last_production_time = Column(DateTime, nullable=True)  # Час останнього виробництва
+    workers_count = Column(Integer, default=0)  # Кількість працівників
+    max_workers = Column(Integer, default=10)  # Максимальна кількість працівників
+    max_storage = Column(
+        Integer, default=666
+    )  # Максимальна кількість ресурсу на складі
+    salary = Column(Integer, default=30)  # Зарплата за годину
+    item_price = Column(Integer, default=11)  # Ціна за одиницю ресурсу
+    balance = Column(Integer, default=1000)  # Додаємо поле балансу
+    storage_multiplier = Column(Integer, default=40)  # Коефіцієнт для розміру складу
+    production_type = Column(String, default="factory")  # factory або mine
 
-    item_template = relationship("Item")
+class BattleHistory(Base):
+    __tablename__ = "battle_histories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    completion_time = Column(DateTime, default=datetime.utcnow)
+    user = relationship("User", back_populates="battle_histories")
+
+class PlayerRating(Base):
+    __tablename__ = "player_ratings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    rating = Column(Integer, default=1000)  # Початковий рейтинг 1000
+    wins = Column(Integer, default=0)
+    losses = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Зв'язки
+    user = relationship("User", back_populates="rating")
+
+
+
+
+

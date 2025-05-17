@@ -75,6 +75,23 @@
                 </div>
             </div>
 
+            <!-- Рейтинг -->
+            <div class="player-rating">
+                <h3>Рейтинг</h3>
+                <div class="rating-row">
+                    <img src="../static/images/rating-icon.png" alt="Rating" class="rating-icon">
+                    <span>Рейтинг: {{ player_rating.rating }}</span>
+                </div>
+                <div class="rating-row">
+                    <img src="../static/images/wins-icon.png" alt="Wins" class="rating-icon">
+                    <span>Перемоги: {{ player_rating.wins }}</span>
+                </div>
+                <div class="rating-row">
+                    <img src="../static/images/losses-icon.png" alt="Losses" class="rating-icon">
+                    <span>Поразки: {{ player_rating.losses }}</span>
+                </div>
+            </div>
+
             <!-- Місце роботи -->
             {% if player.workplace %}
                 <div class="workplace-info">
@@ -415,6 +432,41 @@
 .equipment-slot.back {
     background: rgba(255, 255, 255, 0.1);
     border: 2px solid #666;
+}
+
+.player-resources {
+    margin-bottom: 20px;
+}
+
+.player-rating {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.player-rating h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.rating-row {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    gap: 10px;
+}
+
+.rating-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.rating-row span {
+    font-size: 1.1em;
+    color: #34495e;
 }
 </style>
 {% endblock %} 

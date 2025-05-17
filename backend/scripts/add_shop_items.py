@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from sqlalchemy.orm import Session
 
 from backend import database, models
@@ -319,5 +323,13 @@ def add_shop_items(db: Session):
 
 
 if __name__ == "__main__":
-    db = next(database.get_db())
-    add_shop_items(db)
+    db = database.SessionLocal()
+    try:
+        add_shop_items(db)
+        db.commit()
+        print("Предмети успішно додано до магазину!")
+    except Exception as e:
+        print(f"Помилка при додаванні предметів: {e}")
+        db.rollback()
+    finally:
+        db.close()

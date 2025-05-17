@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Покрокова тактична гра</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f9ff;
+        }
+        /* --- Загальні контейнери --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .screen.active { display: flex; }
+        /* --- Екран вибору режиму --- */
+        #mode-selection-screen h1 { margin-bottom: 1.5rem; }
+        #mode-selection-screen button { margin: 0.5rem; }
+
+        /* --- Екран гри --- */
+        #game-screen { position: relative; }
+
+         .ai-turn-overlay, .deployment-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(200, 200, 200, 0.3);
+            z-index: 50; /* Оверлей під панеллю розстановки */
+            display: none;
+            justify-content: center;
+            align-items: center; /* Центруємо текст */
+            font-size: 1.5rem;
+            color: #333;
+            font-weight: bold;
+            border-radius: 1rem;
+            text-align: center;
+            padding: 1rem;
+             pointer-events: none; /* Кліки будуть ігноруватися цим елементом */
+        }
+         .deployment-overlay.active, .ai-turn-overlay.active {
+             display: flex;
+         }
+
+        /* --- Сітка та клітинки --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 40px);
+            grid-template-rows: repeat(8, 40px);
+            gap: 1px;
+            background-color: #cbd5e1;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 1rem;
+            position: relative; /* Для позиціонування створінь */
+            z-index: 1; /* Переконаємось, що сітка нижче панелей */
+        }
+        .grid-cell {
+            background-color: #e2e8f0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+             pointer-events: auto; /* Клітинки завжди реагують на кліки */
+        }
+        /* Заборона hover-ефекту на клітинках під час ходу ШІ (візуально) */
+        .ai-turn-overlay.active ~ .grid .grid-cell:hover {
+             background-color: #e2e8f0;
+             cursor: default; /* Показувати стандартний курсор під час ходу ШІ */
+        }
+        /* Hover для звичайного стану */
+        .grid-cell:hover:not(.deployment-zone) {
+             background-color: #bfdbfe;
+        }
+
+
+         /* --- Підсвічування зон та дій --- */
+        .deployment-zone {
+            background-color: rgba(100, 180, 255, 0.3);
+            outline: 1px dashed #3b82f6;
+            outline-offset: -1px;
+        }
+         .deployment-zone:hover {
+             background-color: rgba(100, 180, 255, 0.5);
+         }
+        .move-highlight { background-color: rgba(0, 255, 0, 0.3); }
+        .attack-highlight { background-color: rgba(255, 0, 0, 0.3); }
+
+        /* --- Створіння --- */
+        .creature {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s ease, top 0.3s ease, left 0.3s ease;
+            z-index: 10; /* Створіння вище сітки */
+            user-select: none;
+             pointer-events: auto; /* Створіння завжди реагують на кліки */
+        }
+        .creature.selected {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 5px yellow);
+        }
+        .creature .health {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 0.7rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            white-space: nowrap;
+             pointer-events: none; /* Текст здоров'я не повинен перехоплювати кліки */
+        }
+        /* --- Інформаційна панель --- */
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 402px;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background-color: #f1f5f9;
+            border-radius: 0.5rem;
+            position: relative;
+            z-index: 60; /* Вище за оверлей */
+        }
+        .info-panel span { font-weight: bold; }
+
+        /* --- Панель розстановки --- */
+        #deployment-panel {
+            width: 100%;
+            max-width: 402px;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background-color: #e0f2fe;
+            border-radius: 0.5rem;
+            text-align: center;
+            position: relative;
+            z-index: 60; /* Вище за оверлей */
+        }
+        #deployment-panel h3 { margin-bottom: 0.5rem; font-weight: bold;}
+        #deployment-creatures-list span {
+            font-size: 1.8rem;
+            margin: 0 0.3rem;
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+             pointer-events: auto; /* Емодзі мають бути клікабельні */
+        }
+        #deployment-creatures-list span.selected {
+            background-color: #fdba74;
+        }
+        #deployment-creatures-list span:hover {
+             background-color: #fed7aa;
+        }
+
+        /* --- Повідомлення --- */
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000; /* Найвищий */
+            display: none;
+            font-size: 0.9rem;
+             pointer-events: none; /* Повідомлення не повинно блокувати кліки */
+        }
+        /* --- Кнопки --- */
+        button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-weight: bold;
+            position: relative;
+            z-index: 60; /* Вище за оверлей */
+             pointer-events: auto; /* Кнопки мають бути клікабельні */
+        }
+        button:hover:not(:disabled) { background-color: #2563eb; }
+        button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        #restart-button { background-color: #ef4444; }
+        #restart-button:hover:not(:disabled) { background-color: #dc2626; }
+
+    </style>
+</head>
+<body>
+    <div id="mode-selection-screen" class="screen active">
+        <h1 class="text-2xl font-bold">Виберіть режим гри</h1>
+        <button id="pve-button">Гравець проти ШІ</button>
+        <button id="pvp-button">Гравець проти Гравця</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+         <div id="deployment-overlay" class="deployment-overlay">Розстановка військ...</div>
+         <div id="ai-turn-overlay" class="ai-turn-overlay">Хід ШІ...</div>
+
+        <h1 class="text-2xl font-bold mb-4">Тактична Битва</h1>
+
+        <div id="message-box" class="message-box">Повідомлення</div>
+
+        <div class="info-panel">
+            <div>Хід: <span id="current-player-text">Гравець 1</span></div>
+            <div id="selected-creature-info">Виберіть створіння</div>
+        </div>
+
+        <div id="deployment-panel" style="display: none;">
+             <h3 id="deployment-player-text">Гравець 1: Розставте свої війська</h3>
+             <div id="deployment-creatures-list">
+                 </div>
+             <p class="text-sm mt-2">Виберіть створіння і клікніть на вільну клітинку у вашій зоні.</p>
+        </div>
+
+        <div id="game-grid" class="grid">
+            </div>
+
+        <button id="end-turn-button" class="mt-4" style="display: none;">Завершити хід</button>
+         <button id="restart-button" class="mt-2">Почати знову</button>
+    </div>
+
+    <script>
+        // --- Налаштування Гри ---
+        const GRID_WIDTH = 10;
+        const GRID_HEIGHT = 8;
+        const CELL_SIZE = 40;
+        const AI_PLAYER_NUMBER = 2;
+        const AI_ACTION_DELAY = 500;
+        const DEPLOYMENT_COLUMNS = 3;
+
+        // --- Стан Гри ---
+        let gameState = 'mode_selection';
+        let gameMode = 'pve';
+        let currentPlayer = 1;
+        let deploymentPlayer = 1;
+        let isAITurn = false;
+        let gameStarted = false;
+
+        // Елементи DOM
+        let modeSelectionScreen = document.getElementById('mode-selection-screen');
+        let gameScreen = document.getElementById('game-screen');
+        let gameGridElement = document.getElementById('game-grid');
+        let infoPanelElement = document.getElementById('info-panel');
+        let currentPlayerTextElement = document.getElementById('current-player-text');
+        let selectedCreatureInfoElement = document.getElementById('selected-creature-info');
+        let endTurnButton = document.getElementById('end-turn-button');
+        let restartButton = document.getElementById('restart-button');
+        let messageBox = document.getElementById('message-box');
+        let aiTurnOverlay = document.getElementById('ai-turn-overlay');
+        let deploymentOverlay = document.getElementById('deployment-overlay');
+        let deploymentPanel = document.getElementById('deployment-panel');
+        let deploymentPlayerText = document.getElementById('deployment-player-text');
+        let deploymentCreaturesList = document.getElementById('deployment-creatures-list');
+
+        // Дані гри
+        let creatures = [];
+        let player1DeploymentPool = {};
+        let player2DeploymentPool = {};
+        let selectedCreature = null;
+        let selectedDeploymentCreatureType = null;
+        let highlightedCells = [];
+
+        // --- Типи Створінь ---
+        const creatureTypes = {
+            knight: { name: 'knight', emoji: '♘', maxHp: 20, attack: 5, movement: 3, range: 1 },
+            archer: { name: 'archer', emoji: '🏹', maxHp: 12, attack: 4, movement: 2, range: 4 },
+            skeleton: { name: 'skeleton', emoji: '💀', maxHp: 15, attack: 3, movement: 2, range: 1 },
+            goblin: { name: 'goblin', emoji: '👺', maxHp: 10, attack: 2, movement: 4, range: 1 },
+        };
+
+        // --- Початковий набір військ ---
+        const initialArmy = { knight: 1, archer: 1, goblin: 1 };
+
+        // --- Ініціалізація та Перемикання Екранів ---
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // --- Функції Ініціалізації Гри ---
+        function initializeGame(selectedMode) {
+            console.log(`Initializing game. Mode: ${selectedMode}`);
+            gameMode = selectedMode;
+            gameState = 'deployment';
+            currentPlayer = 1;
+            deploymentPlayer = 1;
+            isAITurn = false;
+            gameStarted = true;
+            creatures = [];
+            selectedCreature = null;
+            selectedDeploymentCreatureType = null;
+            highlightedCells = [];
+            player1DeploymentPool = { ...initialArmy };
+            player2DeploymentPool = { ...initialArmy };
+
+            initializeGrid();
+            setupDeploymentPhase();
+
+            showScreen('game-screen');
+            endTurnButton.style.display = 'none';
+            restartButton.disabled = false;
+             currentPlayerTextElement.textContent = getPlayerName(currentPlayer);
+             selectedCreatureInfoElement.textContent = 'Розстановка...';
+        }
+
+        function initializeGrid() {
+            gameGridElement.innerHTML = '';
+            gameGridElement.querySelectorAll('.creature').forEach(el => el.remove());
+            gameGridElement.style.gridTemplateColumns = `repeat(${GRID_WIDTH}, ${CELL_SIZE}px)`;
+            gameGridElement.style.gridTemplateRows = `repeat(${GRID_HEIGHT}, ${CELL_SIZE}px)`;
+
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.addEventListener('click', () => handleCellClick(x, y));
+                    gameGridElement.appendChild(cell);
+                }
+            }
+        }
+
+        // --- Логіка Розстановки ---
+        function setupDeploymentPhase() {
+            console.log(`Setup deployment for Player ${deploymentPlayer}`);
+            deploymentPanel.style.display = 'block';
+            updateDeploymentInfo();
+            highlightDeploymentZone(deploymentPlayer);
+            deploymentOverlay.classList.add('active');
+            deploymentOverlay.textContent = `Розстановка: ${getPlayerName(deploymentPlayer)}`;
+            currentPlayerTextElement.textContent = `Розстановка (${getPlayerName(deploymentPlayer)})`;
+            selectedCreatureInfoElement.textContent = 'Виберіть створіння для розміщення';
+        }
+
+        function updateDeploymentInfo() {
+            deploymentPlayerText.textContent = `${getPlayerName(deploymentPlayer)}: Розставте свої війська`;
+            const pool = (deploymentPlayer === 1) ? player1DeploymentPool : player2DeploymentPool;
+            deploymentCreaturesList.innerHTML = '';
+            let remainingCount = 0;
+            console.log(`Updating deployment info for Player ${deploymentPlayer}. Pool:`, JSON.stringify(pool));
+            for (const typeName in pool) {
+                remainingCount += pool[typeName];
+                if (pool[typeName] > 0) {
+                    const type = creatureTypes[typeName];
+                    const span = document.createElement('span');
+                    span.textContent = type.emoji;
+                    span.title = `${typeName} (Залишилось: ${pool[typeName]})`;
+                    span.dataset.type = typeName;
+                    span.addEventListener('click', (e) => {
+                        console.log(`Clicked on deployment icon: ${typeName}`);
+                        selectCreatureForDeployment(typeName);
+                    });
+                    span.classList.toggle('selected', typeName === selectedDeploymentCreatureType);
+                    deploymentCreaturesList.appendChild(span);
+                }
+            }
+             console.log(`Remaining creatures for Player ${deploymentPlayer}: ${remainingCount}`);
+             if (remainingCount === 0) {
+                 selectCreatureForDeployment(null);
+             } else if (selectedDeploymentCreatureType && pool[selectedDeploymentCreatureType] === 0) {
+                 selectCreatureForDeployment(null);
+             }
+        }
+
+        function selectCreatureForDeployment(typeName) {
+             if (gameState !== 'deployment') return;
+             const pool = (deploymentPlayer === 1) ? player1DeploymentPool : player2DeploymentPool;
+             if (typeName && (!pool[typeName] || pool[typeName] <= 0)) {
+                 console.warn(`Attempted to select unavailable type: ${typeName}`);
+                 return;
+             }
+            selectedDeploymentCreatureType = typeName;
+            deploymentCreaturesList.querySelectorAll('span').forEach(span => {
+                span.classList.toggle('selected', span.dataset.type === typeName);
+            });
+            console.log("Selected for deployment:", selectedDeploymentCreatureType);
+        }
+
+        function highlightDeploymentZone(player) {
+            clearHighlights();
+            const startCol = (player === 1) ? 0 : GRID_WIDTH - DEPLOYMENT_COLUMNS;
+            const endCol = startCol + DEPLOYMENT_COLUMNS;
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = startCol; x < endCol; x++) {
+                    const cell = gameGridElement.querySelector(`.grid-cell[data-x="${x}"][data-y="${y}"]`);
+                    if (cell && !getCreatureAt(x,y)) {
+                        cell.classList.add('deployment-zone');
+                        highlightedCells.push(cell);
+                    }
+                }
+            }
+        }
+
+         function isCellInDeploymentZone(x, y, player) {
+            const startCol = (player === 1) ? 0 : GRID_WIDTH - DEPLOYMENT_COLUMNS;
+            const endCol = startCol + DEPLOYMENT_COLUMNS;
+            return x >= startCol && x < endCol && y >= 0 && y < GRID_HEIGHT;
+        }
+
+        // --- ВИПРАВЛЕНО: Додано функцію generateId ---
+        function generateId() {
+            return Math.random().toString(36).substring(2, 9);
+        }
+
+        function placeCreatureDuringDeployment(player, typeName, x, y) {
+            console.log(`Attempting to place ${typeName} for Player ${player} at (${x}, ${y})`);
+            console.log("Current creatures on board before getCreatureAt:", JSON.stringify(creatures.map(c=>({p:c.player, t:c.type.name, x:c.x, y:c.y}))));
+
+            if (!isCellInDeploymentZone(x, y, player)) {
+                console.log("Placement failed: Not in deployment zone.");
+                showMessage("Не можна розмістити тут! Виберіть клітинку у вашій зоні.");
+                return false;
+            }
+            const existingCreature = getCreatureAt(x, y);
+            if (existingCreature) {
+                 console.log(`Placement failed: Cell (${x}, ${y}) occupied by`, existingCreature);
+                showMessage("Ця клітинка вже зайнята!");
+                return false;
+            }
+            const pool = (player === 1) ? player1DeploymentPool : player2DeploymentPool;
+             if (!pool[typeName] || pool[typeName] <= 0) {
+                 console.log(`Placement failed: No ${typeName} left in pool.`);
+                 showMessage(`У вас більше немає створінь типу ${creatureTypes[typeName].emoji}`);
+                 selectCreatureForDeployment(null);
+                 return false;
+             }
+
+            // Тепер addCreature має доступ до generateId
+            const creatureData = addCreature(typeName, player, x, y);
+            if (creatureData) {
+                 creatures.push(creatureData);
+                 console.log("Creature pushed to global array. Current creatures:", JSON.stringify(creatures.map(c=>({p:c.player, t:c.type.name, x:c.x, y:c.y}))));
+                const creatureElement = createCreatureElement(creatureData);
+                gameGridElement.appendChild(creatureElement);
+                pool[typeName]--;
+                console.log(`Successfully placed ${typeName}. Pool left:`, JSON.stringify(pool));
+                updateDeploymentInfo();
+                highlightDeploymentZone(player);
+                 if (checkDeploymentComplete(player)) {
+                     console.log(`Player ${player} deployment complete.`);
+                     advanceDeployment();
+                 } else {
+                     selectCreatureForDeployment(null);
+                 }
+                return true;
+            } else {
+                 console.error("Failed to create creature data for", typeName);
+                 return false;
+            }
+        }
+
+        function checkDeploymentComplete(player) {
+            const pool = (player === 1) ? player1DeploymentPool : player2DeploymentPool;
+            for (const typeName in pool) {
+                if (pool[typeName] > 0) return false;
+            }
+            return true;
+        }
+
+        function advanceDeployment() {
+            console.log(`Advancing deployment from Player ${deploymentPlayer}`);
+            clearHighlights();
+            deploymentOverlay.classList.remove('active');
+
+            if (deploymentPlayer === 1) {
+                if (gameMode === 'pvp') {
+                    deploymentPlayer = 2;
+                    showMessage("Гравець 2: Розставте свої війська.");
+                    setupDeploymentPhase();
+                } else {
+                    showMessage("ШІ розставляє свої війська...");
+                     setTimeout(() => {
+                         deployAICreatures();
+                         startBattle();
+                     }, 500);
+                }
+            } else {
+                startBattle();
+            }
+        }
+
+        function deployAICreatures() {
+            console.log("AI deploying creatures...");
+            const player = AI_PLAYER_NUMBER;
+            const pool = player2DeploymentPool;
+            const startCol = GRID_WIDTH - DEPLOYMENT_COLUMNS;
+            const endCol = GRID_WIDTH;
+            let availableCells = [];
+             for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = startCol; x < endCol; x++) {
+                    if (!getCreatureAt(x, y)) {
+                        availableCells.push({ x, y });
+                    }
+                }
+            }
+            console.log(`AI available deployment cells: ${availableCells.length}`);
+
+            for (const typeName in pool) {
+                let count = pool[typeName];
+                console.log(`AI deploying ${count} of ${typeName}`);
+                while (count > 0 && availableCells.length > 0) {
+                     const randomIndex = Math.floor(Math.random() * availableCells.length);
+                     const cell = availableCells[randomIndex];
+                     const creatureData = addCreature(typeName, player, cell.x, cell.y);
+                     if (creatureData) {
+                         creatures.push(creatureData);
+                         const creatureElement = createCreatureElement(creatureData);
+                         gameGridElement.appendChild(creatureElement);
+                         console.log(`AI placed ${typeName} at (${cell.x}, ${cell.y})`);
+                     }
+                     availableCells.splice(randomIndex, 1);
+                     count--;
+                }
+                 if (count > 0) console.error(`AI ran out of space to place ${count} ${typeName}!`);
+                pool[typeName] = 0;
+            }
+            console.log("AI deployment finished.");
+        }
+
+        function startBattle() {
+            console.log("Starting battle!");
+            gameState = 'battle';
+            deploymentPanel.style.display = 'none';
+            deploymentOverlay.classList.remove('active');
+            clearHighlights();
+            endTurnButton.style.display = 'inline-block';
+            currentPlayer = 1;
+            currentPlayerTextElement.textContent = getPlayerName(currentPlayer);
+            selectedCreatureInfoElement.textContent = 'Виберіть створіння';
+            showMessage("Бій розпочато! Хід Гравця 1.");
+
+            creatures.forEach(c => {
+                c.retaliatedThisTurn = false;
+                 if (c.player === currentPlayer) {
+                    c.canMove = true;
+                    c.canAttack = true;
+                } else {
+                     c.canMove = false;
+                     c.canAttack = false;
+                 }
+            });
+            checkEndTurnButtonState();
+        }
+
+        // --- Логіка Бою ---
+        function handleCreatureClick(creature) {
+             // console.log(`Creature clicked: ${creature.type.emoji} (Player ${creature.player}) at (${creature.x}, ${creature.y})`);
+             if (gameState !== 'battle' || (gameMode === 'pve' && isAITurn)) {
+                 // console.log("Click ignored (wrong state or AI turn)");
+                 return;
+             }
+             if (selectedCreature && creature.player !== currentPlayer && selectedCreature.canAttack) {
+                 // console.log(`Attempting attack from ${selectedCreature.type.emoji} to ${creature.type.emoji}`);
+                 if (isCellHighlighted(creature.x, creature.y, 'attack')) {
+                     attackCreature(selectedCreature, creature);
+                 } else {
+                     showMessage("Занадто далеко для атаки!");
+                     selectCreature(null);
+                 }
+             }
+             else if (creature.player === currentPlayer) {
+                 // console.log(`Selecting own creature: ${creature.type.emoji}`);
+                 if (!creature.canMove && !creature.canAttack) {
+                     showMessage("Це створіння вже не може діяти цього ходу.");
+                     selectCreature(null);
+                 } else {
+                     selectCreature(creature);
+                 }
+             }
+             else {
+                 // console.log("Clicked opponent creature (not attack)");
+                 showMessage("Це створіння супротивника.");
+                 selectCreature(null);
+             }
+        }
+
+        function handleCellClick(x, y) {
+             console.log(`Cell clicked: (${x}, ${y}), Game state: ${gameState}`);
+             if (gameState === 'deployment') {
+                 console.log(`Deployment click. Selected type: ${selectedDeploymentCreatureType}`);
+                 if (!selectedDeploymentCreatureType) {
+                     console.log("No creature type selected for deployment.");
+                     showMessage("Спочатку виберіть створіння зі списку.");
+                     return;
+                 }
+                 if (isCellInDeploymentZone(x, y, deploymentPlayer)) {
+                     console.log("Cell is in deployment zone. Attempting placement...");
+                     placeCreatureDuringDeployment(deploymentPlayer, selectedDeploymentCreatureType, x, y);
+                 } else {
+                      console.log("Cell is NOT in deployment zone.");
+                      showMessage("Виберіть клітинку у вашій зоні розстановки!");
+                 }
+                 return;
+             }
+
+             if (gameState === 'battle') {
+                  if (gameMode === 'pve' && isAITurn) {
+                       return;
+                  }
+                 if (!selectedCreature) {
+                      return;
+                 }
+                 const targetCreature = getCreatureAt(x, y);
+                 if (targetCreature && targetCreature.player !== selectedCreature.player && isCellHighlighted(x, y, 'attack')) {
+                     if (selectedCreature.canAttack) {
+                         attackCreature(selectedCreature, targetCreature);
+                     } else {
+                         showMessage("Це створіння вже атакувало цього ходу.");
+                         selectCreature(null);
+                     }
+                 }
+                 else if (!targetCreature && isCellHighlighted(x, y, 'move')) {
+                     if (selectedCreature.canMove) {
+                         moveCreature(selectedCreature, x, y);
+                     } else {
+                         showMessage("Це створіння вже рухалось цього ходу.");
+                         selectCreature(null);
+                     }
+                 }
+                 else {
+                     selectCreature(null);
+                 }
+             }
+        }
+
+        // --- Решта функцій (без змін) ---
+
+        function selectCreature(creature) {
+             if (gameState !== 'battle' || (gameMode === 'pve' && isAITurn)) return;
+            if (selectedCreature) {
+                const oldElement = document.getElementById(`creature-${selectedCreature.id}`);
+                if (oldElement) oldElement.classList.remove('selected');
+            }
+             clearHighlights();
+            selectedCreature = creature;
+            if (selectedCreature) {
+                 if (!selectedCreature.canMove && !selectedCreature.canAttack) {
+                    showMessage("Це створіння вже не може діяти цього ходу.");
+                    selectedCreature = null;
+                    selectedCreatureInfoElement.textContent = 'Виберіть створіння';
+                    return;
+                }
+                const newElement = document.getElementById(`creature-${selectedCreature.id}`);
+                if (newElement) newElement.classList.add('selected');
+                 selectedCreatureInfoElement.textContent = `Вибрано: ${selectedCreature.type.emoji} (HP: ${selectedCreature.hp}/${selectedCreature.type.maxHp}, Рух: ${selectedCreature.canMove}, Атака: ${selectedCreature.canAttack})`;
+                if (selectedCreature.canMove) highlightAvailableMoves(selectedCreature);
+                if (selectedCreature.canAttack) highlightAvailableAttacks(selectedCreature);
+            } else {
+                selectedCreatureInfoElement.textContent = 'Виберіть створіння';
+            }
+        }
+
+        function moveCreature(creature, newX, newY) {
+             if (gameState !== 'battle') return false;
+             if (!isValidMove(creature, newX, newY)) return false;
+            const creatureElement = document.getElementById(`creature-${creature.id}`);
+            if (!creatureElement) return false;
+            creature.x = newX; creature.y = newY; creature.canMove = false;
+            creatureElement.style.left = `${newX * CELL_SIZE}px`;
+            creatureElement.style.top = `${newY * CELL_SIZE}px`;
+             if (!isAITurn) {
+                 if (creature.canAttack) selectCreature(creature);
+                 else selectCreature(null);
+                 checkEndTurnButtonState();
+             }
+             return true;
+        }
+
+        function attackCreature(attacker, defender) {
+             if (gameState !== 'battle' || !attacker.canAttack) return false;
+            const distance = calculateDistance(attacker.x, attacker.y, defender.x, defender.y);
+            if (distance > attacker.type.range) {
+                 if (!isAITurn) showMessage("Ціль занадто далеко!");
+                 selectCreature(null); return false;
+            }
+            const damage = attacker.type.attack;
+            defender.hp -= damage;
+            attacker.canAttack = false;
+            if (attacker.type.name !== 'knight') attacker.canMove = false;
+            showMessage(`${attacker.type.emoji} (${getPlayerName(attacker.player)}) атакує ${defender.type.emoji} (${getPlayerName(defender.player)}) на ${damage} шкоди!`);
+            updateHealthDisplay(defender);
+            let attackerDefeated = false;
+            if (defender.hp > 0 && !defender.retaliatedThisTurn) {
+                const retaliationDistance = calculateDistance(defender.x, defender.y, attacker.x, attacker.y);
+                if (retaliationDistance <= defender.type.range) {
+                    const retaliationDamage = defender.type.attack;
+                    attacker.hp -= retaliationDamage;
+                    defender.retaliatedThisTurn = true;
+                    showMessage(`${defender.type.emoji} (${getPlayerName(defender.player)}) контратакує ${attacker.type.emoji} (${getPlayerName(attacker.player)}) на ${retaliationDamage} шкоди!`);
+                    updateHealthDisplay(attacker);
+                    if (attacker.hp <= 0) { defeatCreature(attacker); attackerDefeated = true; }
+                }
+            }
+            if (defender.hp <= 0) defeatCreature(defender);
+             if (!isAITurn && !attackerDefeated) {
+                 if (attacker.type.name === 'knight' && attacker.canMove) selectCreature(attacker);
+                 else selectCreature(null);
+                 checkEndTurnButtonState();
+             } else if (attackerDefeated) { selectCreature(null); }
+             return true;
+        }
+
+        function defeatCreature(creature) {
+            showMessage(`${creature.type.emoji} (${getPlayerName(creature.player)}) переможено!`);
+            const creatureElement = document.getElementById(`creature-${creature.id}`);
+            if (creatureElement) creatureElement.remove();
+            if (selectedCreature && selectedCreature.id === creature.id) selectCreature(null);
+            creatures = creatures.filter(c => c.id !== creature.id);
+            if (gameState === 'battle') checkWinCondition();
+        }
+
+        function checkWinCondition() {
+             if (gameState !== 'battle') return false;
+            const player1Creatures = creatures.filter(c => c.player === 1 && c.hp > 0).length;
+            const player2Creatures = creatures.filter(c => c.player === AI_PLAYER_NUMBER && c.hp > 0).length;
+            let gameOver = false;
+            if (player1Creatures === 0 && creatures.some(c => c.player === AI_PLAYER_NUMBER)) {
+                showMessage(`${getPlayerName(AI_PLAYER_NUMBER)} переміг!`, 5000); gameOver = true;
+            } else if (player2Creatures === 0 && creatures.some(c => c.player === 1)) {
+                showMessage(`${getPlayerName(1)} переміг!`, 5000); gameOver = true;
+            }
+            if (gameOver) {
+                 gameState = 'game_over'; endTurnButton.disabled = true; isAITurn = false;
+                 aiTurnOverlay.classList.remove('active'); selectCreature(null); clearHighlights();
+                 restartButton.disabled = false;
+            }
+             return gameOver;
+        }
+
+        // Додає дані створіння, але НЕ в глобальний масив creatures
+        function addCreature(typeName, player, x, y) {
+             if (!creatureTypes[typeName]) return null;
+             const type = creatureTypes[typeName];
+             // Використовуємо generateId тут
+             return { id: generateId(), type: type, player: player, x: x, y: y, hp: type.maxHp, canMove: false, canAttack: false, retaliatedThisTurn: false };
+        }
+
+
+        function createCreatureElement(creature) {
+            const div = document.createElement('div');
+            div.id = `creature-${creature.id}`;
+            div.classList.add('creature', `player${creature.player}`);
+            div.textContent = creature.type.emoji;
+            div.style.left = `${creature.x * CELL_SIZE}px`; div.style.top = `${creature.y * CELL_SIZE}px`;
+            div.dataset.id = creature.id;
+            const healthSpan = document.createElement('span');
+            healthSpan.classList.add('health'); healthSpan.id = `health-${creature.id}`;
+            healthSpan.textContent = `${creature.hp}/${creature.type.maxHp}`;
+            div.appendChild(healthSpan);
+            div.addEventListener('click', (event) => {
+                 if (gameState === 'battle' && !(gameMode === 'pve' && isAITurn)) {
+                    event.stopPropagation(); handleCreatureClick(creature);
+                }
+            });
+            return div;
+        }
+
+         function updateHealthDisplay(creature) {
+             const healthSpan = document.getElementById(`health-${creature.id}`);
+            if (healthSpan) healthSpan.textContent = `${Math.max(0, creature.hp)}/${creature.type.maxHp}`;
+        }
+
+        function getCreatureAt(x, y) { return creatures.find(c => c.x === x && c.y === y); }
+        function isWithinGrid(x, y) { return x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT; }
+        function calculateDistance(x1, y1, x2, y2) { return Math.abs(x1 - x2) + Math.abs(y1 - y2); }
+        function isValidMove(creature, targetX, targetY) {
+            if (!isWithinGrid(targetX, targetY) || getCreatureAt(targetX, targetY)) return false;
+            const distance = calculateDistance(creature.x, creature.y, targetX, targetY);
+            return creature.canMove && distance > 0 && distance <= creature.type.movement;
+        }
+
+        function highlightAvailableMoves(creature) {
+            if (!creature.canMove) return;
+            const startX = creature.x, startY = creature.y, maxMove = creature.type.movement;
+            for (let dx = -maxMove; dx <= maxMove; dx++) {
+                for (let dy = -maxMove; dy <= maxMove; dy++) {
+                    const nextX = startX + dx, nextY = startY + dy;
+                    if (isValidMove(creature, nextX, nextY)) highlightCell(nextX, nextY, 'move');
+                }
+            }
+        }
+
+        function highlightAvailableAttacks(creature) {
+             if (!creature.canAttack) return;
+             const startX = creature.x, startY = creature.y, maxRange = creature.type.range;
+             for (let dx = -maxRange; dx <= maxRange; dx++) {
+                 for (let dy = -maxRange; dy <= maxRange; dy++) {
+                     const targetX = startX + dx, targetY = startY + dy;
+                     if (dx === 0 && dy === 0 || !isWithinGrid(targetX, targetY)) continue;
+                     const targetCreature = getCreatureAt(targetX, targetY);
+                     if (targetCreature && targetCreature.player !== creature.player && calculateDistance(startX, startY, targetX, targetY) <= maxRange) {
+                         highlightCell(targetX, targetY, 'attack');
+                     }
+                 }
+             }
+        }
+
+        function highlightCell(x, y, type) {
+            const cell = gameGridElement.querySelector(`.grid-cell[data-x="${x}"][data-y="${y}"]`);
+            if (cell) { cell.classList.add(type === 'move' ? 'move-highlight' : 'attack-highlight'); highlightedCells.push(cell); }
+        }
+
+        function isCellHighlighted(x, y, type) {
+            const cell = gameGridElement.querySelector(`.grid-cell[data-x="${x}"][data-y="${y}"]`);
+            return cell ? cell.classList.contains(type === 'move' ? 'move-highlight' : 'attack-highlight') : false;
+        }
+
+        function clearHighlights() {
+            highlightedCells.forEach(cell => cell.classList.remove('move-highlight', 'attack-highlight', 'deployment-zone'));
+            highlightedCells = [];
+        }
+
+         function getPlayerName(playerNumber) { return (gameMode === 'pve' && playerNumber === AI_PLAYER_NUMBER) ? "ШІ" : `Гравець ${playerNumber}`; }
+
+        function endTurn() {
+             if (gameState !== 'battle' || checkWinCondition()) return;
+             if (isAITurn) { isAITurn = false; aiTurnOverlay.classList.remove('active'); }
+             else { selectCreature(null); }
+             const nextPlayer = (currentPlayer === 1) ? AI_PLAYER_NUMBER : 1;
+             currentPlayer = nextPlayer; currentPlayerTextElement.textContent = getPlayerName(currentPlayer);
+             let canNextPlayerAct = false;
+             creatures.forEach(c => {
+                 c.retaliatedThisTurn = false;
+                 if (c.player === currentPlayer && c.hp > 0) { c.canMove = true; c.canAttack = true; canNextPlayerAct = true; }
+                 else { c.canMove = false; c.canAttack = false; }
+             });
+             showMessage(`Хід ${getPlayerName(currentPlayer)}`);
+             if (!canNextPlayerAct && !checkWinCondition()) { showMessage(`${getPlayerName(currentPlayer)} пропускає хід.`); setTimeout(endTurn, 1500); return; }
+             checkEndTurnButtonState();
+             if (gameMode === 'pve' && currentPlayer === AI_PLAYER_NUMBER) {
+                 if (!checkWinCondition()) { isAITurn = true; aiTurnOverlay.classList.add('active'); endTurnButton.disabled = true; setTimeout(executeAITurn, AI_ACTION_DELAY); }
+             } else { isAITurn = false; aiTurnOverlay.classList.remove('active'); }
+        }
+
+        function checkEndTurnButtonState() {
+             if (gameState !== 'battle') { endTurnButton.disabled = true; return; }
+             const p1 = creatures.some(c => c.player === 1 && c.hp > 0), p2 = creatures.some(c => c.player === AI_PLAYER_NUMBER && c.hp > 0);
+             endTurnButton.disabled = !(p1 && p2) || isAITurn;
+        }
+
+        let messageTimeout;
+        function showMessage(text, duration = 2000) {
+             clearTimeout(messageTimeout); messageBox.textContent = text; messageBox.style.display = 'block';
+             messageTimeout = setTimeout(() => { messageBox.style.display = 'none'; }, duration);
+        }
+
+        function restartGame() {
+             gameState = 'mode_selection'; gameStarted = false; showScreen('mode-selection-screen');
+             creatures = []; player1DeploymentPool = {}; player2DeploymentPool = {}; selectedCreature = null;
+             selectedDeploymentCreatureType = null; highlightedCells = []; isAITurn = false;
+             aiTurnOverlay.classList.remove('active'); deploymentOverlay.classList.remove('active');
+             deploymentPanel.style.display = 'none'; endTurnButton.style.display = 'none'; restartButton.disabled = true;
+             showMessage("Гру скинуто. Виберіть режим.");
+        }
+
+        // --- Логіка ШІ ---
+        async function executeAITurn() {
+             // console.log("--- Хід ШІ розпочато ---");
+             if (gameState !== 'battle' || !isAITurn) { console.log("Хід ШІ скасовано."); aiTurnOverlay.classList.remove('active'); checkEndTurnButtonState(); return; }
+             const aiUnits = creatures.filter(c => c.player === AI_PLAYER_NUMBER && c.hp > 0 && (c.canMove || c.canAttack));
+             const playerUnits = creatures.filter(c => c.player === 1 && c.hp > 0);
+             if (playerUnits.length === 0 || aiUnits.length === 0) { if (gameState === 'battle') endTurn(); return; }
+
+             for (const aiUnit of aiUnits) {
+                  if (gameState !== 'battle' || !isAITurn) { console.log("Хід ШІ перервано."); return; }
+                  if (aiUnit.hp <= 0 || (!aiUnit.canMove && !aiUnit.canAttack)) continue;
+                  let target = null, minDistance = Infinity;
+                  const currentAlivePlayerUnits = creatures.filter(c => c.player === 1 && c.hp > 0);
+                  if (currentAlivePlayerUnits.length === 0) break;
+                  currentAlivePlayerUnits.forEach(p => { const d = calculateDistance(aiUnit.x, aiUnit.y, p.x, p.y); if (d < minDistance) { minDistance = d; target = p; } });
+                  if (!target) continue;
+                  // console.log(`ШІ ${aiUnit.type.emoji} ціль ${target.type.emoji} dist ${minDistance}`);
+                  let actionTaken = false;
+                  if (aiUnit.canAttack && minDistance <= aiUnit.type.range) {
+                      // console.log(`ШІ ${aiUnit.type.emoji} атакує`);
+                      actionTaken = attackCreature(aiUnit, target);
+                      await delay(AI_ACTION_DELAY); if (gameState === 'game_over') return;
+                  }
+                  if (aiUnit.canMove && target && (!actionTaken || aiUnit.type.name === 'knight')) {
+                      const bestMove = findBestMoveTowards(aiUnit, target.x, target.y);
+                      if (bestMove) { /* console.log(`ШІ ${aiUnit.type.emoji} рухається`); */ moveCreature(aiUnit, bestMove.x, bestMove.y); await delay(AI_ACTION_DELAY); if (gameState === 'game_over') return; }
+                      // else console.log(`ШІ ${aiUnit.type.emoji} не може рухатись`);
+                  }
+             }
+             // console.log("--- Хід ШІ (цикл) завершено ---");
+             if (gameState === 'battle') endTurn();
+             else { isAITurn = false; aiTurnOverlay.classList.remove('active'); checkEndTurnButtonState(); }
+        }
+
+        function findBestMoveTowards(creature, targetX, targetY) {
+             if (!creature.canMove) return null;
+             let bestPos = null, minDistance = calculateDistance(creature.x, creature.y, targetX, targetY);
+             const maxMove = creature.type.movement; let possibleMoves = [];
+             for (let dx = -maxMove; dx <= maxMove; dx++) {
+                 for (let dy = -maxMove; dy <= maxMove; dy++) {
+                     if (dx === 0 && dy === 0) continue; const nextX = creature.x + dx, nextY = creature.y + dy;
+                     if (isValidMove(creature, nextX, nextY)) possibleMoves.push({ x: nextX, y: nextY, dist: calculateDistance(nextX, nextY, targetX, targetY) });
+                 }
+             }
+             if (possibleMoves.length > 0) {
+                 possibleMoves.sort((a, b) => a.dist - b.dist);
+                 if (possibleMoves[0].dist < minDistance) bestPos = { x: possibleMoves[0].x, y: possibleMoves[0].y };
+                 // else console.log(`ШІ ${creature.type.emoji} не може наблизитись`);
+             }
+             return bestPos;
+        }
+
+        function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+        // --- Обробники Подій для Кнопок ---
+        document.getElementById('pve-button').addEventListener('click', () => initializeGame('pve'));
+        document.getElementById('pvp-button').addEventListener('click', () => initializeGame('pvp'));
+        endTurnButton.addEventListener('click', endTurn);
+        restartButton.addEventListener('click', restartGame);
+
+        // --- Початковий стан ---
+        showScreen('mode-selection-screen');
+        restartButton.disabled = true;
+
+        // Прибираємо префікс DEBUG з логів
+        // const originalLog = console.log;
+        // const originalWarn = console.warn;
+        // const originalError = console.error;
+        // console.log = (...args) => originalLog(...args);
+        // console.warn = (...args) => originalWarn(...args);
+        // console.error = (...args) => originalError(...args);
+
+
+    </script>
+</body>
+</html>

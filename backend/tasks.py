@@ -49,14 +49,14 @@ async def check_workers():
 
                             # Додаємо ресурс на склад підприємства в залежності від типу
                             if enterprise.resource_type == "wood":
-                                enterprise.wood_stored += (
+                                enterprise.resource_stored += (
                                     1  #  enterprise.production_rate
                                 )
                                 logging.info(
                                     f"Added 1 wood to enterprise {enterprise.id}"
                                 )
                             elif enterprise.resource_type == "stone":
-                                enterprise.stone_stored += (
+                                enterprise.resource_stored += (
                                     1  #  enterprise.production_rate
                                 )
                                 logging.info(

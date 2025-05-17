@@ -4,6 +4,7 @@ import asyncio
 import uvicorn
 from fastapi import FastAPI, WebSocket
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend import database, utils
 from backend.tasks import check_workers
@@ -11,11 +12,22 @@ from backend.websockets import manager
 
 from .routers import (admin, adventure_guild, auth, castle, char_tasks,
                       enterprise, help, inventory, map, shop, player,
-                      upload, item)
+                      upload, item, rating)
+from .routers.battles import battle
 
 logger = utils.setup_logger(__name__)
 
 app = FastAPI()
+
+# Налаштування CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Дозволяємо всі джерела
+    allow_credentials=True,
+    allow_methods=["*"],  # Дозволяємо всі методи
+    allow_headers=["*"],  # Дозволяємо всі заголовки
+)
+
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 app.mount(
     "/avatars", StaticFiles(directory="frontend/user_resourses/avatars"), name="avatars"
@@ -51,6 +63,10 @@ app.include_router(shop.router)
 logger.info("Shop router registered")
 app.include_router(item.router)
 logger.info("Item router registered")
+app.include_router(battle.router)
+logger.info("Battle router registered")
+app.include_router(rating.router)
+logger.info("Rating router registered")
 
 
 # TODO: Run this just one time when app start
