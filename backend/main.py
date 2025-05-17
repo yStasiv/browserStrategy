@@ -26,6 +26,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],  # Дозволяємо всі методи
     allow_headers=["*"],  # Дозволяємо всі заголовки
+    expose_headers=["*"]  # Дозволяємо доступ до всіх заголовків
 )
 
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
