@@ -32,5 +32,6 @@ sniffio==1.3.1
 
 
 # $ uvicorn backend.main:app --reload
+# uvicorn backend.main:app --host 0.0.0.0 --port $PORT
 
 # python -m "scripts.add_shop_items"
