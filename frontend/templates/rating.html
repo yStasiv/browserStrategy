@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}Рейтинг гравців{% endblock %}
+
+{% block body %}
+<div class="navigation-panel">
+    <a href="/player" class="nav-link">Мій персонаж</a>
+    <a href="/map" class="nav-link">Карта</a>
+    <a href="/guild" class="nav-link">Гільдія</a>
+    <a href="/char_tasks" class="nav-link">Завдання</a>
+    <a href="/castle" class="nav-link">Замок</a>
+</div>
+
+<div class="rating-container">
+    <h1>Рейтинг гравців</h1>
+    
+    <div class="rating-filters">
+        <button class="filter-btn active" data-filter="rating">За рейтингом</button>
+        <button class="filter-btn" data-filter="level">За рівнем</button>
+        <button class="filter-btn" data-filter="experience">За досвідом</button>
+    </div>
+
+    <div class="rating-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Місце</th>
+                    <th>Гравець</th>
+                    <th>Рейтинг</th>
+                    <th>Рівень</th>
+                    <th>Досвід</th>
+                    <th>Перемоги</th>
+                    <th>Поразки</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in players %}
+                <tr class="{% if player.id == current_user.id %}current-user{% endif %}">
+                    <td>{{ loop.index }}</td>
+                    <td><a href="/player_info?id={{ player.id }}">{{ player.username}} </a></td>
+                    <td>{{ player.rating.rating }}</td>
+                    <td>{{ player.level }}</td>
+                    <td>{{ player.experience }}</td>
+                    <td>{{ player.rating.wins }}</td>
+                    <td>{{ player.rating.losses }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.rating-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.rating-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-btn.active {
+    background: #007bff;
+    color: white;
+}
+
+.rating-table {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.current-user {
+    background: #e3f2fd;
+}
+
+tr:hover {
+    background: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .rating-table {
+        overflow-x: auto;
+    }
+    
+    table {
+        min-width: 800px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const tableBody = document.querySelector('tbody');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            const filter = this.dataset.filter;
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            
+            // Sort rows based on selected filter
+            rows.sort((a, b) => {
+                const aValue = getValue(a, filter);
+                const bValue = getValue(b, filter);
+                return bValue - aValue;
+            });
+            
+            // Reorder rows in the table
+            rows.forEach((row, index) => {
+                row.querySelector('td:first-child').textContent = index + 1;
+                tableBody.appendChild(row);
+            });
+        });
+    });
+    
+    function getValue(row, filter) {
+        switch(filter) {
+            case 'rating':
+                return parseInt(row.querySelector('td:nth-child(3)').textContent);
+            case 'level':
+                return parseInt(row.querySelector('td:nth-child(4)').textContent);
+            case 'experience':
+                return parseInt(row.querySelector('td:nth-child(5)').textContent);
+            default:
+                return 0;
+        }
+    }
+});
+</script>
+{% endblock %} 
