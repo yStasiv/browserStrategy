@@ -12,25 +12,25 @@ templates = Jinja2Templates(directory="frontend/templates")
 
 @router.get("/shop")
 async def shop_page(request: Request, db: Session = Depends(database.get_db)):
-    user_session_id = request.cookies.get("session_id")
-    if not user_session_id:
+    player_session_id = request.cookies.get("session_id")
+    if not player_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
+    player = (
+        db.query(models.User).filter(models.User.session_id == player_session_id).first()
     )
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
 
     # Отримуємо доступні товари
     shop_items = (
         db.query(models.ShopItem)
-        .filter(models.ShopItem.level_required <= user.level)
+        .filter(models.ShopItem.level_required <= player.level)
         .all()
     )
 
     return templates.TemplateResponse(
-        "shop.html", {"request": request, "user": user, "shop_items": shop_items}
+        "shop.html", {"request": request, "player": player, "shop_items": shop_items}
     )
 
 

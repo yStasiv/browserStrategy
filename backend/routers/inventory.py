@@ -13,13 +13,13 @@ templates = Jinja2Templates(directory="frontend/templates")
 
 @router.get("/inventory")
 async def get_inventory(request: Request, db: Session = Depends(database.get_db)):
-    user = await get_current_user(request, db)
-    if not user:
+    player = await get_current_user(request, db)
+    if not player:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     # Отримуємо всі вдягнені предмети
     equipped_items = {}
-    if user.equipped_items:
+    if player.equipped_items:
         slots = {
             "helmet_id": "Шолом",
             "armor_id": "Броня",
@@ -34,7 +34,7 @@ async def get_inventory(request: Request, db: Session = Depends(database.get_db)
         }
 
         for slot_id, slot_name in slots.items():
-            item_id = getattr(user.equipped_items, slot_id)
+            item_id = getattr(player.equipped_items, slot_id)
             if item_id:
                 item = db.query(models.Item).filter(models.Item.id == item_id).first()
                 if item:
@@ -43,92 +43,92 @@ async def get_inventory(request: Request, db: Session = Depends(database.get_db)
     # Оновлені бонуси від предметів
     user_data = {
         # Основні характеристики
-        "stamina": user.stamina or 0,
+        "stamina": player.stamina or 0,
         "stamina_bonus": sum(
             item.stats.get("stamina", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "energy": user.energy or 0,
+        "energy": player.energy or 0,
         "energy_bonus": sum(
             item.stats.get("energy", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "agility": user.agility or 0,
+        "agility": player.agility or 0,
         "agility_bonus": sum(
             item.stats.get("agility", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "mind": user.mind or 0,
+        "mind": player.mind or 0,
         "mind_bonus": sum(
             item.stats.get("mind", 0) for item in equipped_items.values() if item.stats
         ),
         # Додаткові характеристики
-        "melee_attack": user.melee_attack or 0,
+        "melee_attack": player.melee_attack or 0,
         "melee_attack_bonus": sum(
             item.stats.get("melee_attack", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "ranged_attack": user.ranged_attack or 0,
+        "ranged_attack": player.ranged_attack or 0,
         "ranged_attack_bonus": sum(
             item.stats.get("ranged_attack", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "magic_power": user.magic_power or 0,
+        "magic_power": player.magic_power or 0,
         "magic_power_bonus": sum(
             item.stats.get("magic_power", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "physical_defense": user.physical_defense or 0,
+        "physical_defense": player.physical_defense or 0,
         "physical_defense_bonus": sum(
             item.stats.get("physical_defense", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "magic_resistance": user.magic_resistance or 0,
+        "magic_resistance": player.magic_resistance or 0,
         "magic_resistance_bonus": sum(
             item.stats.get("magic_resistance", 0)
             for item in equipped_items.values()
             if item.stats
         ),
         # Бонуси до шкоди
-        "bonus_melee_damage": user.bonus_melee_damage or 0,
+        "bonus_melee_damage": player.bonus_melee_damage or 0,
         "bonus_melee_damage_bonus": sum(
             item.stats.get("bonus_melee_damage", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "bonus_ranged_damage": user.bonus_ranged_damage or 0,
+        "bonus_ranged_damage": player.bonus_ranged_damage or 0,
         "bonus_ranged_damage_bonus": sum(
             item.stats.get("bonus_ranged_damage", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "bonus_magic_damage": user.bonus_magic_damage or 0,
+        "bonus_magic_damage": player.bonus_magic_damage or 0,
         "bonus_magic_damage_bonus": sum(
             item.stats.get("bonus_magic_damage", 0)
             for item in equipped_items.values()
             if item.stats
         ),
         # Бонуси до захисту
-        "bonus_melee_defense": user.bonus_melee_defense or 0,
+        "bonus_melee_defense": player.bonus_melee_defense or 0,
         "bonus_melee_defense_bonus": sum(
             item.stats.get("bonus_melee_defense", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "bonus_ranged_defense": user.bonus_ranged_defense or 0,
+        "bonus_ranged_defense": player.bonus_ranged_defense or 0,
         "bonus_ranged_defense_bonus": sum(
             item.stats.get("bonus_ranged_defense", 0)
             for item in equipped_items.values()
             if item.stats
         ),
-        "bonus_magic_defense": user.bonus_magic_defense or 0,
+        "bonus_magic_defense": player.bonus_magic_defense or 0,
         "bonus_magic_defense_bonus": sum(
             item.stats.get("bonus_magic_defense", 0)
             for item in equipped_items.values()
@@ -138,7 +138,7 @@ async def get_inventory(request: Request, db: Session = Depends(database.get_db)
 
     inventory_items = (
         db.query(models.Item)
-        .filter(models.Item.owner_id == user.id, models.Item.is_equipped == False)
+        .filter(models.Item.owner_id == player.id, models.Item.is_equipped == False)
         .all()
     )
 
@@ -146,7 +146,7 @@ async def get_inventory(request: Request, db: Session = Depends(database.get_db)
         "inventory.html",
         {
             "request": request,
-            "user": user_data,
+            "player": user_data,
             "inventory_items": inventory_items,
             "equipped_items": equipped_items,
             "max_items": 30,

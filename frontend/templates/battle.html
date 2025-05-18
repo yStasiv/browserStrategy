@@ -53,7 +53,8 @@
     <div id="mode-selection-screen" class="screen active">
         <h1 class="text-2xl font-bold">Виберіть режим гри</h1>
         <button id="pve-button">Гравець проти ШІ</button>
-        <button id="pvp-button">Гравець проти Гравця</button>
+        <button id="pvp-button" disabled>Гравець проти Гравця(наразі не прауює)</button>
+        <p><br><br><a href="/player">Персонаж</a></p>
     </div>
 
     <div id="game-screen" class="screen">
@@ -100,8 +101,8 @@
         };
 
         // --- Frontend Configuration ---
-        const API_BASE_URL = 'http://127.0.0.1:8000/battle';
-        // const API_BASE_URL = 'https://browserstrategy-alpha.onrender.com/battle';
+        // const API_BASE_URL = 'http://127.0.0.1:8000/battle';
+        const API_BASE_URL = 'https://browserstrategy-alpha.onrender.com/battle';
         const GRID_WIDTH = 10;
         const GRID_HEIGHT = 8;
         const CELL_SIZE = 40;

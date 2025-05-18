@@ -179,7 +179,8 @@ class AuthRotes:
 
         return RedirectResponse(url="/login", status_code=303)
 
-    @router.post("/login")
+    # UnicodeEncodeError: 'latin-1' codec can't encode characters in position 10-13: ordinal not in range(256)
+    @router.post("/login")  # TODO: add support for ukrainian language for nickmanes 
     def login(
         # request: Request,
         username: str = Form(...),

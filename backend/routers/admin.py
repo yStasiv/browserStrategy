@@ -20,15 +20,15 @@ def get_current_user(request: Request, db: Session = Depends(database.get_db)):
 async def admin_enterprises(
     request: Request,
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(get_current_user),
+    player: models.User = Depends(get_current_user),
 ):
-    if not current_user or current_user.id != 1:
+    if not player or player.id != 1:
         raise HTTPException(status_code=403, detail="Access denied")
 
     enterprises = db.query(models.Enterprise).all()
     return templates.TemplateResponse(
         "admin_enterprises.html",
-        {"request": request, "user": current_user, "enterprises": enterprises},
+        {"request": request, "player": player, "enterprises": enterprises},
     )
 
 

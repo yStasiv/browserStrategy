@@ -3,13 +3,7 @@
 {% block title %}Перегляд персонажа{% endblock %}
 
 {% block body %}
-<div class="navigation-panel">
-    <a href="/player" class="nav-link">Мій персонаж</a>
-    <a href="/map" class="nav-link">Карта</a>
-    <a href="/guild" class="nav-link">Гільдія</a>
-    <a href="/char_tasks" class="nav-link">Завдання</a>
-    <a href="/castle" class="nav-link">Замок</a>
-</div>
+
 
 <div class="player-container">
     <div class="player-view-container">
@@ -29,95 +23,76 @@
             </div>
 
             <!-- Характеристики -->
+            <div class="stats-row">
+                <!-- Рейтинг -->
+                <div class="player-rating">
+                    <h3>Рейтинг</h3>
+                    <div class="rating-row">
+                        <img src="../static/images/rating-icon.png" alt="Rating" class="rating-icon">
+                        <span>Рейтинг: {{ player_rating.rating }}</span>
+                    </div>
+                    <div class="rating-row">
+                        <img src="../static/images/wins-icon.png" alt="Wins" class="rating-icon">
+                        <span>Перемоги: {{ player_rating.wins }}</span>
+                    </div>
+                    <div class="rating-row">
+                        <img src="../static/images/losses-icon.png" alt="Losses" class="rating-icon">
+                        <span>Поразки: {{ player_rating.losses }}</span>
+                    </div>
+                </div>
+                
+                <div class="player-stats">
+                    <h3>Характеристики</h3>
+                    <div class="stat-row">
+                        <img src="../static/images/level-icon.png" alt="Level" class="stat-icon">
+                        <span>Рівень: {{ player.level }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <img src="../static/images/exp-icon.png" alt="Experience" class="stat-icon">
+                        <span>Досвід: {{ player.experience }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <img src="../static/images/attributes/stamina.png" alt="Stamina" class="stat-icon">
+                        <span>Stamina: {{ player.stamina }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <img src="../static/images/attributes/energy.png" alt="energy" class="stat-icon">
+                        <span>Energy: {{ player.energy }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <img src="../static/images/attributes/agility.png" alt="agility" class="stat-icon">
+                        <span>Agility: {{ player.agility }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <img src="../static/images/attributes/mind.png" alt="mind" class="stat-icon">
+                        <span>Mind: {{ player.mind }}</span>
+                    </div>
+                </div>
 
-            <div class="player-stats">
-                <h3>Характеристики</h3>
-                <div class="stat-row">
-                    <img src="../static/images/level-icon.png" alt="Level" class="stat-icon">
-                    <span>Рівень: {{ player.level }}</span>
-                </div>
-                <div class="stat-row">
-                    <img src="../static/images/exp-icon.png" alt="Experience" class="stat-icon">
-                    <span>Досвід: {{ player.experience }}</span>
-                </div>
-                <div class="stat-row">
-                    <img src="../static/images/attributes/stamina.png" alt="Stamina" class="stat-icon">
-                    <span>Stamina: {{ player.stamina }}</span>
-                </div>
-                <div class="stat-row">
-                    <img src="../static/images/attributes/energy.png" alt="energy" class="stat-icon">
-                    <span>Energy: {{ player.energy }}</span>
-                </div>
-                <div class="stat-row">
-                    <img src="../static/images/attributes/agility.png" alt="agility" class="stat-icon">
-                    <span>Agility: {{ player.agility }}</span>
-                </div>
-                <div class="stat-row">
-                    <img src="../static/images/attributes/mind.png" alt="mind" class="stat-icon">
-                    <span>Mind: {{ player.mind }}</span>
-                </div>
-            </div>
-
-            <!-- Ресурси -->
-            <div class="player-resources">
-                <h3>Ресурси</h3>
-                <div class="resource-row">
-                    <img src="../static/images/gold-resource-icon.png" alt="Gold" class="resource-icon">
-                    <span>Золото: {{ player.gold }}</span>
-                </div>
-                <div class="resource-row">
-                    <img src="../static/images/wood-resource-icon.png" alt="Wood" class="resource-icon">
-                    <span>Дерево: {{ player.wood }}</span>
-                </div>
-                <div class="resource-row">
-                    <img src="../static/images/stone-resourse-icon.png" alt="Stone" class="resource-icon">
-                    <span>Камінь: {{ player.stone }}</span>
-                </div>
-            </div>
-
-            <!-- Рейтинг -->
-            <div class="player-rating">
-                <h3>Рейтинг</h3>
-                <div class="rating-row">
-                    <img src="../static/images/rating-icon.png" alt="Rating" class="rating-icon">
-                    <span>Рейтинг: {{ player_rating.rating }}</span>
-                </div>
-                <div class="rating-row">
-                    <img src="../static/images/wins-icon.png" alt="Wins" class="rating-icon">
-                    <span>Перемоги: {{ player_rating.wins }}</span>
-                </div>
-                <div class="rating-row">
-                    <img src="../static/images/losses-icon.png" alt="Losses" class="rating-icon">
-                    <span>Поразки: {{ player_rating.losses }}</span>
+                <!-- Ресурси -->
+                <div class="player-resources">
+                    <h3>Ресурси</h3>
+                    <div class="resource-row">
+                        <img src="../static/images/gold-resource-icon.png" alt="Gold" class="resource-icon">
+                        <span>Золото: {{ player.gold }}</span>
+                    </div>
+                    <div class="resource-row">
+                        <img src="../static/images/wood-resource-icon.png" alt="Wood" class="resource-icon">
+                        <span>Дерево: {{ player.wood }}</span>
+                    </div>
+                    <div class="resource-row">
+                        <img src="../static/images/stone-resourse-icon.png" alt="Stone" class="resource-icon">
+                        <span>Камінь: {{ player.stone }}</span>
+                    </div>
                 </div>
             </div>
 
             <!-- Місце роботи -->
             {% if player.workplace %}
-                <div class="workplace-info">
+                <div class="workplace-info" style="color: black;">
                     <h3>Місце роботи</h3>
                     <p>{{ player.workplace.replace('enterprise_', 'Підприємство #') }}</p>
                 </div>
-            {% endif %}
-        </div>
-
-        <div class="achievements-section">
-            <h2>Досягнення</h2>
-            {% if player.achievements %}
-            <div class="achievements-grid">
-                {% for user_achievement in player.achievements %}
-                <div class="achievement-card">
-                    {% if user_achievement.achievement.icon_url %}
-                    <img src="{{ user_achievement.achievement.icon_url }}" alt="{{ user_achievement.achievement.title }}">
-                    {% endif %}
-                    <h3>{{ user_achievement.achievement.title }}</h3>
-                    <p>{{ user_achievement.achievement.description }}</p>
-                    <span class="obtained-at">Отримано: {{ user_achievement.obtained_at.strftime('%d.%m.%Y') }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="no-achievements">У вас поки немає досягнень</p>
             {% endif %}
         </div>
 
@@ -137,7 +112,7 @@
                             </div>
                         {% else %}
                             <div class="empty-slot">
-                                <img src="/static/images/items/empty_helmet.svg" alt="Empty">
+                                <img src="/static/images/items/empty_helmet.png" alt="Empty">
                             </div>
                         {% endif %}
                     </div>
@@ -153,7 +128,7 @@
                             </div>
                         {% else %}
                             <div class="empty-slot">
-                                <img src="/static/images/items/empty_back.svg" alt="Empty">
+                                <img src="/static/images/items/empty_back.png" alt="Empty">
                             </div>
                         {% endif %}
                     </div>
@@ -172,7 +147,7 @@
                             </div>
                         {% else %}
                             <div class="empty-slot">
-                                <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                                <img src="/static/images/items/empty_weapon.png" alt="Empty">
                             </div>
                         {% endif %}
                     </div>
@@ -188,7 +163,7 @@
                             </div>
                         {% else %}
                             <div class="empty-slot">
-                                <img src="/static/images/items/empty_armor.svg" alt="Empty">
+                                <img src="/static/images/items/empty_armor.png" alt="Empty">
                             </div>
                         {% endif %}
                     </div>
@@ -204,7 +179,7 @@
                             </div>
                         {% else %}
                             <div class="empty-slot">
-                                <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                                <img src="/static/images/items/empty_weapon.png" alt="Empty">
                             </div>
                         {% endif %}
                     </div>
@@ -222,7 +197,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_boots.svg" alt="Empty">
+                            <img src="/static/images/items/empty_boots.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -241,7 +216,7 @@
                             </div>
                         {% else %}
                             <div class="empty-slot">
-                                <img src="/static/images/items/empty_jewelry.svg" alt="Empty">
+                                <img src="/static/images/items/empty_jewelry.png" alt="Empty">
                             </div>
                         {% endif %}
                     </div>
@@ -249,9 +224,24 @@
                 </div>
             </div>
         </div>
-
-        <div class="navigation-buttons">
-            <button onclick="history.back()" class="back-btn">Повернутися назад</button>
+        <div class="achievements-section">
+            <h2>Досягнення</h2>
+            {% if player.achievements %}
+            <div class="achievements-grid">
+                {% for user_achievement in player.achievements %}
+                <div class="achievement-card">
+                    {% if user_achievement.achievement.icon_url %}
+                    <img src="{{ user_achievement.achievement.icon_url }}" alt="{{ user_achievement.achievement.title }}">
+                    {% endif %}
+                    <h3>{{ user_achievement.achievement.title }}</h3>
+                    <p>{{ user_achievement.achievement.description }}</p>
+                    <span class="obtained-at">Отримано: {{ user_achievement.obtained_at.strftime('%d.%m.%Y') }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="no-achievements">У вас поки немає досягнень</p>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -262,56 +252,152 @@
     justify-content: center;
     gap: 20px;
     padding: 15px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.1);
     margin-bottom: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .nav-link {
-    padding: 8px 16px;
-    color: #333;
+    padding: 10px 20px;
+    color: #fff;
     text-decoration: none;
-    border-radius: 4px;
+    border-radius: 8px;
     transition: all 0.3s ease;
+    background: rgba(0, 0, 0, 0.3);
 }
 
 .nav-link:hover {
-    background: #e9ecef;
-    color: #007bff;
+    background: rgba(76, 175, 80, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
 }
 
 .player-container {
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.player-view-container {
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.player-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.player-header h2 {
+    color: #4CAF50;
+    font-size: 2em;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.fraction {
+    color: #fff;
+    font-size: 1.2em;
+    opacity: 0.8;
+}
+
+.player-info {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.player-avatar {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.avatar-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 3px solid #4CAF50;
+    object-fit: cover;
+    margin-bottom: 10px;
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.player-stats, .player-resources, .player-rating {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    height: fit-content;
+}
+
+.player-stats h3, .player-resources h3, .player-rating h3 {
+    color: #4CAF50;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.stat-row, .resource-row, .rating-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+    color: #fff;
+}
+
+.stat-icon, .resource-icon, .rating-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
 }
 
 .achievements-section {
-    margin-top: 30px;
+    grid-column: 1 / -1;
+    background: rgba(255, 255, 255, 0.1);
     padding: 20px;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    margin: 30px 0;
+}
+
+.achievements-section h2 {
+    color: #4CAF50;
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .achievements-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 20px;
-    margin-top: 20px;
 }
 
 .achievement-card {
+    background: rgba(0, 0, 0, 0.3);
     padding: 15px;
-    background: rgba(248, 249, 250, 0.9);
-    border-radius: 8px;
+    border-radius: 10px;
     text-align: center;
-    transition: transform 0.2s;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 .achievement-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
 }
 
 .achievement-card img {
@@ -319,86 +405,91 @@
     height: 64px;
     margin-bottom: 10px;
     border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 2px solid #4CAF50;
 }
 
 .achievement-card h3 {
+    color: #4CAF50;
     margin: 10px 0;
-    color: #2c3e50;
-    font-size: 1.2em;
+    font-size: 1.1em;
 }
 
 .achievement-card p {
-    font-size: 14px;
-    color: #34495e;
+    color: #fff;
+    font-size: 0.9em;
     line-height: 1.4;
+    opacity: 0.8;
 }
 
 .obtained-at {
     display: block;
-    font-size: 12px;
-    color: #7f8c8d;
+    font-size: 0.8em;
+    color: #4CAF50;
     margin-top: 10px;
-    font-style: italic;
-}
-
-.no-achievements {
-    text-align: center;
-    color: #7f8c8d;
-    font-style: italic;
-    padding: 20px;
+    opacity: 0.7;
 }
 
 .player-equipment {
-    background: rgba(0, 0, 0, 0.8);
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 15px;
+    margin-top: 30px;
 }
 
 .equipment-grid {
     display: grid;
-    gap: 10px;
+    gap: 20px;
     justify-items: center;
 }
 
 .equipment-row {
     display: flex;
-    gap: 10px;
+    gap: 20px;
 }
 
 .equipment-slot {
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid #666;
-    border-radius: 5px;
+    width: 100px;
+    height: 100px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid #4CAF50;
+    border-radius: 10px;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
+    transition: transform 0.3s;
+}
+
+.equipment-slot:hover {
+    transform: scale(1.05);
 }
 
 .slot-label {
     position: absolute;
-    top: -20px;
-    font-size: 12px;
-    color: #aaa;
+    top: -25px;
+    font-size: 14px;
+    color: #4CAF50;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .equipped-item {
     width: 100%;
     height: 100%;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 10px;
 }
 
 .equipped-item img {
     max-width: 90%;
     max-height: 90%;
     object-fit: contain;
+    transition: transform 0.3s;
+}
+
+.equipped-item:hover img {
+    transform: scale(1.1);
 }
 
 .empty-slot {
@@ -418,55 +509,47 @@
 .jewelry-slots {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-top: 20px;
+    gap: 20px;
+    margin-top: 30px;
 }
 
-.equipment-row.top {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 10px;
+.navigation-buttons {
+    text-align: center;
+    margin: 30px 0;
 }
 
-.equipment-slot.back {
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid #666;
-}
-
-.player-resources {
-    margin-bottom: 20px;
-}
-
-.player-rating {
-    margin-bottom: 20px;
-    padding: 15px;
-    background: #f8f9fa;
+.back-btn {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    padding: 12px 25px;
     border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.player-rating h3 {
-    color: #2c3e50;
-    margin-bottom: 10px;
-    font-size: 1.2em;
+.back-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
 }
 
-.rating-row {
-    display: flex;
-    align-items: center;
-    margin: 8px 0;
-    gap: 10px;
+@media (max-width: 768px) {
+    .stats-row {
+        grid-template-columns: 1fr;
+    }
 }
 
-.rating-icon {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
-}
-
-.rating-row span {
-    font-size: 1.1em;
-    color: #34495e;
+@media (max-width: 480px) {
+    .achievements-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .equipment-row {
+        flex-direction: column;
+    }
 }
 </style>
 {% endblock %} 

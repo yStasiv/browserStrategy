@@ -5,7 +5,7 @@
 {% block body %}
 <div class="character-container">
     <!-- Ресурси -->
-    <div class="character-resources">
+    <div class="player-resources">
         <span class="resource">
             <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ player.gold }}
         </span>
@@ -109,22 +109,29 @@
         </form>
     </div>
 
-    <!-- Кнопка виходу -->
-    <div class="logout-btn">
-        <form action="/logout" method="POST">
-            <button type="submit">Вийти</button>
-        </form>
-    </div>
-
-    <div class="character-actions">
-        <!-- ... існуючі кнопки ... -->
-        <div class="action-btn">
-            <form action="/inventory" method="get">
-                <button type="submit" class="inventory-btn">Інвентар</button>
-            </form>
+    <div class="character-menu">
+        <div class="menu-grid">
+            <a href="/inventory" class="menu-item">
+                <img src="../static/images/menu/inventary_icon.png" alt="Inventory" class="menu-icon">
+                <span>Інвентар</span>
+            </a>
+            <a href="/shop" class="menu-item">
+                <img src="../static/images/menu/market_icon.png" alt="Shop" class="menu-icon">
+                <span>Магазин</span>
+            </a>
+            <a href="/battle" class="menu-item">
+                <img src="../static/images/menu/start_battle_icon.png" alt="Start_battle" class="menu-icon">
+                <span>Почати бій</span>
+            </a>
+            {% if player.enterprise %}
+            <a href="/enterprise/{{ player.enterprise.split('_')[1] }}" class="menu-item">
+                <img src="../static/images/menu/enterprise-icon.png" alt="Підприємство" class="menu-icon">
+                <span>Моє підприємство</span>
+            </a>
+            {% endif %}
         </div>
     </div>
-
+    
     <!-- Додаємо блок спорядження -->
     <div class="character-equipment">
         <div class="equipment-grid">
@@ -141,7 +148,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_helmet.svg" alt="Empty">
+                            <img src="/static/images/items/empty_helmet.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -157,7 +164,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_back.svg" alt="Empty">
+                            <img src="/static/images/items/empty_back.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -176,7 +183,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                            <img src="/static/images/items/empty_weapon.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -192,7 +199,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_armor.svg" alt="Empty">
+                            <img src="/static/images/items/empty_armor.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -208,7 +215,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                            <img src="/static/images/items/empty_weapon.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -226,7 +233,7 @@
                     </div>
                 {% else %}
                     <div class="empty-slot">
-                        <img src="/static/images/items/empty_boots.svg" alt="Empty">
+                        <img src="/static/images/items/empty_boots.png" alt="Empty">
                     </div>
                 {% endif %}
             </div>
@@ -245,7 +252,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_jewelry.svg" alt="Empty">
+                            <img src="/static/images/items/empty_jewelry.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -254,13 +261,11 @@
         </div>
     </div>
 
-    <div class="character-menu">
-        <a href="/inventory" class="menu-button">Інвентар</a>
-        <a href="/shop" class="menu-button">Магазин</a>
-        <a href="/battle" class="menu-button">Почати бій</a>
-        {% if player.enterprise %}
-            <a href="/enterprise/{{ player.enterprise.split('_')[1] }}" class="menu-button">Моє підприємство</a>
-        {% endif %}
+       <!-- Кнопка виходу -->
+       <div class="logout-btn">
+        <form action="/logout" method="POST">
+            <button type="submit">Вийти</button>
+        </form>
     </div>
 </div>
 
@@ -301,88 +306,217 @@
 </script>
 
 <style>
-/* ... існуючі стилі ... */
+.character-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
 
-.adventurer-card {
-    background: linear-gradient(45deg, #ffd700, #ffa500);
+.player-resources {
+        display: flex;
+        gap: 3px;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 2px 3px;
+        border-radius: 4px;
+        font-size: 0.9em;
+        justify-content: center;
+    }
+
+    .resource {
+        display: flex;
+        align-items: center;
+        gap: 1px;
+        color: #fff;
+        white-space: nowrap;
+        padding: 2px 4px;
+        border-radius: 3px;
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .resource-icon {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+    }
+
+.character-info {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.avatar {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
     padding: 20px;
     border-radius: 10px;
-    margin: 20px 0;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    color: #333;
 }
 
-.adventurer-card h3 {
-    margin: 0 0 10px 0;
+.avatar-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 3px solid #4CAF50;
+    object-fit: cover;
+    margin-bottom: 10px;
+}
+
+.avatar-caption {
+    display: block;
+    font-size: 18px;
     color: #fff;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
 
-.inventory-btn {
-    background-color: #9c27b0;
+.avatar-caption a {
+    color: #4CAF50;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.avatar-caption a:hover {
+    color: #45a049;
+}
+
+.character-attributes {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.character-attributes h3 {
+    color: #4CAF50;
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+.character-attributes p {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+    color: #fff;
+}
+
+.attribute-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.character-attributes button {
+    background: #4CAF50;
     color: white;
-    padding: 10px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
-    font-size: 16px;
     transition: background-color 0.3s;
 }
 
-.inventory-btn:hover {
-    background-color: #7b1fa2;
+.character-attributes button:hover {
+    background: #45a049;
+}
+
+.character-level-experience {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    color: #fff;
+    display: block; /* Робить блоковим елементом (займає весь рядок) */
+    width: 100%;   /* Займає всю доступну ширину */
+    box-sizing: border-box; /* Враховує padding у ширині */
+}
+
+.experience-bar {
+    background: rgba(0, 0, 0, 0.3);
+    height: 20px;
+    border-radius: 10px;
+    margin: 10px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.experience-filled {
+    background: linear-gradient(90deg, #4CAF50, #45a049);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.experience-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    line-height: 20px;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .character-equipment {
-    background: rgba(0, 0, 0, 0.8);
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 15px;
+    margin: 30px 0;
 }
 
 .equipment-grid {
     display: grid;
-    gap: 10px;
+    gap: 20px;
     justify-items: center;
 }
 
 .equipment-row {
     display: flex;
-    gap: 10px;
+    gap: 20px;
 }
 
 .equipment-slot {
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid #666;
-    border-radius: 5px;
+    width: 100px;
+    height: 100px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid #4CAF50;
+    border-radius: 10px;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
+    transition: transform 0.3s;
+}
+
+.equipment-slot:hover {
+    transform: scale(1.05);
 }
 
 .slot-label {
     position: absolute;
-    top: -20px;
-    font-size: 12px;
-    color: #aaa;
+    top: -25px;
+    font-size: 14px;
+    color: #4CAF50;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .equipped-item {
     width: 100%;
     height: 100%;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 10px;
 }
 
 .equipped-item img {
     max-width: 90%;
     max-height: 90%;
     object-fit: contain;
+    transition: transform 0.3s;
+}
+
+.equipped-item:hover img {
+    transform: scale(1.1);
 }
 
 .empty-slot {
@@ -402,39 +536,151 @@
 .jewelry-slots {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.equipment-row.top {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 10px;
-}
-
-.equipment-slot.back {
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid #666;
+    gap: 20px;
+    margin-top: 30px;
 }
 
 .character-menu {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    margin: 30px 0;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    justify-items: center;
+}
+
+.menu-item {
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 10px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    text-decoration: none;
+    color: #4CAF50;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 200px;
+}
+
+.menu-item:hover {
+    transform: translateY(-5px);
+    background: rgba(76, 175, 80, 0.2);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.menu-icon {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+
+.menu-item span {
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+    .menu-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .menu-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+#update-avatar-button, #update-cancel-avatar-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin: 10px 0;
+}
+
+#update-avatar-button:hover, #update-cancel-avatar-button:hover {
+    background: #45a049;
+}
+
+#upload-avatar-form {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
     margin: 20px 0;
 }
 
-.menu-button {
-    padding: 10px 20px;
-    background-color: #4CAF50;
+#upload-avatar-form label {
+    color: #fff;
+    margin-right: 10px;
+}
+
+#upload-avatar-form input[type="file"] {
+    margin: 10px 0;
+}
+
+#upload-avatar-form button {
+    background: #4CAF50;
     color: white;
-    text-decoration: none;
+    border: none;
+    padding: 10px 20px;
     border-radius: 5px;
+    cursor: pointer;
     transition: background-color 0.3s;
 }
 
-.menu-button:hover {
-    background-color: #45a049;
+#upload-avatar-form button:hover {
+    background: #45a049;
+}
+
+#file-name {
+    color: #4CAF50;
+    margin-left: 10px;
+}
+
+.map-btn, .castle-btn, .task-btn, .logout-btn {
+    margin: 10px 0;
+}
+
+.map-btn button, .castle-btn button, .task-btn button, .logout-btn button {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    width: 100%;
+}
+
+.map-btn button:hover, .castle-btn button:hover, .task-btn button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.logout-btn button {
+    background: linear-gradient(45deg, #f44336, #d32f2f);
+}
+
+.logout-btn button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
 }
 </style>
 

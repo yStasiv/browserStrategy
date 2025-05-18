@@ -121,13 +121,13 @@ def init_test_admin(db: Session):
 
         admin = models.User(
             id=1,
-            username="1",
-            password=hash_password("1"),
+            username="YuraAdmin",
+            password=hash_password("1994"),
             fraction="Admin",
-            gold=1000000,
-            wood=1000000,
-            stone=1000000,
-            level=100,
+            gold=10000,
+            wood=2,
+            stone=3,
+            level=7,
         )
         db.add(admin)
         db.commit()

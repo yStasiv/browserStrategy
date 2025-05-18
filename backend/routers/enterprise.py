@@ -87,10 +87,10 @@ async def enterprise_page(
     if not user_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
+    player = (
         db.query(models.User).filter(models.User.session_id == user_session_id).first()
     )
-    if not user:
+    if not player:
         raise HTTPException(status_code=404, detail="User not found")
 
     enterprise = (
@@ -114,7 +114,7 @@ async def enterprise_page(
         "enterprise.html",
         {
             "request": request,
-            "user": user,
+            "player": player,
             "enterprise": enterprise,
             "workers": workers,
             "current_time": datetime.now(),
@@ -148,13 +148,16 @@ async def start_work(
     current_time = datetime.now()
 
     if user.workplace:
+        # RedirectResponse(url=f"/enterprise/{enterprise_id}", status_code=400)
         raise HTTPException(status_code=400, detail="Already working somewhere")
 
     if enterprise.workers_count >= enterprise.max_workers:
+        # RedirectResponse(url=f"/enterprise/{enterprise_id}", status_code=400)
         raise HTTPException(status_code=400, detail="No vacant positions")
 
     # Перевіряємо, чи знаходиться гравець у правильному секторі
     if user.map_sector != enterprise.sector:
+        # RedirectResponse(url=f"/enterprise/{enterprise_id}", status_code=400)
         raise HTTPException(
             status_code=400, detail="You must be in the same sector as the enterprise"
         )
@@ -176,7 +179,7 @@ async def start_work(
     enterprise.workers_count += 1
 
     db.commit()
-    return {"status": "success"}
+    return RedirectResponse(url=f"/enterprise/{enterprise_id}", status_code=303)
 
 
 # Додаємо модель для запиту
