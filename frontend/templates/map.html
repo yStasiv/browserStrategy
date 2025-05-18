@@ -76,11 +76,11 @@
                 {% for enterprise in enterprises %}
                     <a href="/enterprise/{{ enterprise.id }}" class="enterprise-link">
                         {% if enterprise.resource_type == 'wood' %}
-                            <img src="../static/images/sawmill-icon.png" alt="Sawmill" class="enterprise-icon">
+                            <img src="../static/images/enterpricses/sawmill_model.png" alt="Sawmill" class="enterprise-icon">
                         {% elif enterprise.resource_type == 'stone' %}
-                            <img src="../static/images/mine-icon.png" alt="Mine" class="enterprise-icon">
+                            <img src="../static/images/enterpricses/mine_model.png" alt="Mine" class="enterprise-icon">
                         {% elif enterprise.resource_type == 'gold' %}
-                            <img src="../static/images/gold-mine-icon.png" alt="Gold Mine" class="enterprise-icon">
+                            <img src="../static/images/enterpricses/gold_mine_model.png" alt="Gold Mine" class="enterprise-icon">
                         {% endif %}
                         <span>{{ enterprise.name }}</span>
                         <div class="enterprise-info">
