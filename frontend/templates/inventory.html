@@ -8,6 +8,7 @@
     <div class="character-info">
         <div class="stats-block">
             <h3>Характеристики</h3>
+            <h4><a style="color: #f44336;">!!! Наразі характеристики не задіяні у битвах !!!</a></h4>
             
             <!-- Основні характеристики -->
             <div class="stats-section">
@@ -15,23 +16,23 @@
             <div class="stats-list">
                     <div class="stat-row" data-stat="stamina">
                         <img src="../static/images/attributes/stamina.png" alt="mind Icon" class="attribute-icon">
-                        <span class="stat-value">{{ user.stamina or 0 }}</span>
-                        {% if user.stamina_bonus %}<span class="stat-bonus">(+{{ user.stamina_bonus }})</span>{% endif %}
+                        <span class="stat-value">{{ player.stamina or 0 }}</span>
+                        {% if player.stamina_bonus %}<span class="stat-bonus">(+{{ player.stamina_bonus }})</span>{% endif %}
                     </div>
                     <div class="stat-row" data-stat="energy">
                         <img src="../static/images/attributes/energy.png" alt="mind Icon" class="attribute-icon">
-                        <span class="stat-value">{{ user.energy or 0 }}</span>
-                        {% if user.energy_bonus %}<span class="stat-bonus">(+{{ user.energy_bonus }})</span>{% endif %}
+                        <span class="stat-value">{{ player.energy or 0 }}</span>
+                        {% if player.energy_bonus %}<span class="stat-bonus">(+{{ player.energy_bonus }})</span>{% endif %}
                 </div>
                     <div class="stat-row" data-stat="agility">
                         <img src="../static/images/attributes/agility.png" alt="mind Icon" class="attribute-icon">
-                        <span class="stat-value">{{ user.agility or 0 }}</span>
-                        {% if user.agility_bonus %}<span class="stat-bonus">(+{{ user.agility_bonus }})</span>{% endif %}
+                        <span class="stat-value">{{ player.agility or 0 }}</span>
+                        {% if player.agility_bonus %}<span class="stat-bonus">(+{{ player.agility_bonus }})</span>{% endif %}
                     </div>
                     <div class="stat-row" data-stat="mind">
                         <img src="../static/images/attributes/mind.png" alt="mind Icon" class="attribute-icon">
-                        <span class="stat-value">{{ user.mind or 0 }}</span>
-                        {% if user.mind_bonus %}<span class="stat-bonus">(+{{ user.mind_bonus }})</span>{% endif %}
+                        <span class="stat-value">{{ player.mind or 0 }}</span>
+                        {% if player.mind_bonus %}<span class="stat-bonus">(+{{ player.mind_bonus }})</span>{% endif %}
                     </div>
                 </div>
             </div>
@@ -42,13 +43,13 @@
                 <div class="stats-list">
                     <div class="stat-row" data-stat="melee_attack">
                         <span class="stat-name">Ближній бій</span>
-                        <span class="stat-value">{{ user.melee_attack or 0 }}</span>
-                        {% if user.melee_attack_bonus %}<span class="stat-bonus">(+{{ user.melee_attack_bonus }})</span>{% endif %}
+                        <span class="stat-value">{{ player.melee_attack or 0 }}</span>
+                        {% if player.melee_attack_bonus %}<span class="stat-bonus">(+{{ player.melee_attack_bonus }})</span>{% endif %}
                     </div>
                     <div class="stat-row" data-stat="ranged_attack">
                         <span class="stat-name">Дальній бій</span>
-                        <span class="stat-value">{{ user.ranged_attack or 0 }}</span>
-                        {% if user.ranged_attack_bonus %}<span class="stat-bonus">(+{{ user.ranged_attack_bonus }})</span>{% endif %}
+                        <span class="stat-value">{{ player.ranged_attack or 0 }}</span>
+                        {% if player.ranged_attack_bonus %}<span class="stat-bonus">(+{{ player.ranged_attack_bonus }})</span>{% endif %}
                     </div>
                 </div>
             </div>
@@ -59,13 +60,13 @@
                 <div class="stats-list">
                     <div class="stat-row" data-stat="physical_defense">
                         <span class="stat-name">Фізичний захист</span>
-                        <span class="stat-value">{{ user.physical_defense or 0 }}</span>
-                        {% if user.physical_defense_bonus %}<span class="stat-bonus">(+{{ user.physical_defense_bonus }})</span>{% endif %}
+                        <span class="stat-value">{{ player.physical_defense or 0 }}</span>
+                        {% if player.physical_defense_bonus %}<span class="stat-bonus">(+{{ player.physical_defense_bonus }})</span>{% endif %}
                     </div>
                     <div class="stat-row" data-stat="magic_resistance">
                         <span class="stat-name">Стійкість до магії</span>
-                        <span class="stat-value">{{ user.magic_resistance or 0 }}</span>
-                        {% if user.magic_resistance_bonus %}<span class="stat-bonus">(+{{ user.magic_resistance_bonus }})</span>{% endif %}
+                        <span class="stat-value">{{ player.magic_resistance or 0 }}</span>
+                        {% if player.magic_resistance_bonus %}<span class="stat-bonus">(+{{ player.magic_resistance_bonus }})</span>{% endif %}
                     </div>
                 </div>
             </div>
@@ -81,34 +82,34 @@
                             <span class="stat-name">Бонуси атаки</span>
                             <div class="sub-stat">
                                 <span class="sub-stat-name">Бонус ближнього бою:</span>
-                                <span class="sub-stat-value">{{ user.bonus_melee_damage or 0 }}</span>
-                                {% if user.bonus_melee_damage_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_melee_damage_bonus }})</span>{% endif %}
+                                <span class="sub-stat-value">{{ player.bonus_melee_damage or 0 }}</span>
+                                {% if player.bonus_melee_damage_bonus %}<span class="sub-stat-bonus">(+{{ player.bonus_melee_damage_bonus }})</span>{% endif %}
                             </div>
                             <div class="sub-stat">
                                 <span class="sub-stat-name">Бонус дальнього бою:</span>
-                                <span class="sub-stat-value">{{ user.bonus_ranged_damage or 0 }}</span>
-                                {% if user.bonus_ranged_damage_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_ranged_damage_bonus }})</span>{% endif %}
+                                <span class="sub-stat-value">{{ player.bonus_ranged_damage or 0 }}</span>
+                                {% if player.bonus_ranged_damage_bonus %}<span class="sub-stat-bonus">(+{{ player.bonus_ranged_damage_bonus }})</span>{% endif %}
                             </div>
                             <div class="sub-stat">
                                 <span class="sub-stat-name">Бонус магічної шкоди:</span>
-                                <span class="sub-stat-value">{{ user.bonus_magic_damage or 0 }}</span>
-                                {% if user.bonus_magic_damage_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_magic_damage_bonus }})</span>{% endif %}
+                                <span class="sub-stat-value">{{ player.bonus_magic_damage or 0 }}</span>
+                                {% if player.bonus_magic_damage_bonus %}<span class="sub-stat-bonus">(+{{ player.bonus_magic_damage_bonus }})</span>{% endif %}
                             </div>
                             <span class="stat-name">Бонуси захтсту</span>
                             <div class="sub-stat">
                                 <span class="sub-stat-name">Захист від ближнього бою:</span>
-                                <span class="sub-stat-value">{{ user.bonus_melee_defense or 0 }}</span>
-                                {% if user.bonus_melee_defense_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_melee_defense_bonus }})</span>{% endif %}
+                                <span class="sub-stat-value">{{ player.bonus_melee_defense or 0 }}</span>
+                                {% if player.bonus_melee_defense_bonus %}<span class="sub-stat-bonus">(+{{ player.bonus_melee_defense_bonus }})</span>{% endif %}
                             </div>
                             <div class="sub-stat">
                                 <span class="sub-stat-name">Захист від дальнього бою:</span>
-                                <span class="sub-stat-value">{{ user.bonus_ranged_defense or 0 }}</span>
-                                {% if user.bonus_ranged_defense_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_ranged_defense_bonus }})</span>{% endif %}
+                                <span class="sub-stat-value">{{ player.bonus_ranged_defense or 0 }}</span>
+                                {% if player.bonus_ranged_defense_bonus %}<span class="sub-stat-bonus">(+{{ player.bonus_ranged_defense_bonus }})</span>{% endif %}
                 </div>
                             <div class="sub-stat">
                                 <span class="sub-stat-name">Магічний захист:</span>
-                                <span class="sub-stat-value">{{ user.bonus_magic_defense or 0 }}</span>
-                                {% if user.bonus_magic_defense_bonus %}<span class="sub-stat-bonus">(+{{ user.bonus_magic_defense_bonus }})</span>{% endif %}
+                                <span class="sub-stat-value">{{ player.bonus_magic_defense or 0 }}</span>
+                                {% if player.bonus_magic_defense_bonus %}<span class="sub-stat-bonus">(+{{ player.bonus_magic_defense_bonus }})</span>{% endif %}
                 </div>
                 </div>
                         
@@ -134,7 +135,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_helmet.svg" alt="Empty">
+                            <img src="/static/images/items/empty_helmet.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -152,7 +153,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_back.svg" alt="Empty">
+                            <img src="/static/images/items/empty_back.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -172,7 +173,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                            <img src="/static/images/items/empty_weapon.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -189,7 +190,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_armor.svg" alt="Empty">
+                            <img src="/static/images/items/empty_armor.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -206,7 +207,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_weapon.svg" alt="Empty">
+                            <img src="/static/images/items/empty_weapon.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -225,7 +226,7 @@
                     </div>
                 {% else %}
                     <div class="empty-slot">
-                        <img src="/static/images/items/empty_boots.svg" alt="Empty">
+                        <img src="/static/images/items/empty_boots.png" alt="Empty">
                     </div>
                 {% endif %}
             </div>
@@ -245,7 +246,7 @@
                         </div>
                     {% else %}
                         <div class="empty-slot">
-                            <img src="/static/images/items/empty_jewelry.svg" alt="Empty">
+                            <img src="/static/images/items/empty_jewelry.png" alt="Empty">
                         </div>
                     {% endif %}
                 </div>
@@ -255,7 +256,7 @@
     </div>
     
     <div class="inventory-grid">
-        <h2>Інвентар ({{ inventory_items|length }}/{{ max_items }})</h2>
+        <h2>Інвентар ({{ inventory_items|length + equipped_items|length }}/{{ max_items }})</h2>
         <div class="items-grid">
             {% for item in inventory_items %}
             <div class="inventory-item {% if item.is_equipped %}equipped{% endif %}" data-item-id="{{ item.id }}">
