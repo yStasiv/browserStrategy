@@ -1,26 +1,32 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from backend.auth import get_current_user as session_user
+from backend.services import guild
 from backend.database import get_db
 from backend.models import QuestScenario, Task, User, UserTask
-from backend.routers.admin import get_current_user
+
+async def get_current_user(request: Request, db: Session = Depends(get_db)):
+    user = await session_user(request, db)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Увійдіть до гри.")
+    return user
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
 
 
-@router.get("/guild")
+@router.get("/guild/scenarios")
 async def get_guild(
     request: Request,
     scenario_id: int = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if not current_user:
-        return RedirectResponse(url="/")
-
     # Перевіряємо чи користувач в секторі Castle
     if current_user.map_sector != "Castle":
         return templates.TemplateResponse(
@@ -138,8 +144,8 @@ async def accept_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if not current_user:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.map_sector != "Castle":
+        raise HTTPException(status_code=403, detail="Гільдія доступна тільки в секторі Castle.")
 
     # Перевіряємо чи існує завдання
     task = db.query(Task).filter(Task.id == task_id).first()
@@ -166,4 +172,63 @@ async def accept_task(
     db.add(user_task)
     db.commit()
 
-    return RedirectResponse(url=f"/guild?scenario={task.scenario_id}", status_code=303)
+    return RedirectResponse(url=f"/guild/scenarios?scenario_id={task.scenario_id}", status_code=303)
+
+
+class ReplaceQuest(BaseModel):
+    confirm_progress_loss: bool = False
+
+
+@router.get("/guild")
+async def guild_page(request: Request, db: Session = Depends(get_db)):
+    user = await session_user(request, db)
+    if user is None:
+        return RedirectResponse(url="/")
+    response = templates.TemplateResponse(
+        "guild_board.html", {"request": request, "user": user, "in_castle": user.map_sector == "Castle"}
+    )
+    if user.map_sector == "Castle":
+        response.set_cookie("visited_guild", "true")
+    return response
+
+
+def require_castle(user):
+    if user.map_sector != "Castle":
+        raise HTTPException(status_code=403, detail="Гільдія доступна тільки в секторі Castle.")
+
+
+def mutate_board(db, user, operation, *args):
+    require_castle(user)
+    try:
+        operation(db, user.id, *args)
+        db.flush()
+        result = guild.board(db, user.id)
+        db.commit()
+    except guild.GuildError as exc:
+        db.rollback()
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    return result
+
+
+@router.get("/api/guild")
+def guild_board(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    require_castle(user)
+    return guild.board(db, user.id)
+
+
+@router.post("/api/guild/initialize")
+def initialize_board(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    return mutate_board(db, user, guild.initialize)
+
+
+@router.post("/api/guild/quests/{quest_id}/claim")
+def claim_quest(quest_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    return mutate_board(db, user, guild.claim, quest_id)
+
+
+@router.post("/api/guild/quests/{quest_id}/replace")
+def replace_quest(
+    quest_id: int, body: ReplaceQuest, db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return mutate_board(db, user, guild.replace, quest_id, body.confirm_progress_loss)

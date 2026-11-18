@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Гільдія авантюристів{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/guild.css') }}">
+{% if in_castle %}
+<script defer src="{{ url_for('static', path='js/guild.js') }}"></script>
+{% endif %}
+{% endblock %}
+{% block body %}
+<nav class="navigation-panel" aria-label="Навігація гри">
+    <a href="/player" class="nav-link">Мій персонаж</a>
+    <a href="/map" class="nav-link">Карта</a>
+    <a href="/guild" class="nav-link active" aria-current="page">Гільдія</a>
+    <a href="/char_tasks" class="nav-link">Завдання</a>
+    <a href="/castle" class="nav-link">Замок</a>
+</nav>
+<main class="guild-board" lang="uk">
+    <header class="guild-board-header">
+        <h1>Гільдія авантюристів</h1>
+        {% if in_castle %}
+        <div id="guild-summary" hidden>
+            <strong id="guild-rank"></strong>
+            <label for="guild-xp" id="guild-xp-label"></label>
+            <progress id="guild-xp" value="0" max="100"></progress>
+            <p id="guild-replacements"></p>
+        </div>
+        {% else %}
+        <p>Гільдія доступна в секторі Castle.</p>
+        <a href="/map">Перейти до карти</a>
+        {% endif %}
+    </header>
+    {% if in_castle %}
+    <p id="guild-feedback" role="status">Завантаження квестів…</p>
+    <button id="guild-retry" type="button" hidden>Оновити дошку</button>
+    <section id="guild-quests" class="guild-quests" aria-label="Дошка квестів"></section>
+    <a class="guild-legacy" href="/guild/scenarios">Попередні сценарії</a>
+    <template id="guild-quest-card">
+        <article class="guild-card">
+            <p class="guild-card-meta"></p>
+            <h2></h2>
+            <p class="guild-objective"></p>
+            <progress class="guild-objective-progress"></progress>
+            <ul class="guild-rewards" aria-label="Нагороди"></ul>
+            <button type="button"></button>
+        </article>
+    </template>
+    {% endif %}
+</main>
+{% endblock %}

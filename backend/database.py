@@ -53,7 +53,9 @@ def get_db() -> Generator[Any, Any, Any]:
 def init_db():
     from .db_base import Base, engine
 
-    Base.metadata.create_all(bind=engine)
+    # Guild tables and their initial templates are installed together by Alembic.
+    legacy_tables = [table for table in Base.metadata.sorted_tables if not table.name.startswith("guild_")]
+    Base.metadata.create_all(bind=engine, tables=legacy_tables)
     # if not os.path.exists("database.db"):  # Check if database already created
     #     print("Database not found. Creating database...")
     # Base.metadata.create_all(bind=engine)  # Create new one if not
