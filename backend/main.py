@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend import database, utils
 from backend.tasks import check_workers
 from backend.websockets import manager
+from backend.engine import battle_api
 
 from .routers import (admin, adventure_guild, auth, castle, char_tasks,
                       enterprise, help, inventory, map, shop, player,
@@ -69,7 +70,7 @@ app.include_router(battle.router)
 logger.info("Battle router registered")
 app.include_router(rating.router)
 logger.info("Rating router registered")
-
+app.include_router(battle_api.router)
 
 # TODO: Run this just one time when app start
 @app.on_event("startup")
