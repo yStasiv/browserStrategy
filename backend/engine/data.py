@@ -1,6 +1,21 @@
-"""Довідник істот. Цифри — заглушки для тестів, баланс виносимо в БД/конфіг пізніше."""
+"""Battle creature catalog and existing PvE scenarios."""
+import json
 from dataclasses import dataclass
-from typing import Tuple
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class Recruitment:
+    factions: list[str]
+    min_level: int
+    max_count: int
+
+
+@dataclass(frozen=True)
+class Hunting:
+    min_level: int
+    count: int
+    difficulty: str
 
 
 @dataclass(frozen=True)
@@ -12,26 +27,40 @@ class UnitType:
     dmg_min: int
     dmg_max: int
     hp: int
-    speed: int        # скільки клітинок за хід
-    initiative: int   # чим більше, тим частіше й раніше діє
-    shots: int = 0    # 0 = ближній бій; >0 = стрілець із боєзапасом
-    size: Tuple[int, int] = (1, 1)   # (ширина, висота) у клітинках
+    speed: int
+    initiative: int
+    shots: int
+    size: tuple[int, int]
+    icon: str
+    abilities: tuple[str, ...]
+    starter_count: int
+    recruitment: Recruitment | None
+    hunting: Hunting | None
 
 
-UNITS = {u.key: u for u in [
-    UnitType("peasant",   "Селянин",  1,  1, 1, 1,  4, 3,  9),
-    UnitType("archer",    "Лучник",   6,  3, 2, 3, 10, 4, 10, shots=12),
-    UnitType("swordsman", "Мечник",  10, 12, 6, 9, 35, 4, 10),
-    UnitType("knight",    "Лицар",   16, 12, 15, 25, 90, 5, 8),
-    UnitType("goblin",    "Гоблін",   4,  2, 1, 2,  5, 5, 9),
-    UnitType("skeleton",  "Скелет",   5,  4, 1, 3,  6, 4, 8),
-    # великі істоти (ширина x висота); цифри — заглушки
-    UnitType("ogre",      "Огр",     13,  9, 8, 14, 60, 4, 7, size=(2, 2)),
-    UnitType("dragon",    "Дракон",  20, 18, 40, 60, 180, 5, 9, size=(2, 3)),
-]}
+def load_creatures():
+    path = Path(__file__).resolve().parents[2] / "content" / "creatures.json"
+    catalog = {}
+    for row in json.loads(path.read_text(encoding="utf-8")):
+        recruit, hunt = row.pop("recruitment"), row.pop("hunting")
+        row["size"] = tuple(row["size"])
+        row["abilities"] = tuple(row["abilities"])
+        unit = UnitType(**row, recruitment=Recruitment(**recruit) if recruit else None,
+                        hunting=Hunting(**hunt) if hunt else None)
+        if (unit.key in catalog or len(unit.size) != 2 or min(*unit.size, unit.hp, unit.initiative) < 1
+                or not 1 <= unit.dmg_min <= unit.dmg_max or not 0 <= unit.initiative <= 100_000
+                or min(unit.speed, unit.shots, unit.starter_count) < 0
+                or (unit.hunting and min(unit.hunting.min_level, unit.hunting.count) < 1)
+                or (unit.recruitment and min(unit.recruitment.min_level, unit.recruitment.max_count) < 1)
+                or set(unit.abilities) != ({"ranged_attack"} if unit.shots else set())):
+            raise ValueError(f"Некоректні параметри істоти: {unit.key}")
+        catalog[unit.key] = unit
+    return catalog
 
-# Армія нового персонажа: (тип, кількість), максимум 8 слотів (на низьких рівнях у PvE — 5, див. setup.field_rules)
-DEFAULT_ARMY = [("peasant", 20), ("archer", 10), ("swordsman", 5)]
+
+UNITS = load_creatures()
+DEFAULT_ARMY = [(u.key, u.starter_count) for u in UNITS.values() if u.starter_count]
+UNIT_PRESENTATION = {u.key: {"name": u.name, "emoji": u.icon} for u in UNITS.values()}
 
 
 # PvE-сценарії (поки тут; пізніше переїдуть у БД/конфіг разом із нагородами та складністю)

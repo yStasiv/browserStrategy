@@ -320,3 +320,78 @@ def test_world_locations_protect_enterprises_and_guild(sessions, monkeypatch):
             "Forest", 83, 50, 98, 1
         )
         assert db.get(User, 2).map_sector == "Castle"
+
+
+def test_castle_sliders_save_the_army_used_by_battle(sessions):
+    from backend.engine import battle_service
+    from backend.routers import castle
+
+    app = FastAPI()
+    app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+    app.include_router(castle.router)
+
+    def get_db():
+        with sessions() as db:
+            yield db
+
+    app.dependency_overrides[database.get_db] = get_db
+
+    def call(method, form=None):
+        return asyncio.run(asgi_request(app, method, "/castle", "session_id=reader-session", form))
+
+    status, page = call("GET")
+    assert status == 200 and b'type="range"' in page
+    assert call("POST", {"peasant": 99, "archer": 0, "swordsman": 0})[0] == 422
+    assert call("POST", {"peasant": 0, "archer": 0, "swordsman": 0})[0] == 422
+    assert call("POST", {"peasant": 7, "archer": 0, "swordsman": 2})[0] == 303
+
+    with sessions() as db:
+        player = db.get(User, 10)
+        battle = battle_service.start_pve(db, player, "training")
+        army = [(stack["unit"], stack["count"]) for stack in battle["state"]["stacks"].values()
+                if stack["owner"] == 0]
+        assert army == [("peasant", 7), ("swordsman", 2)]
+
+
+def test_hunts_and_faction_recruitment(sessions):
+    from backend.engine import battle_service
+    from backend.routers.castle import army_options
+    from backend.services import world
+
+    with sessions.begin() as db:
+        player = db.get(User, 10)
+        player.level, player.fraction = 4, "elfe"
+        assert "knight" in {unit["key"] for unit in army_options(db, player)}
+        assert "skeleton" not in {unit["key"] for unit in army_options(db, player)}
+        player.fraction = "darkElfe"
+        assert "skeleton" in {unit["key"] for unit in army_options(db, player)}
+        assert "knight" not in {unit["key"] for unit in army_options(db, player)}
+
+    with sessions.begin() as db:
+        other = db.get(User, 2)
+        with pytest.raises(battle_service.Forbidden):
+            battle_service.start_hunt(db, other, "dragon")
+        with pytest.raises(battle_service.NotFound):
+            battle_service.start_hunt(db, other, "archer")
+        world.start_travel(db, other, "Forest")
+    with sessions() as db:
+        with pytest.raises(battle_service.Conflict, match="подорожі"):
+            battle_service.start_hunt(db, db.get(User, 2), "goblin")
+
+    with sessions() as db:
+        player = db.get(User, 10)
+        battle = battle_service.start_hunt(db, player, "goblin")
+        assert battle["state"]["hunt_key"] == "goblin"
+        assert battle["status"] == "deployment"
+        battle = battle_service.update_deployment(db, player, battle["id"], battle["version"])
+        for _ in range(100):
+            if battle["status"] == "finished":
+                break
+            battle = battle_service.submit_auto_action(db, player, battle["id"], battle["version"])
+        assert battle["winner_side"] == 0
+        db.refresh(player)
+        assert 132 <= player.gold <= 398
+        before = player.gold
+        replay = battle_service.battle_events(db, player, battle["id"], finished_only=True)
+        assert replay["initial_state"]["hunt_key"] == "goblin"
+        assert player.gold == before

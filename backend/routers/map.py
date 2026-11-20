@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_current_user, get_db
 from backend.models import User
+from backend.engine.battle_service import hunting_options
 from backend.services import world
 
 router = APIRouter()
@@ -19,6 +20,7 @@ class TravelRequest(BaseModel):
 def location_state(db, player):
     journey, now = world.resolve_location(db, player)
     state = world.map_state(db, player, journey, now)
+    state["hunts"] = hunting_options(player, journey is not None)
     db.commit()
     return state
 
@@ -49,5 +51,6 @@ def start_travel(body: TravelRequest, db: Session = Depends(get_db), player: Use
         db.commit()
         raise
     state = world.map_state(db, player, journey, now)
+    state["hunts"] = hunting_options(player, journey is not None)
     db.commit()
     return state

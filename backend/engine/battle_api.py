@@ -112,3 +112,8 @@ async def deploy(battle_id: int, body: PlacementIn, request: Request, db: Sessio
 @router.post("/{battle_id}/begin")
 async def begin(battle_id: int, body: SurrenderIn, request: Request, db: Session = Depends(database.get_db)):
     return _call(svc.update_deployment, db, await _user(request, db), battle_id, body.version)
+
+
+@router.post("/hunt/{creature_key}")
+async def start_hunt(creature_key: str, request: Request, db: Session = Depends(database.get_db)):
+    return _call(svc.start_hunt, db, await _user(request, db), creature_key)

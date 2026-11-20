@@ -178,6 +178,7 @@
     <div id="result" class="hidden fixed inset-0 z-40 bg-black/70 flex items-center justify-center">
         <div class="bg-slate-800 rounded-xl p-6 text-center">
             <div id="result-title" class="text-2xl font-bold mb-4"></div>
+            <p id="result-reward" class="mb-4 text-amber-200" aria-live="polite"></p>
             <div class="flex gap-2 justify-center">
                 <button id="btn-new" class="btn">Новий бій</button>
                 <button id="btn-replay" class="btn alt">Повтор</button>
@@ -194,16 +195,7 @@
     // ---------- Конфіг ----------
     const API = '/api/battles';
     // Відображення істот. Назви/емодзі лише для клієнта; правила, цифри й розміри живуть на сервері.
-    const UNIT_VIEW = {
-        peasant:   { emoji: '🧑‍🌾', name: 'Селянин' },
-        archer:    { emoji: '🏹', name: 'Лучник' },
-        swordsman: { emoji: '⚔️', name: 'Мечник' },
-        knight:    { emoji: '🐴', name: 'Лицар' },
-        goblin:    { emoji: '👺', name: 'Гоблін' },
-        skeleton:  { emoji: '💀', name: 'Скелет' },
-        ogre:      { emoji: '👹', name: 'Огр' },
-        dragon:    { emoji: '🐉', name: 'Дракон' },
-    };
+    const UNIT_VIEW = Object.create(null);
     const SCENARIOS = [
         { key: 'training', title: 'Тренувальний бій' },
         { key: 'ruins', title: 'Руїни' },
@@ -342,6 +334,7 @@
     // ---------- Відмальовування ----------
     function applyView(v, events) {
         view = v;
+        Object.assign(UNIT_VIEW, v.units);
         for (const s of Object.values(v.state.stacks)) known[s.id] = { unit: s.unit, owner: s.owner };
 
         el.menu.classList.add('hidden');
@@ -603,7 +596,24 @@
         const iSurrendered = view.state.surrendered === view.my_side;
         el.resultTitle.textContent = w === null ? 'Нічия'
             : (w === view.my_side ? 'Перемога!' : (iSurrendered ? 'Ви здалися' : 'Поразка'));
-        setTimeout(() => el.result.classList.remove('hidden'), 900);   // дати програтися числам шкоди
+        const {reward} = view;
+        const parts = reward && [
+            reward.gold > 0 ? `+${reward.gold} золота` : '',
+            reward.experience > 0 ? `+${reward.experience} досвіду` : '',
+        ].filter(Boolean);
+        $('result-reward').textContent = parts
+            ? (parts.length ? parts.join(' · ') : 'Нагороду не нараховано.')
+            : 'Дані про нагороду недоступні.';
+        $('btn-new').classList.toggle('hidden', Boolean(replay));
+        $('btn-replay').textContent = replay ? 'Переглянути повторно' : 'Повтор';
+        if (replay) {
+            el.result.classList.remove('hidden');
+            return;
+        }
+        const battleId = view.id;
+        setTimeout(() => {
+            if (!replay && view?.id === battleId && view.status === 'finished') el.result.classList.remove('hidden');
+        }, 900);   // дати програтися числам шкоди
     }
 
     // ---------- Дії гравця ----------
@@ -867,7 +877,7 @@
     function replayView(state) {
         return {
             id: replay.battle_id, my_side: replay.my_side, state, status: state.status,
-            winner_side: state.winner, turn: null,
+            winner_side: state.winner, reward: replay.reward, turn: null,
             forecast: state.active_id ? [{id: state.active_id}] : [],
         };
     }
@@ -889,6 +899,7 @@
         replay.cursor = cursor;
         $('replay-seek').value = cursor;
         applyView(replayView(state), []);
+        if (cursor === replay.events.length && state.status === 'finished') showResult();
         const result = state.status === 'finished' ?
             (state.winner === null ? 'Нічия' : state.winner === replay.my_side ? 'Перемога' : 'Поразка') : '';
         $('replay-position').textContent =
@@ -929,6 +940,7 @@
     async function openReplay(id) {
         try {
             replay = await api('/' + id + '/replay');
+            Object.assign(UNIT_VIEW, replay.units);
             if (replay.schema_version !== 1) throw new Error('Ця версія повтору не підтримується.');
             $('replay-controls').classList.remove('hidden');
             $('replay-seek').max = replay.events.length;
@@ -940,7 +952,14 @@
     }
 
     $('btn-new').addEventListener('click', showMenu);
-    $('btn-replay').addEventListener('click', () => openReplay(view.id));
+    $('btn-replay').addEventListener('click', () => {
+        if (replay) {
+            seekReplay(0);
+            playReplay();
+        } else {
+            openReplay(view.id);
+        }
+    });
     $('replay-play').addEventListener('click', playReplay);
     $('replay-restart').addEventListener('click', () => seekReplay(0));
     $('replay-seek').addEventListener('input', event => seekReplay(Number(event.target.value)));

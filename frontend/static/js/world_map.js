@@ -4,6 +4,7 @@
     const markers = byId('world-markers');
     const sectors = byId('world-sectors');
     const enterprises = byId('world-enterprises');
+    const hunts = byId('world-hunts');
     const feedback = byId('world-feedback');
     const refresh = byId('world-refresh');
     const icons = {wood: 'sawmill-icon.png', stone: 'mine-icon.png', gold: 'gold-mine-icon.png'};
@@ -86,6 +87,21 @@
                 element('p', `Площа ${entry.area} · Зарплата ${entry.salary} золота/год`));
             return item;
         }));
+        hunts.replaceChildren(...state.hunts.map(hunt => {
+            const item = element('li');
+            item.append(
+                element('strong', `${hunt.icon} ${hunt.name} ×${hunt.count}`),
+                element('p', `${hunt.difficulty} · від рівня ${hunt.min_level}`),
+                element('p', `За перемогу ${hunt.gold_min}–${hunt.gold_max} золота та ${hunt.xp} XP`),
+            );
+            const button = element('button', 'Почати полювання');
+            button.type = 'button';
+            button.disabled = !hunt.available;
+            button.addEventListener('click', () => startHunt(hunt.key));
+            item.append(button);
+            return item;
+        }));
+        byId('world-hunt-feedback').textContent = state.travel ? 'Недоступно під час подорожі.' : '';
         byId('world-enterprise-message').textContent = state.travel ? 'Недоступні під час подорожі.' :
             state.enterprises.length ? '' : 'У цьому секторі немає підприємств.';
         byId('world-castle-links').hidden = Boolean(state.travel) || state.current_sector !== 'Castle';
@@ -123,6 +139,21 @@
         } catch (error) {
             feedback.textContent = error.message;
             refresh.hidden = false;
+        }
+    }
+
+    async function startHunt(key) {
+        if (busy) return;
+        busy = true;
+        const buttons = [...hunts.querySelectorAll('button:not(:disabled)')];
+        buttons.forEach(button => { button.disabled = true; });
+        try {
+            await getState('/api/battles/hunt/' + encodeURIComponent(key), {method: 'POST'});
+            location.assign('/battle');
+        } catch (error) {
+            byId('world-hunt-feedback').textContent = error.message;
+            buttons.forEach(button => { button.disabled = false; });
+            busy = false;
         }
     }
 

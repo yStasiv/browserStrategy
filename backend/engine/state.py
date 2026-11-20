@@ -49,6 +49,8 @@ class BattleState:
     winner: Optional[int] = None        # None при нічиїй
     surrendered: Optional[int] = None   # сторона, що здалася
 
+    hunt_key: Optional[str] = None
+
     def active(self) -> Optional[Stack]:
         if self.status != "active" or self.active_id is None:
             return None
@@ -61,7 +63,10 @@ class BattleState:
         return None
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        snapshot = asdict(self)
+        if self.hunt_key is None:
+            del snapshot["hunt_key"]
+        return snapshot
 
     @classmethod
     def from_dict(cls, d: dict) -> "BattleState":

@@ -91,12 +91,15 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     with sessions() as db:
         player = db.get(User, 10)
         balances = player.gold, player.experience
+        assert battle["reward"] == {"gold": player.gold - 100, "experience": player.experience}
+        assert call("GET", root)[1]["reward"] == battle["reward"]
         assert 132 <= player.gold <= 398
         assert player.experience == 50
         assert db.get(Battle, battle["id"]).rewarded
     status, replay = call("GET", root + "/replay")
     assert status == 200
     assert replay["schema_version"] == 1
+    assert replay["reward"] == battle["reward"]
     assert reconstruct(replay["initial_state"], replay["events"]) == replay["final_state"] == battle["state"]
     assert [event["sequence"] for event in replay["events"]] == sorted(
         {event["sequence"] for event in replay["events"]}
