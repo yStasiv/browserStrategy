@@ -15,6 +15,12 @@ from ..engine import BattleState, IllegalAction, action_from_dict, create_battle
 from ..engine.data import DEFAULT_ARMY, PVE_SCENARIOS
 from ..engine.flow import NotYourTurn, Step, advance_ai, play_turn, surrender_turn
 from ..engine.rules import forecast
+from .actions import action_to_dict
+from .ai import choose_action
+from .deployment import place, slot_limit
+from .setup import ZONE_COLS
+from .rules import init_timeline
+from .events import SCHEMA_VERSION, initial_events
 
 
 class BattleError(Exception):
@@ -52,8 +58,11 @@ def get_army(db: Session, user_id: int) -> List[tuple]:
 
 # ---------- представлення для клієнта ----------
 
+DEPLOYMENT = "deployment"
+
+
 def _view(battle_id: int, mode: str, status: str, version: int, winner_side, state: BattleState,
-          my_side: int, events: list) -> dict:
+          my_side: int, events: list, steps=(), level=None) -> dict:
     active = state.active()
     return {
         "id": battle_id,
@@ -66,13 +75,17 @@ def _view(battle_id: int, mode: str, status: str, version: int, winner_side, sta
         "turn": turn_info(state) if active and active.owner == my_side else None,
         "forecast": forecast(state, 50),   # орієнтовна черга на 50 ходів уперед
         "events": events,
+        "deployment": {
+            "zone_width": ZONE_COLS, "max_slots": slot_limit(level, mode),
+        } if status == DEPLOYMENT else None,
+        "event_stream": [e for step in steps for e in step.replay_events],
     }
 
 
 def _log_steps(db: Session, battle_id: int, first_seq: int, steps: List[Step]) -> None:
     for i, st in enumerate(steps):
         db.add(BattleAction(battle_id=battle_id, seq=first_seq + i, side=st.side,
-                            action=st.action, events=st.events))
+                            action=st.action, events=st.events, replay_events=st.replay_events))
 
 
 def _flat_events(steps: List[Step]) -> list:
@@ -94,16 +107,13 @@ def _settle(db: Session, battle_id: int, state: BattleState) -> None:
     parts = db.query(BattleParticipant).filter(BattleParticipant.battle_id == battle_id,
                                                BattleParticipant.user_id.isnot(None)).all()
     for p in parts:
-        user = db.get(models.User, p.user_id)
-        if user is None:
-            continue
         if state.surrendered == p.side:
             continue                                # хто здався — без нагороди
-        if state.winner == p.side:
-            user.gold += random.randint(32, 298)   # TODO: нагорода зі сценарію
-            user.experience += 50
-        else:
-            user.experience += 10
+        won = state.winner == p.side
+        gold = random.randint(32, 298) if won else 0
+        db.execute(update(models.User).where(models.User.id == p.user_id).values(
+            gold=models.User.gold + gold, experience=models.User.experience + (50 if won else 10)
+        ))
 
 
 def _finish_fields(state: BattleState) -> dict:
@@ -117,12 +127,12 @@ def _finish_fields(state: BattleState) -> dict:
 def get_active_battle_id(db: Session, user_id: int):
     row = (db.query(Battle.id)
            .join(BattleParticipant, BattleParticipant.battle_id == Battle.id)
-           .filter(BattleParticipant.user_id == user_id, Battle.status == "active")
+           .filter(BattleParticipant.user_id == user_id, Battle.status.in_(("active", DEPLOYMENT)))
            .order_by(Battle.id.desc()).first())
     return row[0] if row else None
 
 
-def get_battle_view(db: Session, user, battle_id: int) -> dict:
+def _owned_battle(db: Session, user, battle_id: int):
     battle = db.get(Battle, battle_id)
     if battle is None:
         raise NotFound("бій не знайдено")
@@ -130,14 +140,22 @@ def get_battle_view(db: Session, user, battle_id: int) -> dict:
             .filter_by(battle_id=battle_id, user_id=user.id).first())
     if part is None:
         raise Forbidden("ви не учасник цього бою")
+    return battle, part.side
+
+
+def get_battle_view(db: Session, user, battle_id: int) -> dict:
+    battle, side = _owned_battle(db, user, battle_id)
     return _view(battle.id, battle.mode, battle.status, battle.version, battle.winner_side,
-                 BattleState.from_dict(battle.state), part.side, [])
+                 BattleState.from_dict(battle.state), side, [], level=battle.level)
 
 
 def start_pve(db: Session, user, scenario_key: str) -> dict:
+    db.execute(update(models.User).where(models.User.id == user.id).values(map_sector=models.User.map_sector))
     existing = get_active_battle_id(db, user.id)
     if existing:  # один активний бій на гравця: відновлюємо його
-        return get_battle_view(db, user, existing)
+        result = get_battle_view(db, user, existing)
+        db.commit()
+        return result
 
     scenario = PVE_SCENARIOS.get(scenario_key)
     if scenario is None:
@@ -151,19 +169,57 @@ def start_pve(db: Session, user, scenario_key: str) -> dict:
                               seed=secrets.randbits(31), level=level, mode="pve")
     except ValueError as e:
         raise BattleError(str(e))
-    state, steps = advance_ai(state, {1})  # якщо першим ходить ШІ
-
-    battle = Battle(mode="pve", level=level, state=state.to_dict(), version=0, **_finish_fields(state))
+    state.status = DEPLOYMENT
+    state.active_id = None
+    battle = Battle(mode="pve", level=level, status=DEPLOYMENT, state=state.to_dict(), version=0)
     db.add(battle)
     db.flush()
     db.add_all([BattleParticipant(battle_id=battle.id, side=0, user_id=user.id),
                 BattleParticipant(battle_id=battle.id, side=1, user_id=None)])
-    _log_steps(db, battle.id, 0, steps)
-    if state.status == "finished":
-        _settle(db, battle.id, state)
     db.commit()
-    return _view(battle.id, "pve", "finished" if state.status == "finished" else "active", 0,
-                 state.winner, state, 0, _flat_events(steps))
+    return _view(battle.id, battle.mode, DEPLOYMENT, 0, None, state, 0, [], level=level)
+
+
+def update_deployment(db, user, battle_id, version, placement=None):
+    battle, side = _owned_battle(db, user, battle_id)
+    if battle.status != DEPLOYMENT or battle.version != version:
+        raise Conflict("Стан розстановки змінився.")
+    state = BattleState.from_dict(battle.state)
+    extra = {}
+    steps = []
+    if placement is not None:
+        try:
+            place(state, side, *placement, limit=slot_limit(battle.level, battle.mode))
+        except ValueError as exc:
+            raise BattleError(str(exc)) from exc
+    else:
+        state.status = "active"
+        init_timeline(state)
+        extra = {"initial_state": state.to_dict(), "replay_schema_version": SCHEMA_VERSION}
+        ai_sides = {row.side for row in db.query(BattleParticipant).filter_by(battle_id=battle_id, user_id=None)}
+        state, steps = advance_ai(state, ai_sides)
+        extra.update(_finish_fields(state))
+        extra["winner_side"] = state.winner
+    result = db.execute(
+        update(Battle).where(Battle.id == battle_id, Battle.version == version, Battle.status == DEPLOYMENT)
+        .values(state=state.to_dict(), version=version + 1, status=state.status,
+                **{key: value for key, value in extra.items() if key != "status"})
+    )
+    if result.rowcount != 1:
+        db.rollback()
+        raise Conflict("Стан розстановки змінився.")
+    _log_steps(db, battle_id, 0, steps)
+    if state.status == "finished":
+        _settle(db, battle_id, state)
+    db.commit()
+    return _view(battle_id, battle.mode, state.status, version + 1,
+                 state.winner, state, side, _flat_events(steps), steps, level=battle.level)
+
+
+def _checkpoint(battle):
+    if battle.initial_state is None:
+        return {"initial_state": battle.state, "replay_schema_version": SCHEMA_VERSION}
+    return {}
 
 
 def submit_action(db: Session, user, battle_id: int, action_dict: dict, expected_version: int) -> dict:
@@ -193,7 +249,7 @@ def submit_action(db: Session, user, battle_id: int, action_dict: dict, expected
     res = db.execute(update(Battle)
                      .where(Battle.id == battle_id, Battle.version == expected_version)
                      .values(state=new_state.to_dict(), version=expected_version + 1,
-                             **_finish_fields(new_state)))
+                             **_finish_fields(new_state), **_checkpoint(battle)))
     if res.rowcount != 1:
         db.rollback()
         raise Conflict("стан бою змінився, спробуйте ще раз")
@@ -202,7 +258,7 @@ def submit_action(db: Session, user, battle_id: int, action_dict: dict, expected
         _settle(db, battle_id, new_state)
     db.commit()
     return _view(battle_id, battle.mode, new_state.status if new_state.status == "finished" else "active",
-                 expected_version + 1, new_state.winner, new_state, mine.side, _flat_events(steps))
+                 expected_version + 1, new_state.winner, new_state, mine.side, _flat_events(steps), steps)
 
 
 def surrender_battle(db: Session, user, battle_id: int, expected_version: int) -> dict:
@@ -228,7 +284,7 @@ def surrender_battle(db: Session, user, battle_id: int, expected_version: int) -
     res = db.execute(update(Battle)
                      .where(Battle.id == battle_id, Battle.version == expected_version)
                      .values(state=new_state.to_dict(), version=expected_version + 1,
-                             **_finish_fields(new_state)))
+                             **_finish_fields(new_state), **_checkpoint(battle)))
     if res.rowcount != 1:
         db.rollback()
         raise Conflict("стан бою змінився, спробуйте ще раз")
@@ -236,4 +292,45 @@ def surrender_battle(db: Session, user, battle_id: int, expected_version: int) -
     _settle(db, battle_id, new_state)
     db.commit()
     return _view(battle_id, battle.mode, "finished", expected_version + 1, new_state.winner,
-                 new_state, mine.side, _flat_events(steps))
+                 new_state, mine.side, _flat_events(steps), steps)
+
+
+def submit_auto_action(db, user, battle_id, expected_version):
+    battle, side = _owned_battle(db, user, battle_id)
+    if battle.version != expected_version:
+        raise Conflict("Стан бою змінився.")
+    state = BattleState.from_dict(battle.state)
+    actor = state.active()
+    if actor is None or actor.owner != side:
+        raise Conflict("Зараз немає доступного ходу.")
+    return submit_action(db, user, battle_id, action_to_dict(choose_action(state)), expected_version)
+
+
+def replay_history(db, user, limit=20):
+    query = (db.query(Battle.id, Battle.initial_state.is_not(None).label("available")).join(BattleParticipant)
+             .filter(BattleParticipant.user_id == user.id, Battle.status == "finished")
+             .order_by(Battle.id.desc()))
+    rows = query.limit(limit).all() if limit is not None else query.all()
+    return [{"id": row.id, "available": row.available} for row in rows]
+
+
+def battle_events(db, user, battle_id, *, finished_only=False):
+    battle, side = _owned_battle(db, user, battle_id)
+    if finished_only and battle.status != "finished":
+        raise Conflict("Повтор доступний після завершення бою.")
+    initial = battle.initial_state
+    if initial is None:
+        raise NotFound("Для цього бою немає початкового знімка повтору.")
+    partial = initial["seq"] != 0
+    events = initial_events(initial, partial)
+    actions = (db.query(BattleAction).filter(
+        BattleAction.battle_id == battle_id, BattleAction.seq >= initial["seq"],
+        BattleAction.seq < battle.state["seq"],
+    ).order_by(BattleAction.seq).all())
+    for action in actions:
+        events.extend(action.replay_events)
+    return {
+        "battle_id": battle_id, "schema_version": battle.replay_schema_version, "partial": partial,
+        "initial_state": initial, "events": events, "final_state": battle.state,
+        "my_side": side, "result": {"status": battle.status, "winner_side": battle.winner_side},
+    }

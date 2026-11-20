@@ -7,6 +7,7 @@ import os
 from typing import Dict, List
 from ... import models, database
 from ...auth import get_current_user
+from ...engine.battle_service import replay_history
 from fastapi.templating import Jinja2Templates
 # from .battle_system import BattleSystem
 
@@ -21,6 +22,16 @@ async def battle_page(request: Request, db: Session = Depends(database.get_db)):
     if not player:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return templates.TemplateResponse("battle.html", {"request": request, "player": player})
+
+@router.get("/battle/history")
+async def battle_history(request: Request, db: Session = Depends(database.get_db)):
+    player = await get_current_user(request, db)
+    if not player:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return templates.TemplateResponse("battle_history.html", {
+        "request": request, "player": player, "battles": replay_history(db, player, limit=None),
+    })
+
 
 # @router.get("/battle")
 # async def battle_page(request: Request, db: Session = Depends(database.get_db)):

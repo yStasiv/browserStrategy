@@ -1,4 +1,4 @@
-"""Дії гравця. Дія завжди стосується активного загону (queue[0])."""
+"""Дії гравця. Дія завжди стосується активного загону (active_id)."""
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -34,14 +34,20 @@ class Skip:
 Action = (Move, Attack, Wait, Defend, Skip)
 
 
+def _coordinates(value):
+    if not isinstance(value, (list, tuple)) or len(value) != 2 or any(type(n) is not int for n in value):
+        raise ValueError("coordinates must be a pair of integers")
+    return tuple(value)
+
+
 def action_from_dict(d: dict):
     """Для API: {"type": "attack", "target_id": "...", "from_pos": [x, y]}"""
     t = d.get("type")
     if t == "move":
-        return Move(int(d["x"]), int(d["y"]))
+        return Move(*_coordinates((d["x"], d["y"])))
     if t == "attack":
         fp = d.get("from_pos")
-        return Attack(str(d["target_id"]), tuple(fp) if fp else None)
+        return Attack(str(d["target_id"]), _coordinates(fp) if fp is not None else None)
     if t == "wait":
         return Wait()
     if t == "defend":

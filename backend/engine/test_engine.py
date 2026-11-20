@@ -1,7 +1,7 @@
 import pytest
 
 from engine import (Attack, BattleState, Defend, IllegalAction, Move, Wait,
-                    apply, create_battle, reachable, run_ai, turn_info)
+                    apply, create_battle, forecast, reachable, run_ai, turn_info)
 from engine.data import UNITS
 from engine.rules import _hurt, cheb
 from engine.state import Stack
@@ -28,7 +28,7 @@ def test_height_adapts_to_army_size():
 
 def test_queue_sorted_by_initiative():
     st = create_battle([("knight", 1), ("archer", 1)], [("goblin", 1), ("swordsman", 1)], 1)
-    inits = [UNITS[st.stacks[i].unit].initiative for i in st.queue]
+    inits = [UNITS[st.stacks[item["id"]].unit].initiative for item in forecast(st, len(st.stacks))]
     assert inits == sorted(inits, reverse=True)
 
 
@@ -40,47 +40,44 @@ def test_hurt_kills_whole_creatures():
 
 def test_move_blocked_cells_and_range():
     st = two_stacks()
-    a = st.stacks[st.queue[0]]
+    a = st.active()
     reach = reachable(st, a)
     assert all(cheb(a.x, a.y, x, y) <= 4 for x, y in reach)
     with pytest.raises(IllegalAction):
         apply(st, Move(a.x + 9, a.y))
 
 
-def test_melee_move_attack_and_single_retaliation_per_round():
+def test_retaliation_is_restored_at_the_next_own_turn():
     st = two_stacks()
-    a, b = put_adjacent(st)
-    st.queue = [a.id, b.id]
-    st2, ev = apply(st, Attack(b.id))
-    kinds = [e["type"] for e in ev]
-    assert kinds == ["attack", "retaliation"]
-    assert st2.stacks[b.id].retaliated is True
-    # другий удар по тому ж загону в тому ж раунді — без контратаки
-    st2.queue = [a.id, b.id]
-    st3, ev = apply(st2, Attack(b.id))
-    assert [e["type"] for e in ev] == ["attack"]
+    _, target = put_adjacent(st)
+    target.ready += 50_000
+    st, first = apply(st, Attack(target.id))
+    assert [event["type"] for event in first] == ["attack", "retaliation"]
+    assert st.stacks[target.id].retaliated
+    st, second = apply(st, Attack(target.id))
+    assert [event["type"] for event in second] == ["attack"]
+    while st.active_id != target.id:
+        st, _ = apply(st, Defend())
+    assert not st.stacks[target.id].retaliated
 
 
 def test_ranged_no_retaliation_and_shots_decrease():
     st = two_stacks("archer", "swordsman")
     a = st.stacks["s0_0"]
-    st.queue = [a.id, "s1_0"]
     st2, ev = apply(st, Attack("s1_0"))
     assert [e["type"] for e in ev] == ["attack"] and ev[0]["ranged"]
     assert st2.stacks["s0_0"].shots_left == a.shots_left - 1
 
 
-def test_wait_only_once_and_moves_to_end():
+def test_wait_only_once_and_delays_by_half_period():
     st = create_battle([("knight", 1), ("archer", 1)], [("goblin", 1)], 1)
-    first = st.queue[0]
-    st2, _ = apply(st, Wait())
-    assert st2.queue[-1] == first
-    # той самий загін знову на початку черги не може чекати вдруге
-    st3 = st2
-    while st3.queue[0] != first:
-        st3, _ = apply(st3, Defend())
+    actor = st.active()
+    st, _ = apply(st, Wait())
+    assert st.stacks[actor.id].ready == actor.ready + actor.ready // 2
+    while st.active_id != actor.id:
+        st, _ = apply(st, Defend())
     with pytest.raises(IllegalAction):
-        apply(st3, Wait())
+        apply(st, Wait())
 
 
 def test_input_state_not_mutated_and_roundtrip():
@@ -94,7 +91,6 @@ def test_input_state_not_mutated_and_roundtrip():
 def test_turn_info_lists_targets():
     st = two_stacks()
     a, b = put_adjacent(st)
-    st.queue = [a.id, b.id]
     info = turn_info(st)
     assert info["active"] == a.id and info["targets"][0]["id"] == b.id
 

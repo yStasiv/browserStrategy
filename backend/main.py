@@ -3,7 +3,8 @@ import asyncio
 import os
 
 import uvicorn
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, WebSocket
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,7 +12,7 @@ from backend import database, utils
 from backend.auth import session_player
 from backend.tasks import check_workers
 from backend.websockets import manager
-from backend.engine import battle_api
+from backend.engine import battle_api, battle_service
 
 from .routers import (admin, adventure_guild, auth, castle, char_tasks,
                       enterprise, help, inventory, map, shop, player,
@@ -74,6 +75,24 @@ logger.info("Rating router registered")
 app.include_router(battle_api.router)
 
 # TODO: Run this just one time when app start
+@app.middleware("http")
+async def resume_active_battle(request: Request, call_next):
+    path = request.url.path
+    page_request = (
+        request.method == "GET"
+        and not path.startswith(("/static/", "/avatars/", "/api/"))
+        and (request.headers.get("sec-fetch-mode") == "navigate"
+             or "text/html" in request.headers.get("accept", ""))
+        and (path != "/battle" or "replay" in request.query_params)
+    )
+    if page_request and request.cookies.get("session_id"):
+        with database.SessionLocal() as session:
+            player = session_player(request, session)
+            if player and battle_service.get_active_battle_id(session, player.id) is not None:
+                return RedirectResponse("/battle", status_code=303, headers={"Cache-Control": "no-store"})
+    return await call_next(request)
+
+
 @app.on_event("startup")
 async def startup_event():
     # Підключення до бази даних

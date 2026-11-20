@@ -120,5 +120,12 @@
         height: 16px;
     }
     </style>
+{% if player or user %}
+<script>
+window.addEventListener('pageshow', event => {
+    if (event.persisted) location.reload();
+});
+</script>
+{% endif %}
 </body>
 </html>

@@ -9,23 +9,61 @@
         :root { --cell: 56px; }
         body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
 
-        #board { position: relative; margin: 0 auto; border: 2px solid #475569; border-radius: 6px; overflow: hidden;
-                 background: linear-gradient(#3f6b2f, #335a27); }
+        #board-wrap {
+            perspective: 1000px;
+            min-height: 12rem;
+            padding: clamp(0.5rem, 2vw, 1.4rem);
+            border: 1px solid #51432e;
+            border-radius: 0.8rem;
+            background:
+                radial-gradient(ellipse at 50% 85%, #495335 0%, transparent 62%),
+                linear-gradient(160deg, #293b32, #1d2a25 47%, #171e1b);
+        }
+        #board {
+            position: relative;
+            margin: 0 auto;
+            border: 2px solid #a88c56;
+            border-radius: 0.35rem;
+            overflow: hidden;
+            box-shadow: 0 9px 0 #342b1c, 0 18px 24px #0b110d;
+            transform: rotateX(22deg);
+            transform-origin: center bottom;
+            background:
+                radial-gradient(ellipse at 24% 20%, #7e8750a0, transparent 62%),
+                radial-gradient(ellipse at 78% 72%, #99815888, transparent 66%),
+                repeating-linear-gradient(113deg, #d6c29813 0 1px, transparent 1px 6px),
+                #56613a;
+        }
         #cells { display: grid; position: relative; }
-        .cell { width: var(--cell); height: var(--cell); border: 1px solid rgba(255,255,255,0.12); box-sizing: border-box; }
-        .cell.mv { background: rgba(250, 250, 120, 0.28); cursor: pointer; }
-        .cell.mv:hover { background: rgba(250, 250, 120, 0.5); }
-        .cell.ghost { background: rgba(96, 165, 250, 0.45); }
-        .cell.hit { background: rgba(239, 68, 68, 0.38); }
-        .cell.from { background: rgba(251, 146, 60, 0.45); }
+        .cell {
+            width: var(--cell); height: var(--cell); box-sizing: border-box;
+            border: 1px solid #ece2b331;
+            background: #242c1510;
+        }
+        .cell.alt { background: #ddd4ad14; }
+        .cell.mv { background: #e0c56680; border-color: #f6e397aa; cursor: pointer; }
+        .cell.mv:hover { background: #f5da8799; outline: 1px solid #fff1b5; outline-offset: -2px; }
+        .cell.ghost { background: #64b6c785; }
+        .cell.hit { background: #ad3f3f9c; border-color: #ff9c8b; }
+        .cell.from { background: #d68b5299; }
+        @media (max-width: 480px) {
+            #board { transform: rotateX(14deg); }
+        }
 
         #stacks, #popups { position: absolute; inset: 0; pointer-events: none; }
         .stack { position: absolute; display: flex; align-items: center; justify-content: center;
-                 transition: left 0.35s ease, top 0.35s ease, opacity 0.4s ease; pointer-events: auto; user-select: none; }
-        .stack .icon { width: 82%; height: 82%; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-                       background: rgba(15, 23, 42, 0.55); border: 3px solid #3b82f6; }
-        .stack.big .icon { width: 94%; height: 94%; border-radius: 22%; }
-        .stack.enemy .icon { border-color: #ef4444; }
+                 transition: opacity 0.4s ease; pointer-events: auto; user-select: none; }
+        .stack .icon {
+            width: 78%; height: 78%; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(ellipse at 45% 28%, #374f50, #1a2528 70%);
+            border: 2px solid #79b6c4;
+            box-shadow: 0 5px 0 #172b2d, 0 9px 9px #182416b0;
+            transform: rotateX(-22deg);
+            text-shadow: 0 2px 4px #050a08;
+        }
+        .stack.big .icon { width: 90%; height: 87%; border-radius: 30%; }
+        .stack.enemy .icon { border-color: #d98f75; background: radial-gradient(ellipse at 45% 28%, #684b38, #302225 70%); }
         .stack.active .icon { box-shadow: 0 0 0 3px #facc15, 0 0 14px 4px rgba(250, 204, 21, 0.7); }
         .stack.target { cursor: crosshair; }
         .stack.target .icon { box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.85); }
@@ -72,11 +110,20 @@
     <section id="menu" class="hidden">
         <p class="mb-3 text-slate-300">Оберіть супротивника:</p>
         <div id="scenarios" class="flex flex-wrap gap-2 mb-4"></div>
-        <button class="btn alt" disabled title="Скоро">Гравець проти гравця (скоро)</button>
+        <section id="battle-history" class="mt-5" aria-label="Завершені бої"></section>
     </section>
 
     <!-- Бій -->
     <section id="battle" class="hidden">
+        <div id="replay-controls" class="hidden flex flex-wrap items-center gap-2 mb-3">
+            <button type="button" class="btn" id="replay-play">Відтворити</button>
+            <button type="button" class="btn alt" id="replay-restart">З початку</button>
+            <button type="button" class="btn alt" id="replay-next-turn">Наступний хід</button>
+            <label>Швидкість <select id="replay-speed" class="bg-slate-800"><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
+            <label>Подія <input id="replay-seek" type="range" min="0" value="0"></label>
+            <output id="replay-position" aria-live="polite"></output>
+            <button type="button" class="btn alt" id="replay-exit">До списку боїв</button>
+        </div>
         <div class="flex items-center gap-2 mb-2">
             <span class="text-xs text-slate-400 shrink-0" title="Прогноз на 50 ходів: не враховує майбутні втрати та «чекати»">Черга (50):</span>
             <div id="initiative" class="flex flex-1 min-w-0 gap-1 overflow-x-auto py-1"></div>
@@ -96,7 +143,16 @@
                     <div id="turn-text" class="font-bold mb-1"></div>
                     <div id="active-info" class="text-sm text-slate-300 min-h-[2.5rem]"></div>
                 </div>
-                <div class="flex gap-2">
+                <div id="deployment-actions" class="hidden space-y-2">
+                    <label class="block">Загін <select id="deployment-stack" class="bg-slate-800"></select></label>
+                    <label class="block" id="deployment-split-label">Відокремити істот
+                        <input id="deployment-split" class="bg-slate-800 w-16" type="number" min="0" value="0">
+                    </label>
+                    <p class="text-sm text-slate-300">Обери загін і клітинку в підсвіченій зоні. Нуль означає переміщення всього загону.</p>
+                    <button id="deployment-begin" type="button" class="btn">У бій</button>
+                </div>
+                <div id="battle-actions" class="flex gap-2">
+                    <button id="btn-auto" type="button" class="btn alt flex-1" aria-pressed="false">Авто</button>
                     <button id="btn-wait" class="btn alt flex-1" title="Почекати: один раз за бій (W)">Чекати</button>
                     <button id="btn-defend" class="btn alt flex-1" title="Захист (D)">Захист</button>
                     <button id="btn-surrender" class="btn danger flex-1" title="Здатися">Здатись</button>
@@ -124,6 +180,7 @@
             <div id="result-title" class="text-2xl font-bold mb-4"></div>
             <div class="flex gap-2 justify-center">
                 <button id="btn-new" class="btn">Новий бій</button>
+                <button id="btn-replay" class="btn alt">Повтор</button>
                 <a href="/player" class="btn alt">До персонажа</a>
             </div>
         </div>
@@ -132,6 +189,7 @@
     <div id="toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black/85 text-white text-sm px-4 py-2 rounded"></div>
 </div>
 
+<script src="{{ url_for('static', path='js/battle_events.js') }}"></script>
 <script>
     // ---------- Конфіг ----------
     const API = '/api/battles';
@@ -156,6 +214,12 @@
     // ---------- Стан клієнта ----------
     let view = null;          // остання відповідь сервера
     let busy = false;
+    let auto = false;
+    let deploymentStack = null;
+    let replay = null;
+    let playing = false;
+    let playbackGeneration = 0;
+    let animation;
     let pollTimer = null;
     const known = {};         // id загону -> {unit, owner} (щоб називати загони, що вже загинули)
     const lastPos = {};       // id загону -> {x, y, w, h} з попереднього відмальовування
@@ -221,9 +285,11 @@
     function layout() {
         if (!view) return;
         const w = view.state.width, h = view.state.height;
-        const maxW = Math.min(el.wrap.clientWidth || (window.innerWidth - 24), 960);
+        const frame = getComputedStyle(el.wrap);
+        const padding = parseFloat(frame.paddingLeft) + parseFloat(frame.paddingRight) || 0;
+        const maxW = Math.min((el.wrap.clientWidth || window.innerWidth - 24) - padding - 4, 960);
         const maxH = window.innerHeight * 0.62;
-        const cell = Math.max(32, Math.min(72, Math.floor(Math.min(maxW / w, maxH / h))));
+        const cell = Math.max(18, Math.min(72, Math.floor(Math.min(maxW / w, maxH / h))));
         document.documentElement.style.setProperty('--cell', cell + 'px');
     }
 
@@ -238,7 +304,7 @@
         for (let y = 0; y < h; y++) {
             for (let x = 0; x < w; x++) {
                 const c = document.createElement('div');
-                c.className = 'cell';
+                c.className = (x + y) % 2 ? 'cell alt' : 'cell';
                 c.dataset.x = x;
                 c.dataset.y = y;
                 c.addEventListener('click', () => onCellClick(x, y));
@@ -279,22 +345,22 @@
         layout();
         buildCells();
         if (events && events.length) showEvents(events);
+        renderPanel();
         renderStacks();
         renderInitiative();
         renderHighlights();
-        renderPanel();
 
         for (const s of Object.values(v.state.stacks)) lastPos[s.id] = { x: s.x, y: s.y, w: s.w, h: s.h };
 
         el.menu.classList.add('hidden');
         el.battle.classList.remove('hidden');
-        if (v.status === 'finished') showResult(); else el.result.classList.add('hidden');
+        if (v.status === 'finished' && !replay) showResult(); else el.result.classList.add('hidden');
         schedulePoll();
     }
 
     function renderStacks() {
         const stacks = view.state.stacks;
-        const activeId = view.state.status === 'active' ? view.state.active_id : null;
+        const activeId = view.deployment ? deploymentStack : view.state.active_id;
         const targetIds = new Set(view.turn ? view.turn.targets.map((t) => t.id) : []);
 
         for (const s of Object.values(stacks)) {
@@ -311,6 +377,7 @@
             const u = uv(s.unit);
             d.className = 'stack' + (s.w > 1 || s.h > 1 ? ' big' : '') + (isAlly(s.id) ? '' : ' enemy') +
                           (s.id === activeId ? ' active' : '') + (targetIds.has(s.id) ? ' target' : '');
+            d.style.pointerEvents = view.deployment && s.id === deploymentStack ? 'none' : '';
             d.style.left = 'calc(var(--cell) * ' + s.x + ')';
             d.style.top = 'calc(var(--cell) * ' + s.y + ')';
             d.style.width = 'calc(var(--cell) * ' + s.w + ')';
@@ -368,7 +435,10 @@
             for (const p of view.turn.move) mv.add((p[0] + ox) + ',' + (p[1] + oy));
         }
         el.cells.querySelectorAll('.cell').forEach((c) => {
-            c.classList.toggle('mv', mv.has(c.dataset.x + ',' + c.dataset.y));
+            const x = Number(c.dataset.x);
+            const width = view.deployment?.zone_width;
+            const inZone = width && (view.my_side === 0 ? x < width : x >= view.state.width - width);
+            c.classList.toggle('mv', Boolean(inZone) || mv.has(c.dataset.x + ',' + c.dataset.y));
         });
     }
 
@@ -376,13 +446,35 @@
         const st = view.state;
         const a = activeStack();
         const myTurn = !!view.turn;
+        const deploying = Boolean(view.deployment);
+        $('battle-actions').classList.toggle('hidden', Boolean(replay) || deploying);
+        $('deployment-actions').classList.toggle('hidden', !deploying);
+
+        if (deploying) {
+            const owned = Object.values(st.stacks).filter(stack => stack.owner === view.my_side);
+            if (!owned.some(stack => stack.id === deploymentStack)) deploymentStack = owned[0]?.id;
+            const select = $('deployment-stack');
+            select.replaceChildren(...owned.map(stack =>
+                new Option(uv(stack.unit).name + ' ×' + stack.count, stack.id)));
+            select.value = deploymentStack;
+            select.disabled = busy;
+            const split = $('deployment-split');
+            const max = owned.length < view.deployment.max_slots ? st.stacks[deploymentStack].count - 1 : 0;
+            split.max = max;
+            split.disabled = busy || max === 0;
+            if (Number(split.value) > max) split.value = 0;
+            $('deployment-begin').disabled = busy;
+            el.turnText.textContent = 'Розстановка загонів';
+            el.activeInfo.textContent = `${owned.length}/${view.deployment.max_slots} слотів зайнято`;
+            return;
+        }
 
         if (st.status === 'finished') {
             el.turnText.textContent = 'Бій завершено';
             el.activeInfo.textContent = '';
         } else if (a) {
             const u = uv(a.unit);
-            el.turnText.textContent = myTurn ? 'Ваш хід' : 'Хід суперника…';
+            el.turnText.textContent = replay ? 'Хід · ' + u.name : (myTurn ? 'Ваш хід' : 'Хід суперника…');
             el.activeInfo.textContent = u.emoji + ' ' + u.name + ' ×' + a.count + ' (HP верхнього: ' + a.top_hp + ')' +
                 (a.shots_left > 0
                     ? (view.turn && !view.turn.ranged
@@ -390,10 +482,13 @@
                         : ', постріли: ' + a.shots_left)
                     : '');
         }
-        const can = myTurn && !busy;
+        const can = myTurn && !busy && !auto;
+        $('btn-auto').disabled = view.status !== 'active';
+        $('btn-auto').setAttribute('aria-pressed', String(auto));
+        $('btn-auto').textContent = auto ? 'Авто увімкнено' : 'Авто';
         el.btnWait.disabled = !(can && view.turn.can_wait);
         el.btnDefend.disabled = !can;
-        el.btnSurrender.disabled = busy || view.status !== 'active';   // здатися можна й не у свій хід
+        el.btnSurrender.disabled = !!replay || busy || view.status !== 'active';   // здатися можна й не у свій хід
     }
 
     // ---------- Наведення ----------
@@ -516,35 +611,75 @@
     }
 
     async function send(action) {
-        if (busy || !view || view.status !== 'active' || !view.turn) return;
+        if (replay || busy || auto || !view || view.status !== 'active' || !view.turn) return;
         setBusy(true);
         try {
             const r = await api('/' + view.id + '/actions', 'POST', { version: view.version, action });
-            applyView(r, r.events);
+            await animateLive(r);
         } catch (e) {
             toast(e.message);
             if (e.status === 409) await refresh();
         } finally {
             setBusy(false);
+            schedulePoll();
         }
     }
 
     async function doSurrender() {
         el.confirm.classList.add('hidden');
-        if (busy || !view || view.status !== 'active') return;
+        if (replay || busy || !view || view.status !== 'active') return;
         setBusy(true);
         try {
             const r = await api('/' + view.id + '/surrender', 'POST', { version: view.version });
-            applyView(r, r.events);
+            await animateLive(r);
         } catch (e) {
             toast(e.message);
             if (e.status === 409) await refresh();
         } finally {
             setBusy(false);
+            schedulePoll();
         }
     }
 
+    async function deploymentCommand(path, fields = {}) {
+        if (busy || !view?.deployment) return;
+        setBusy(true);
+        try {
+            const next = await api('/' + view.id + path, 'POST', {version: view.version, ...fields});
+            $('deployment-split').value = 0;
+            applyView(next, next.events);
+        } catch (error) {
+            toast(error.message);
+            if (error.status === 409) await refresh();
+        } finally {
+            setBusy(false);
+            schedulePoll();
+        }
+    }
+
+    function selectDeploymentStack(id) {
+        if (busy || view.state.stacks[id]?.owner !== view.my_side) return;
+        deploymentStack = id;
+        $('deployment-split').value = 0;
+        renderPanel();
+        renderStacks();
+    }
+
+    $('deployment-stack').addEventListener('change', event => selectDeploymentStack(event.target.value));
+    $('deployment-begin').addEventListener('click', () => deploymentCommand('/begin'));
+
     function onCellClick(x, y) {
+        if (view?.deployment && deploymentStack) {
+            const split = $('deployment-split');
+            if (!split.disabled && !split.reportValidity()) return;
+            const count = !split.disabled && Number(split.value) > 0 ? Number(split.value) : null;
+            const stack = view.state.stacks[deploymentStack];
+            if (count === null && stack.x === x && stack.y === y) return;
+            deploymentCommand('/deployment', {
+                stack_id: deploymentStack, x, y, split_count: count,
+            });
+            return;
+        }
         if (!view || !view.turn) return;
         const a = activeStack();
         const [ox, oy] = centerOffset(a);
@@ -553,6 +688,7 @@
     }
 
     function onStackClick(id) {
+        if (view?.deployment) { selectDeploymentStack(id); return; }
         if (!view || !view.turn) return;
         const t = view.turn.targets.find((q) => q.id === id);
         if (!t) return;
@@ -586,20 +722,48 @@
     }
 
     // Якщо зараз не наш хід (наприклад, у майбутньому PvP) — опитуємо сервер.
+    async function autoTurn() {
+        if (!auto || busy || !view?.turn || view.status !== 'active') return;
+        setBusy(true);
+        try {
+            await animateLive(await api('/' + view.id + '/auto', 'POST', {version: view.version}));
+        } catch (error) {
+            auto = false;
+            toast(error.message);
+            await refresh();
+        } finally {
+            setBusy(false);
+            schedulePoll();
+        }
+    }
+
+    $('btn-auto').addEventListener('click', () => {
+        auto = !auto;
+        renderPanel();
+        schedulePoll();
+    });
+
     function schedulePoll() {
         clearTimeout(pollTimer);
-        if (view && view.status === 'active' && !view.turn) {
-            pollTimer = setTimeout(refresh, 2000);
-        }
+        if (replay || busy || !view || view.status !== 'active') return;
+        if (view.turn && auto) pollTimer = setTimeout(autoTurn, 250);
+        else if (!view.turn) pollTimer = setTimeout(async () => {
+            await refresh();
+            schedulePoll();
+        }, 2000);
     }
 
     // ---------- Старт ----------
     function resetClientState() {
+        Object.keys(known).forEach(id => delete known[id]);
+        Object.keys(lastPos).forEach(id => delete lastPos[id]);
         Object.keys(stackEls).forEach((id) => { stackEls[id].remove(); delete stackEls[id]; });
         el.popups.innerHTML = '';
         el.log.innerHTML = '';
         builtDims = '';
         view = null;
+        auto = false;
+        deploymentStack = null;
     }
 
     function showMenu() {
@@ -608,6 +772,7 @@
         el.confirm.classList.add('hidden');
         el.battle.classList.add('hidden');
         el.menu.classList.remove('hidden');
+        loadHistory();
     }
 
     async function startScenario(key) {
@@ -632,10 +797,173 @@
         }
     }
 
+    async function loadHistory() {
+        const history = $('battle-history');
+        try {
+            const battles = await api('/history');
+            history.replaceChildren();
+
+            const title = document.createElement('h2');
+            title.textContent = 'Завершені бої';
+            history.append(title);
+            const list = document.createElement('ul');
+            list.className = 'space-y-2 my-3';
+            history.append(list);
+            for (const battle of battles) {
+                const link = document.createElement('button');
+                link.className = 'btn alt m-1';
+                link.textContent = battle.available ? `Повтор №${battle.id}` : `Бій №${battle.id} · повтор недоступний`;
+                link.disabled = !battle.available;
+                link.addEventListener('click', () => openReplay(battle.id));
+                const row = document.createElement('li');
+                row.append(link);
+                list.append(row);
+            }
+            const all = document.createElement('a');
+            all.className = 'btn alt inline-block';
+            all.href = '/battle/history';
+            all.textContent = 'Переглянути всі бої';
+            history.append(all);
+        } catch (error) {
+            history.textContent = error.message;
+        }
+    }
+
+    async function animateEvent(event, state, speed) {
+        const entry = BattleEvents.logEvent(event);
+        if (entry) showEvents([entry]);
+        const effect = BattleEvents.animate(event, stackEls, state,
+            el.cells.firstElementChild.offsetWidth, speed);
+        animation = effect;
+        if (effect) await effect.finished.catch(() => {});
+        if (animation === effect) animation = null;
+    }
+
+    async function animateLive(result) {
+        if (!view || !result.event_stream?.length) {
+            applyView(result, result.events);
+            return;
+        }
+        const state = structuredClone(view.state);
+        view = {...view, state, turn: null};
+        for (const event of result.event_stream) {
+            await animateEvent(event, state, 1);
+            BattleEvents.apply(state, event);
+            renderStacks();
+        }
+        applyView(result, []);
+    }
+
+    function pauseReplay() {
+        playing = false;
+        playbackGeneration++;
+        animation?.cancel();
+        $('replay-play').textContent = 'Відтворити';
+    }
+
+    function replayView(state) {
+        return {
+            id: replay.battle_id, my_side: replay.my_side, state, status: state.status,
+            winner_side: state.winner, turn: null,
+            forecast: state.active_id ? [{id: state.active_id}] : [],
+        };
+    }
+
+    function replayLog(event) {
+        const entry = BattleEvents.logEvent(event);
+        if (!entry) return;
+        const actor = entry.stack || entry.attacker;
+        const description = {
+            move: 'рухається', attack: `завдає ${entry.damage} шкоди`,
+            retaliation: `контратакує, ${entry.damage} шкоди`, defend: 'у захисті',
+            wait: 'чекає', skip: 'пропускає хід', surrender: 'Сторона здалася',
+            battle_end: 'Бій завершено',
+        };
+        logLine(actor ? `${stackName(actor)} ${description[entry.type]}` : description[entry.type], 'sys');
+    }
+
+    function updateReplay(state, cursor) {
+        replay.cursor = cursor;
+        $('replay-seek').value = cursor;
+        applyView(replayView(state), []);
+        const result = state.status === 'finished' ?
+            (state.winner === null ? 'Нічия' : state.winner === replay.my_side ? 'Перемога' : 'Поразка') : '';
+        $('replay-position').textContent =
+            `${cursor}/${replay.events.length}${replay.partial ? ' · частковий повтор' : ''}${result ? ' · ' + result : ''}`;
+    }
+
+    function seekReplay(cursor) {
+        pauseReplay();
+        const state = structuredClone(replay.initial_state);
+        resetClientState();
+        view = replayView(state);
+        for (const stack of Object.values(state.stacks)) known[stack.id] = stack;
+        for (const event of replay.events.slice(0, cursor)) {
+            replayLog(event);
+            BattleEvents.apply(state, event);
+        }
+        updateReplay(state, cursor);
+    }
+
+    async function playReplay() {
+        if (playing) { pauseReplay(); return; }
+        if (replay.cursor === replay.events.length) seekReplay(0);
+        const generation = ++playbackGeneration;
+        playing = true;
+        $('replay-play').textContent = 'Пауза';
+        while (generation === playbackGeneration && replay.cursor < replay.events.length) {
+            const event = replay.events[replay.cursor];
+            const speed = Number($('replay-speed').value);
+            await animateEvent(event, view.state, speed);
+            if (generation !== playbackGeneration) return;
+            BattleEvents.apply(view.state, event);
+            updateReplay(view.state, replay.cursor + 1);
+            await new Promise(resolve => setTimeout(resolve, 100 / speed));
+        }
+        if (generation === playbackGeneration) pauseReplay();
+    }
+
+    async function openReplay(id) {
+        try {
+            replay = await api('/' + id + '/replay');
+            if (replay.schema_version !== 1) throw new Error('Ця версія повтору не підтримується.');
+            $('replay-controls').classList.remove('hidden');
+            $('replay-seek').max = replay.events.length;
+            seekReplay(0);
+        } catch (error) {
+            replay = null;
+            toast(error.message);
+        }
+    }
+
     $('btn-new').addEventListener('click', showMenu);
+    $('btn-replay').addEventListener('click', () => openReplay(view.id));
+    $('replay-play').addEventListener('click', playReplay);
+    $('replay-restart').addEventListener('click', () => seekReplay(0));
+    $('replay-seek').addEventListener('input', event => seekReplay(Number(event.target.value)));
+    $('replay-next-turn').addEventListener('click', () => {
+        const index = replay.events.findIndex((event, i) => i >= replay.cursor && event.type === 'TURN_STARTED');
+        seekReplay(index === -1 ? replay.events.length : index + 1);
+    });
+    $('replay-exit').addEventListener('click', () => {
+        pauseReplay();
+        replay = null;
+        $('replay-controls').classList.add('hidden');
+        showMenu();
+    });
+
+    window.addEventListener('pageshow', event => {
+        if (event.persisted) location.reload();
+    });
 
     (async function init() {
         buildMenu();
+        const replayId = new URLSearchParams(location.search).get('replay');
+        if (/^\d+$/.test(replayId || '')) {
+            showMenu();
+            await openReplay(replayId);
+            return;
+        }
         try {
             const r = await api('/active');   // є незавершений бій — продовжуємо його
             applyView(r, []);

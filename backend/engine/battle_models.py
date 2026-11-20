@@ -17,6 +17,8 @@ class Battle(Base):
     status = Column(String(16), nullable=False, default="active", index=True)  # active | finished
     version = Column(Integer, nullable=False, default=0)   # оптимістичне блокування
     state = Column(JSON, nullable=False)                   # BattleState.to_dict()
+    initial_state = Column(JSON(none_as_null=True))
+    replay_schema_version = Column(Integer)
     winner_side = Column(Integer, nullable=True)           # None при нічиїй або поки бій іде
     rewarded = Column(Boolean, nullable=False, default=False)  # нагороди видано (захист від дубля)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -34,7 +36,7 @@ class BattleParticipant(Base):
 
 
 class BattleAction(Base):
-    """Лог усіх дій (людини і ШІ). За ним бій можна відтворити з нуля."""
+    """Дії людини та ШІ з версіонованими подіями повтору."""
     __tablename__ = "battle_actions"
     __table_args__ = (UniqueConstraint("battle_id", "seq"),)
 
@@ -44,6 +46,7 @@ class BattleAction(Base):
     side = Column(Integer, nullable=False)
     action = Column(JSON, nullable=False)
     events = Column(JSON, nullable=False)
+    replay_events = Column(JSON(none_as_null=True))
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
 

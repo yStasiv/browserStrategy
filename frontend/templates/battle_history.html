@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Історія боїв{% endblock %}
+{% block body %}
+<main lang="uk" class="guild-board">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/guild.css') }}">
+    <header class="guild-board-header">
+        <h1>Історія боїв</h1>
+        <a href="/battle">До боїв</a>
+    </header>
+    {% if battles %}
+    <ul style="list-style: none; padding: 0; display: grid; gap: .5rem">
+        {% for battle in battles %}
+        <li class="guild-card">
+            {% if battle.available %}
+            <a href="/battle?replay={{ battle.id }}">Переглянути бій №{{ battle.id }}</a>
+            {% else %}
+            <span>Бій №{{ battle.id }} · повтор недоступний</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Завершених боїв поки немає.</p>
+    {% endif %}
+</main>
+{% endblock %}

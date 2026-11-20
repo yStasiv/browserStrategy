@@ -65,10 +65,16 @@ def _layout(sizes: List[Tuple[int, int]], owner: int, width: int, height: int) -
     return out
 
 
-def create_battle(army_a: Army, army_b: Army, seed: int, level: int = 1, mode: str = "pve") -> BattleState:
+def create_battle(
+    army_a: Army, army_b: Army, seed: int, level: int = 1, mode: str = "pve",
+    *, configuration: Optional[FieldRules] = None,
+) -> BattleState:
     """Сторона 0 стає біля лівого краю, сторона 1 — біля правого.
     Висота адаптивного поля = за сумою висот загонів більшої армії (від MIN_HEIGHT до MAX_HEIGHT)."""
-    rules = field_rules(level, mode)
+    defaults = field_rules(level, mode)
+    rules = configuration or defaults
+    if rules.width < 1 or (rules.height is not None and rules.height < 1):
+        raise ValueError("некоректні розміри поля")
     for army in (army_a, army_b):
         if not army or len(army) > rules.max_slots:
             raise ValueError(f"армія має містити від 1 до {rules.max_slots} загонів")
@@ -81,13 +87,19 @@ def create_battle(army_a: Army, army_b: Army, seed: int, level: int = 1, mode: s
 
     height = rules.height or min(MAX_HEIGHT, max(MIN_HEIGHT, need(army_a), need(army_b)))
     stacks = {}
+    occupied = set()
     for owner, army in ((0, army_a), (1, army_b)):
         sizes = [UNITS[k].size for k, _ in army]
         for i, ((key, count), (w, h), (x, y)) in enumerate(zip(army, sizes, _layout(sizes, owner, rules.width, height))):
             ut = UNITS[key]
             sid = f"s{owner}_{i}"
-            stacks[sid] = Stack(id=sid, unit=key, owner=owner, count=count, top_hp=ut.hp,
+            stack = Stack(id=sid, unit=key, owner=owner, count=count, top_hp=ut.hp,
                                 x=x, y=y, w=w, h=h, shots_left=ut.shots)
+            cells = set(stack.cells())
+            if any(not (0 <= x < rules.width and 0 <= y < height) for x, y in cells) or cells & occupied:
+                raise ValueError("загони не можна розмістити на цьому полі")
+            stacks[sid] = stack
+            occupied.update(cells)
     state = BattleState(width=rules.width, height=height, seed=seed, stacks=stacks)
     init_timeline(state)
     return state

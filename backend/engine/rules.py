@@ -127,10 +127,14 @@ def _roll_damage(att: Stack, target: Stack, rng: random.Random) -> int:
     return max(1, int(base * _multiplier(att, target)))
 
 
+def total_hp(stack: Stack) -> int:
+    return (stack.count - 1) * UNITS[stack.unit].hp + stack.top_hp if stack.count > 0 else 0
+
+
 def _hurt(stack: Stack, dmg: int) -> int:
     """Завдає шкоду загону. Повертає, скільки істот загинуло."""
     hp = UNITS[stack.unit].hp
-    pool = (stack.count - 1) * hp + stack.top_hp - dmg
+    pool = total_hp(stack) - dmg
     old = stack.count
     if pool <= 0:
         stack.count = 0
@@ -222,22 +226,26 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
             events.append({"type": "move", "stack": actor.id, "path": _path(st, actor, pos)})
             actor.x, actor.y = pos
 
+    hp_before = total_hp(target)
     dmg = _roll_damage(actor, target, rng)
     killed = _hurt(target, dmg)
     if ranged:
         actor.shots_left -= 1
     events.append({"type": "attack", "attacker": actor.id, "target": target.id,
                    "damage": dmg, "killed": killed, "ranged": ranged,
-                   "target_left": target.count})
+                   "target_left": target.count, "top_hp": target.top_hp,
+                   "hp_before": hp_before, "hp_after": total_hp(target)})
 
     if target.count <= 0:
         del st.stacks[target.id]
     elif not ranged and not target.retaliated:
         target.retaliated = True
+        hp_before = total_hp(actor)
         rdmg = _roll_damage(target, actor, rng)
         rkilled = _hurt(actor, rdmg)
         events.append({"type": "retaliation", "attacker": target.id, "target": actor.id,
-                       "damage": rdmg, "killed": rkilled, "target_left": actor.count})
+                       "damage": rdmg, "killed": rkilled, "target_left": actor.count, "top_hp": actor.top_hp,
+                       "hp_before": hp_before, "hp_after": total_hp(actor)})
         if actor.count <= 0:
             del st.stacks[actor.id]
     _end_turn(st, actor, events)
@@ -261,8 +269,8 @@ def apply(state: BattleState, action) -> Tuple[BattleState, List[dict]]:
         events.append({"type": "defend", "stack": actor.id})
         _end_turn(st, actor, events)
     elif isinstance(action, Wait):
-        # if actor.waited:
-        #     raise IllegalAction("чекати можна лише один раз за бій")
+        if actor.waited:
+            raise IllegalAction("чекати можна лише один раз за бій")
         actor.waited = True
         actor.ready += period(actor) // 2   # діятиме пізніше, але раніше за повний період
         events.append({"type": "wait", "stack": actor.id})
