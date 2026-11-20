@@ -31,7 +31,7 @@
                     <img src="../static/images/rating-icon.png" alt="Rating" class="nav-icon">
                     Рейтинг
                 </a>
-                {% if player.id == 1 %}
+                {% if player.is_admin %}
                 <a href="/admin/enterprises" class="nav-link">
                     <img src="../static/images/admin-icon.png" alt="Admin" class="nav-icon">
                     Керування підприємствами

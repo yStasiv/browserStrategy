@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from .. import database, models, utils
+from ..auth import session_player
 
 logger = utils.setup_logger(__name__)
 
@@ -88,15 +89,9 @@ class CastleRotes(CastleHelpers):
     @router.get("/castle", response_class=HTMLResponse)
     def castle_page(request: Request, db: Session = Depends(database.get_db)):
 
-        user_session_id = request.cookies.get("session_id")
-        if not user_session_id:
+        player = session_player(request, db)
+        if player is None:
             raise HTTPException(status_code=401, detail="Not logged in")
-
-        player = (
-            db.query(models.User)
-            .filter(models.User.session_id == user_session_id)
-            .first()
-        )
         available_units = CastleHelpers.get_available_units(
             player, db
         )  # Отримуємо доступні юніти
@@ -119,14 +114,9 @@ class CastleRotes(CastleHelpers):
     # Обробка пост-запиту для набору військ
     @router.post("/castle", response_class=HTMLResponse)
     async def add_units(request: Request, db: Session = Depends(database.get_db)):
-        user_session_id = request.cookies.get("session_id")
-        if not user_session_id:
+        player = session_player(request, db)
+        if player is None:
             raise HTTPException(status_code=401, detail="Not logged in")
-        player = (
-            db.query(models.User)
-            .filter(models.User.session_id == user_session_id)
-            .first()
-        )
 
         form_data = await request.form()
 

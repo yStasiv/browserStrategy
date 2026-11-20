@@ -1,45 +1,53 @@
-import logging
-
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from backend.database import get_db
-from backend.models import Enterprise, User
+from backend.database import get_current_user, get_db
+from backend.models import User
+from backend.services import world
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
 
-logger = logging.getLogger(__name__)
+
+class TravelRequest(BaseModel):
+    sector: str = Field(min_length=1, max_length=100)
 
 
-def get_current_user(request: Request, db: Session = Depends(get_db)):
-    username = request.cookies.get("username")
-    if username:
-        return db.query(User).filter(User.username == username).first()
-    return None
+def location_state(db, player):
+    journey, now = world.resolve_location(db, player)
+    state = world.map_state(db, player, journey, now)
+    db.commit()
+    return state
 
 
 @router.get("/map")
-async def get_map(
-    request: Request,
-    db: Session = Depends(get_db),
-    player: User = Depends(get_current_user),
-):
-    if not player:
+def get_map(request: Request, db: Session = Depends(get_db), player: User = Depends(get_current_user)):
+    if player is None:
         return RedirectResponse(url="/")
+    state = location_state(db, player)
+    return templates.TemplateResponse("map.html", {"request": request, "player": player, "world": state})
 
-    # Отримуємо тільки підприємства з поточного сектора
-    sector_enterprises = (
-        db.query(Enterprise).filter(Enterprise.sector == player.map_sector).all()
-    )
 
-    return templates.TemplateResponse(
-        "map.html",
-        {
-            "request": request,
-            "player": player,
-            "enterprises": sector_enterprises,  # Передаємо відфільтровані підприємства
-        },
-    )
+@router.get("/api/world")
+def world_status(db: Session = Depends(get_db), player: User = Depends(get_current_user)):
+    if player is None:
+        raise HTTPException(401, "Увійдіть до гри.")
+    return location_state(db, player)
+
+
+@router.post("/move-to-sector")
+def start_travel(body: TravelRequest, db: Session = Depends(get_db), player: User = Depends(get_current_user)):
+    if player is None:
+        raise HTTPException(401, "Увійдіть до гри.")
+    try:
+        journey, now = world.start_travel(db, player, body.sector)
+    except HTTPException:
+        # A due arrival may have been finalized before the new request was rejected.
+        db.commit()
+        raise
+    state = world.map_state(db, player, journey, now)
+    db.commit()
+    return state

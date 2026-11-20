@@ -11,8 +11,8 @@ from backend.guild_models import (
     GuildDailyReplacement, GuildEvent, GuildProgress, GuildQuest, GuildQuestSlot,
     GuildQuestTemplate,
 )
-from backend.models import User
 from backend.services.guild_content import load_templates
+from backend.services.rewards import issue_system_resources
 
 logger = logging.getLogger(__name__)
 
@@ -141,10 +141,9 @@ def claim(db, player_id, quest_id):
     progress, slot, quest, keys = current_quest(db, player_id, quest_id)
     if quest.status != "completed" or quest.progress < quest.required:
         raise GuildError("Спочатку виконайте квест.")
-    db.execute(
-        update(User).where(User.id == player_id).values(
-            gold=User.gold + quest.gold, wood=User.wood + quest.wood, stone=User.stone + quest.stone
-        )
+    issue_system_resources(
+        db, player_id, "guild_quest", str(quest.id),
+        gold=quest.gold, wood=quest.wood, stone=quest.stone,
     )
     progress.xp += quest.xp
     while progress.xp >= progress.next_xp:

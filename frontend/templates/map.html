@@ -1,176 +1,41 @@
 {% extends 'base.html' %}
-
 {% block title %}Карта світу{% endblock %}
-
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/world_map.css') }}">
+<script defer src="{{ url_for('static', path='js/world_map.js') }}"></script>
+{% endblock %}
 {% block body %}
-<div class="game-layout">
-    <div class="map-container">
-        <!-- Ресурси -->
-        <!-- <div class="character-resources">
-            <span class="resource">
-                <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ player.gold }}
-            </span>
-            <span class="resource">
-                <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Дерево: {{ player.wood }}
-            </span>
-            <span class="resource">
-                <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Камінь: {{ player.stone }}
-            </span>
-        </div> -->
-
-        <div class="map-content">
-            <h2>Карта світу - Сектор: {{ player.map_sector }}</h2>
-            <div class="world-map">
-                <div class="map-overlay">
-                    <img src="../static/images/map_v1.png" alt="World Map" class="map-image">
-                    <div class="sector-borders">
-                        <div class="sector sector-1 {% if player.map_sector == "Mountain" %}active{% endif %}" onclick="moveToSector('Mountain')"></div>
-                        <div class="sector sector-2 {% if player.map_sector == "Castle" %}active{% endif %}" onclick="moveToSector('Castle')"></div>
-                        <div class="sector sector-3 {% if player.map_sector == "Forest" %}active{% endif %}" onclick="moveToSector('Forest')"></div>
-                    </div>
-                    <div class="player-position" id="player-marker"></div>
-                </div>
-
-                <!-- Компас навігації -->
-                <div class="compass-navigation">
-                    <div class="compass-row">
-                        <button onclick="move('nw')" class="compass-btn">↖</button>
-                        <button onclick="move('n')" class="compass-btn">↑</button>
-                        <button onclick="move('ne')" class="compass-btn">↗</button>
-                    </div>
-                    <div class="compass-row">
-                        <button onclick="move('w')" class="compass-btn">←</button>
-                        <button class="compass-btn compass-center">•</button>
-                        <button onclick="move('e')" class="compass-btn">→</button>
-                    </div>
-                    <div class="compass-row">
-                        <button onclick="move('sw')" class="compass-btn">↙</button>
-                        <button onclick="move('s')" class="compass-btn">↓</button>
-                        <button onclick="move('se')" class="compass-btn">↘</button>
-                    </div>
-                </div>
-            </div>
+<main class="world-page" lang="uk">
+    <section class="world-board" aria-labelledby="world-title">
+        <h1 id="world-title">Карта світу</h1>
+        <p id="world-current"></p>
+        <p id="world-work-notice" hidden>Під час роботи залишити сектор неможливо.</p>
+        <div class="world-art">
+            <img src="{{ url_for('static', path='images/map_v1.png') }}" alt="Ілюстрація карти світу">
+            <div id="world-markers"></div>
         </div>
-
-        <!-- Навігаційні кнопки -->
-        <div class="navigation-buttons">
-            <div class="character-btn">
-                <form action="/player" method="get">
-                    <button type="submit">Повернутися до персонажа</button>
-                </form>
-            </div>
-
-            <div class="castle-btn">
-                <form action="/castle" method="get">
-                    <button type="submit">Перейти до замку</button>
-                </form>
-            </div>
+        <div class="world-travel" id="world-travel" hidden>
+            <label for="world-progress" id="world-travel-label"></label>
+            <progress id="world-progress" value="0" max="1"></progress>
+            <p id="world-time"></p>
         </div>
-    </div>
-
-    <!-- Плейсхолдер для підприємств -->
-    <div class="buildings-placeholder">
-        <h3>Доступні підприємства в секторі {{ player.map_sector }}</h3>
-        <div class="enterprise-links">
-            {% if enterprises %}
-                {% for enterprise in enterprises %}
-                    <a href="/enterprise/{{ enterprise.id }}" class="enterprise-link">
-                        {% if enterprise.resource_type == 'wood' %}
-                            <img src="../static/images/sawmill-icon.png" alt="Sawmill" class="enterprise-icon">
-                        {% elif enterprise.resource_type == 'stone' %}
-                            <img src="../static/images/mine-icon.png" alt="Mine" class="enterprise-icon">
-                        {% elif enterprise.resource_type == 'gold' %}
-                            <img src="../static/images/gold-mine-icon.png" alt="Gold Mine" class="enterprise-icon">
-                        {% endif %}
-                        <span>{{ enterprise.name }}</span>
-                        <div class="enterprise-info">
-                            <p>Площа: {{ enterprise.area }} у.о.</p>
-                            <p>Зарплата: {{ enterprise.salary }} золота/год</p>
-                            <p>Працівники: {{ enterprise.workers_count }}/{{ enterprise.max_workers }}</p>
-                            <p>Склад: {{ enterprise.resource_stored }}/{{ enterprise.max_storage }}</p>
-                        </div>
-                    </a>
-                {% endfor %}
-            {% else %}
-                <p class="no-enterprises">У цьому секторі немає доступних підприємств</p>
-            {% endif %}
-        </div>
-
-        {% if player.map_sector == "Castle" %}
-        <div class="guild-section">
-            <h3>Гільдія авантюристів</h3>
-            <a href="/guild" class="guild-link">
-                <img src="../static/images/guild-icon.png" alt="Guild" class="guild-icon">
-                <div class="guild-info">
-                    <span class="guild-name">Гільдія авантюристів</span>
-                    <p class="guild-description">Тут ви можете знайти завдання та отримати нагороди</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<script>
-window.onload = function() {
-    const playerMarker = document.getElementById('player-marker');
-    playerMarker.style.left = '{{ player.map_x }}%';
-    playerMarker.style.top = '{{ player.map_y }}%';
-};
-
-async function move(direction) {
-    try {
-        const response = await fetch('/move', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ direction })
-        });
-        
-        if (response.ok) {
-            window.location.reload();
-        }
-    } catch (error) {
-        console.error('Error moving:', error);
-    }
-}
-
-async function moveToSector(sector) {
-    const playerMarker = document.getElementById('player-marker');
-    playerMarker.style.transition = 'all 3s ease-in-out';
-    
-    // Розраховуємо центральну позицію для кожного сектора
-    const sectorCenters = {
-        "Mountain": { x: 16.5, y: 50 },
-        "Castle": { x: 49.5, y: 50 },
-        "Forest": { x: 82.5, y: 50 }
-    };
-    
-    try {
-        const response = await fetch('/move-to-sector', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                sector: sector, 
-                x: sectorCenters[sector].x, 
-                y: sectorCenters[sector].y 
-            })
-        });
-        
-        if (response.ok) {
-            playerMarker.style.left = `${sectorCenters[sector].x}%`;
-            playerMarker.style.top = `${sectorCenters[sector].y}%`;
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 500);
-        }
-    } catch (error) {
-        console.error('Error moving to sector:', error);
-    }
-}
-</script>
-{% endblock %} 
+        <p id="world-feedback" role="status"></p>
+        <button type="button" id="world-refresh" hidden>Оновити стан</button>
+        <h2>Сектори</h2>
+        <ul id="world-sectors" class="world-sectors"></ul>
+    </section>
+    <aside class="world-side" aria-label="Місцеві можливості">
+        <section class="world-board">
+            <h2>Підприємства</h2>
+            <p id="world-enterprise-message"></p>
+            <ul id="world-enterprises" class="world-enterprises"></ul>
+            <p id="world-castle-links" hidden><a href="/castle">Замок</a> · <a href="/guild">Гільдія авантюристів</a></p>
+        </section>
+        <section class="world-board">
+            <h2>Полювання</h2>
+            <p>Мисливські зустрічі ще недоступні.</p>
+        </section>
+    </aside>
+    <script type="application/json" id="world-state">{{ world | tojson }}</script>
+</main>
+{% endblock %}

@@ -111,24 +111,3 @@ def init_test_data(db: Session):
 
         db.commit()
         print("Тестові дані успішно створено")
-
-
-def init_test_admin(db: Session):
-    """Створює тестового адміністратора, якщо його ще немає"""
-    admin = db.query(models.User).filter(models.User.id == 1).first()
-    if not admin:
-        from backend.routers.auth import hash_password
-
-        admin = models.User(
-            id=1,
-            username="1",
-            password=hash_password("1"),
-            fraction="Admin",
-            gold=1000000,
-            wood=1000000,
-            stone=1000000,
-            level=100,
-        )
-        db.add(admin)
-        db.commit()
-        print("Створено тестового адміністратора (login: 1, password: 1)")

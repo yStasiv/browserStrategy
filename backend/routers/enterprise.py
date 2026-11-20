@@ -8,8 +8,10 @@ from pydantic import BaseModel
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
+from backend.auth import session_player
 from backend import database, models
 from backend.services.guild import record_collection
+from backend.services.world import require_presence
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
@@ -90,9 +92,7 @@ async def enterprise_page(
     if not user_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
+    user = session_player(request, db)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -103,6 +103,7 @@ async def enterprise_page(
     )
     if not enterprise:
         raise HTTPException(status_code=404, detail="Enterprise not found")
+    require_presence(db, user, enterprise.sector)
 
     # Отримуємо список всіх працівників підприємства
     workers = (
@@ -111,7 +112,11 @@ async def enterprise_page(
         .all()
     )
 
+    # Release the player lock before production updates other players' balances.
+    db.commit()
     update_resources(db)
+    require_presence(db, user, enterprise.sector)
+    db.commit()
 
     return templates.TemplateResponse(
         "enterprise.html",
@@ -134,9 +139,7 @@ async def start_work(
     if not user_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
+    user = session_player(request, db)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -147,6 +150,7 @@ async def start_work(
     )
     if not enterprise:
         raise HTTPException(status_code=404, detail="Enterprise not found")
+    require_presence(db, user, enterprise.sector)
 
     current_time = datetime.now()
 
@@ -155,12 +159,6 @@ async def start_work(
 
     if enterprise.workers_count >= enterprise.max_workers:
         raise HTTPException(status_code=400, detail="No vacant positions")
-
-    # Перевіряємо, чи знаходиться гравець у правильному секторі
-    if user.map_sector != enterprise.sector:
-        raise HTTPException(
-            status_code=400, detail="You must be in the same sector as the enterprise"
-        )
 
     # Розраховуємо зарплату за годину
     salary_for_hour = enterprise.salary
@@ -198,9 +196,7 @@ async def buy_resources(
     if not user_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
+    user = session_player(request, db)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -211,6 +207,7 @@ async def buy_resources(
     )
     if not enterprise:
         raise HTTPException(status_code=404, detail="Enterprise not found")
+    require_presence(db, user, enterprise.sector)
 
     total_cost = amount * enterprise.item_price
     if not 0 <= total_cost <= 2_147_483_647:

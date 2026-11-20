@@ -7,9 +7,9 @@
     <div class="form-group">
         <label for="sector">Сектор:</label>
         <select id="sector" name="sector" required>
-            <option value="Forest">Ліс</option>
-            <option value="Mountain">Гори</option>
-            <option value="Castle">Замок</option>
+            {% for sector in sectors %}
+            <option value="{{ sector.key }}">{{ sector.name }}</option>
+            {% endfor %}
         </select>
     </div>
     

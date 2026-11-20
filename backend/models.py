@@ -2,10 +2,12 @@ from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
-                        String)
+                        String, UniqueConstraint, false, text)
 from sqlalchemy.orm import relationship
 
+from .config import SYSTEM_PLAYER_ID
 from .db_base import Base
+from .world_models import WorldSector
 
 # USER
 
@@ -17,6 +19,8 @@ class User(Base):
     password = Column(String)
     email = Column(String, unique=True, index=True)
     is_active = Column(Boolean, default=True)
+    is_system = Column(Boolean, nullable=False, server_default=false())
+    is_admin = Column(Boolean, nullable=False, server_default=false())
     avatar_url = Column(String, nullable=True)  # user img path
     fraction = Column(String, default="Elfe")
 
@@ -52,7 +56,7 @@ class User(Base):
     stone = Column(Integer, default=0)
     session_id = Column(String, unique=True, nullable=True)
 
-    map_sector = Column(String, default="Castle")  # Сектор карти
+    map_sector = Column(String, ForeignKey(WorldSector.key, name="fk_users_map_sector"), nullable=False, default="Castle")  # Сектор карти
     map_x = Column(Integer, default=0)  # Координата X на карті
     map_y = Column(Integer, default=0)  # Координата Y на карті
 
@@ -321,7 +325,12 @@ class Enterprise(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)  # Назва підприємства (sawmill, mine, etc.)
-    sector = Column(String, default="Castle")  # Додаємо поле для сектора
+    owner_id = Column(
+        Integer, ForeignKey("users.id", name="fk_enterprises_owner_id_users"), nullable=False,
+        server_default=text(str(SYSTEM_PLAYER_ID)), index=True,
+    )
+    owner = relationship("User")
+    sector = Column(String, ForeignKey(WorldSector.key, name="fk_enterprises_sector"), nullable=False, default="Castle")
     resource_type = Column(String)  # Тип ресурсу (wood, stone, etc.)
     resource_stored = Column(Integer, default=0)  # Кількість ресурсу на складі
     area = Column(Integer, default=100)  # Площа підприємства в умовних одиницях
@@ -363,3 +372,21 @@ class PlayerRating(Base):
 
 
 
+
+
+class RewardTransaction(Base):
+    __tablename__ = "reward_transactions"
+    __table_args__ = (
+        UniqueConstraint("source", "source_key", "recipient_id", name="uq_reward_transaction_source"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    issuer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    recipient_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    source = Column(String(32), nullable=False)
+    source_key = Column(String(64), nullable=False)
+    gold = Column(Integer, nullable=False)
+    wood = Column(Integer, nullable=False)
+    stone = Column(Integer, nullable=False)
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="SET NULL"))
+    created_at = Column(DateTime, nullable=False)

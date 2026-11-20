@@ -22,6 +22,7 @@
         <div class="avatar">
             <img src="{{ player.avatar_url or '../static/images/simple-elfe.png' }}" alt="Avatar" class="avatar-img">
             <span class="avatar-caption"><a href="/player_info?id={{ player.id }}">{{ player.username }}</a></span>
+            {% if player.is_system %}<p>Системний персонаж</p>{% endif %}
         </div>
 
         <!-- Характеристики персонажа --> 

@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from backend.auth import playable_users, session_player
 from backend import database, models, utils
 from backend.routers.player import PlayerHelper
 
@@ -57,7 +58,7 @@ class TaskHelper:
 
         # Add this task for each users
         TaskHelper.update_tasks_for_users(
-            db, db_task, all_users=db.query(models.User).all()
+            db, db_task, all_users=playable_users(db).all()
         )
         return db_task
 
@@ -76,7 +77,7 @@ class TaskHelper:
             )
             .all()
         )
-        if user.id == 1:
+        if user.is_admin:
             tasks = (
                 db.query(models.UserTask)
                 .join(models.Task)
@@ -172,16 +173,12 @@ class TaskRoutes(TaskHelper):
         if not user_session_id:
             raise HTTPException(status_code=401, detail="Not logged in")
 
-        user = (
-            db.query(models.User)
-            .filter(models.User.session_id == user_session_id)
-            .first()
-        )
+        user = session_player(request, db)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
         # Додавання завдання тільки для гравця з id = 1
-        if user.id == 1:
+        if user.is_admin:
             TaskHelper.create_task(
                 db,
                 title,

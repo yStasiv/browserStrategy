@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from . import models
 from .db_base import SessionLocal
-from .init_test_data import init_test_admin, init_test_data
+from .auth import session_player
+from .init_test_data import init_test_data
 
 
 def init_default_task(db: SessionLocal):
@@ -43,7 +44,6 @@ def get_db() -> Generator[Any, Any, Any]:
     db = SessionLocal()
     try:
         init_test_data(db)  # Ініціалізуємо тестові дані
-        init_test_admin(db)  # Створюємо адміністратора
         # init_default_task(db)  # Ініціалізуємо початкове завдання при створенні сесії
         yield db
     finally:
@@ -53,16 +53,17 @@ def get_db() -> Generator[Any, Any, Any]:
 def init_db():
     from .db_base import Base, engine
 
-    # Guild tables and their initial templates are installed together by Alembic.
-    legacy_tables = [table for table in Base.metadata.sorted_tables if not table.name.startswith("guild_")]
+    from sqlalchemy import inspect
+
+    if not inspect(engine).has_table("world_sectors"):
+        return
+    legacy_tables = [
+        table for table in Base.metadata.sorted_tables
+        if not table.name.startswith(("guild_", "world_"))
+        and table.name not in {"reward_transactions", "player_travel"}
+    ]
     Base.metadata.create_all(bind=engine, tables=legacy_tables)
-    # if not os.path.exists("database.db"):  # Check if database already created
-    #     print("Database not found. Creating database...")
-    # Base.metadata.create_all(bind=engine)  # Create new one if not
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
-    username = request.cookies.get("username")
-    if username:
-        return db.query(models.User).filter(models.User.username == username).first()
-    return None
+    return session_player(request, db)

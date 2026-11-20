@@ -15,6 +15,7 @@
     <div class="player-view-container">
         <div class="player-header">
             <h2>{{ player.username }}</h2>
+            {% if player.is_system %}<p>Системний персонаж</p>{% endif %}
             <p class="fraction">Фракція: {{ player.fraction }}</p>
         </div>
 

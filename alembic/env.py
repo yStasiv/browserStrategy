@@ -12,6 +12,22 @@ if context.is_offline_mode():
         context.run_migrations()
 else:
     with engine.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
-        with context.begin_transaction():
-            context.run_migrations()
+        if connection.dialect.name == "sqlite":
+            # Batch migrations rebuild referenced tables. Check integrity before committing.
+            foreign_keys = connection.exec_driver_sql("PRAGMA foreign_keys").scalar()
+            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            connection.commit()
+            try:
+                with connection.begin():
+                    connection.exec_driver_sql("BEGIN IMMEDIATE")
+                    context.configure(connection=connection, target_metadata=target_metadata)
+                    context.run_migrations()
+                    violations = connection.exec_driver_sql("PRAGMA foreign_key_check").fetchmany(5)
+                    if violations:
+                        raise RuntimeError(f"SQLite foreign-key violations after migration: {violations}")
+            finally:
+                connection.exec_driver_sql(f"PRAGMA foreign_keys={int(foreign_keys)}")
+        else:
+            context.configure(connection=connection, target_metadata=target_metadata)
+            with context.begin_transaction():
+                context.run_migrations()

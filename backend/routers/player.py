@@ -1,10 +1,9 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from backend.auth import playable_users, session_player
 from backend import database, models, utils
 from backend.auth import get_current_user
 
@@ -92,7 +91,7 @@ class PlayerHelper:
 async def player_info(
     id: int, request: Request, db: Session = Depends(database.get_db)
 ):
-    player = db.query(models.User).filter(models.User.id == id).first()
+    player = playable_users(db).filter(models.User.id == id).first()
     if not player:
         raise HTTPException(status_code=404, detail="Character not found")
 
@@ -160,11 +159,7 @@ class PlayerRotes(PlayerHelper):
         if not user_session_id:
             raise HTTPException(status_code=401, detail="Not logged in")
 
-        user = (
-            db.query(models.User)
-            .filter(models.User.session_id == user_session_id)
-            .first()
-        )
+        user = session_player(request, db)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -189,100 +184,3 @@ class PlayerRotes(PlayerHelper):
             logger.error(HTTPException(status_code=400, detail="Invalid attribute"))
 
         return RedirectResponse(url="/player", status_code=303)
-
-    # @router.get("/map", response_class=HTMLResponse)
-    # async def map_page(
-    #     request: Request,
-    #     db: Session = Depends(database.get_db)
-    #     ):
-    #     user_session_id = request.cookies.get("session_id")
-    #     if not user_session_id:
-    #         raise HTTPException(status_code=401, detail="Not logged in")
-
-    #     user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    #     if not user:
-    #         raise HTTPException(status_code=404, detail="User not found")
-
-    #     return templates.TemplateResponse("map.html", {"request": request, "user": user})
-
-    @router.post("/move")
-    async def move_character(
-        request: Request, movement: dict, db: Session = Depends(database.get_db)
-    ):
-        user_session_id = request.cookies.get("session_id")
-        if not user_session_id:
-            raise HTTPException(status_code=401, detail="Not logged in")
-
-        user = (
-            db.query(models.User)
-            .filter(models.User.session_id == user_session_id)
-            .first()
-        )
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        direction = movement.get("direction")
-
-        direction_changes = {
-            "e": (33.3, 0),  # Вправо
-            "w": (-33.3, 0),  # Вліво
-        }
-
-        if direction in direction_changes:
-            dx, dy = direction_changes[direction]
-
-            # Обчислюємо нові координати
-            new_x = max(17, min(100 - 17, user.map_x + dx))
-            new_y = max(50, min(100 - 50, user.map_y + dy))
-
-            # Визначаємо сектор на основі x-координати (тепер як рядок)
-            if new_x < 33.3:
-                new_sector = "Mountain"
-            elif new_x < 66.6:
-                new_sector = "Castle"
-            else:
-                new_sector = "Forest"
-
-            # Оновлюємо позицію користувача
-            user.map_x = new_x
-            user.map_y = new_y
-            user.map_sector = new_sector
-            db.commit()
-
-        return {"status": "success"}
-
-
-@router.post("/move-to-sector")
-async def move_to_sector(
-    request: Request, movement: dict, db: Session = Depends(database.get_db)
-):
-    user_session_id = request.cookies.get("session_id")
-    if not user_session_id:
-        raise HTTPException(status_code=401, detail="Not logged in")
-
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Перевіряємо, чи не працює зараз гравець
-    if user.workplace and user.work_start_time:
-        hours_worked = (datetime.now() - user.work_start_time).total_seconds() / 3600
-        if hours_worked < 8:
-            raise HTTPException(
-                status_code=400,
-                detail="You cannot leave sector while working! (8 hours not passed)",
-            )
-
-    sector = str(movement.get("sector"))
-    x = movement.get("x")
-    y = movement.get("y")
-
-    if sector in ["Mountain", "Castle", "Forest"] and x is not None and y is not None:
-        user.map_sector = sector
-        user.map_x = x
-        user.map_y = y
-        db.commit()
-
-    return {"status": "success"}

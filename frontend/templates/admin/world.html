@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Сектори й маршрути{% endblock %}
+{% block body %}
+<main class="admin-panel" lang="uk">
+    <h1>Сектори й маршрути</h1>
+    <p><a href="/admin/enterprises">Керування підприємствами</a></p>
+    <section class="enterprise-form-container">
+        <h2>Додати сектор</h2>
+        <form method="post" action="/admin/world/sectors" class="enterprise-form">
+            <label>Ключ <input name="key" pattern="[A-Za-z0-9_\-]+" maxlength="100" required></label>
+            <label>Назва <input name="name" maxlength="100" required></label>
+            <label>Порядок <input name="sort_order" type="number" min="0" value="0" required></label>
+            <label>Позиція X (%) <input name="map_x" type="number" min="0" max="100"></label>
+            <label>Позиція Y (%) <input name="map_y" type="number" min="0" max="100"></label>
+            <label><input type="checkbox" name="unlocked" value="true"> Відкрити одразу</label>
+            <button type="submit">Додати сектор</button>
+        </form>
+        <ul>
+            {% for sector in sectors %}
+            <li>
+                {{ sector.name }} ({{ sector.key }}) · {{ 'Відкритий' if sector.unlocked else 'Заблокований' }}
+                {% if not sector.unlocked %}
+                <form method="post" action="/admin/world/sectors/{{ sector.key | urlencode }}/unlock">
+                    <button type="submit">Відкрити сектор</button>
+                </form>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    <section class="enterprise-form-container">
+        <h2>Додати або оновити сполучення</h2>
+        <form method="post" action="/admin/world/connections" class="enterprise-form">
+            <label>Звідки
+                <select name="origin" required>
+                    {% for sector in sectors %}<option value="{{ sector.key }}">{{ sector.name }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>Куди
+                <select name="destination" required>
+                    {% for sector in sectors %}<option value="{{ sector.key }}">{{ sector.name }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>Тривалість (с) <input name="duration_seconds" type="number" min="1" required></label>
+            <label>Напрямок
+                <select name="bidirectional">
+                    <option value="true">В обидва боки</option>
+                    <option value="false">Лише зі старту до призначення</option>
+                </select>
+            </label>
+            <button type="submit">Зберегти сполучення</button>
+        </form>
+        <ul>
+            {% for route in connections %}
+            <li>{{ route.origin }} → {{ route.destination }} · {{ route.duration_seconds }} с</li>
+            {% endfor %}
+        </ul>
+    </section>
+</main>
+{% endblock %}

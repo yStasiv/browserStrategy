@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend import database, utils
+from backend.auth import session_player
 from backend.tasks import check_workers
 from backend.websockets import manager
 from backend.engine import battle_api
@@ -91,6 +92,12 @@ async def startup_event():
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    with database.SessionLocal() as session:
+        player = session_player(websocket, session)
+        authorized = player is not None and player.id == user_id
+    if not authorized:
+        await websocket.close(code=1008)
+        return
     await manager.connect(websocket, user_id)
     try:
         while True:
