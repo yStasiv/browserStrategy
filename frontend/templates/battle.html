@@ -283,14 +283,16 @@
 
     // ---------- Розкладка ----------
     function layout() {
-        if (!view) return;
+        if (!view || !el.wrap.clientWidth) return;
         const w = view.state.width, h = view.state.height;
         const frame = getComputedStyle(el.wrap);
         const padding = parseFloat(frame.paddingLeft) + parseFloat(frame.paddingRight) || 0;
-        const maxW = Math.min((el.wrap.clientWidth || window.innerWidth - 24) - padding - 4, 960);
+        const maxW = Math.min(el.wrap.clientWidth - padding - 4, 960);
         const maxH = window.innerHeight * 0.62;
-        const cell = Math.max(18, Math.min(72, Math.floor(Math.min(maxW / w, maxH / h))));
-        document.documentElement.style.setProperty('--cell', cell + 'px');
+        const cell = Math.max(1, Math.min(72, Math.floor(Math.min(maxW / w, maxH / h)))) + 'px';
+        if (el.board.style.getPropertyValue('--cell') !== cell) {
+            el.board.style.setProperty('--cell', cell);
+        }
     }
 
     function buildCells() {
@@ -342,6 +344,8 @@
         view = v;
         for (const s of Object.values(v.state.stacks)) known[s.id] = { unit: s.unit, owner: s.owner };
 
+        el.menu.classList.add('hidden');
+        el.battle.classList.remove('hidden');
         layout();
         buildCells();
         if (events && events.length) showEvents(events);
@@ -352,8 +356,6 @@
 
         for (const s of Object.values(v.state.stacks)) lastPos[s.id] = { x: s.x, y: s.y, w: s.w, h: s.h };
 
-        el.menu.classList.add('hidden');
-        el.battle.classList.remove('hidden');
         if (v.status === 'finished' && !replay) showResult(); else el.result.classList.add('hidden');
         schedulePoll();
     }
@@ -708,7 +710,8 @@
         if (k === 'w' && !el.btnWait.disabled) send({ type: 'wait' });
         if (k === 'd' && !el.btnDefend.disabled) send({ type: 'defend' });
     });
-    window.addEventListener('resize', () => { if (view) layout(); });
+    window.addEventListener('resize', layout);
+    new ResizeObserver(layout).observe(el.wrap);
 
     // ---------- Синхронізація ----------
     async function refresh() {
