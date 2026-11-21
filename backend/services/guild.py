@@ -22,7 +22,7 @@ BASE_XP = 100
 XP_PER_LEVEL = 50
 OBJECTIVE_GROWTH_PERCENT = 20
 RANKS = ((10, "Ветеран"), (5, "Шукач пригод"), (1, "Новачок"))
-RESOURCE_NAMES = {"wood": "деревини", "stone": "каменю"}
+RESOURCE_NAMES = {"singing_resin": "співочої смоли", "basalt_bone": "базальтової кістки"}
 
 
 class Category(str, Enum):
@@ -216,9 +216,9 @@ def board(db, player_id):
         "quests": [
             {
                 "id": quest.id, "slot": slot.number, "title": quest.title,
-                "description": quest.description, "category": quest.category,
+                "description": quest.description.replace("деревини", "співочої смоли").replace("каменю", "базальтової кістки"), "category": quest.category,
                 "difficulty": quest.difficulty, "required": quest.required, "progress": quest.progress,
-                "status": quest.status, "gold": quest.gold, "wood": quest.wood, "stone": quest.stone,
+                "status": quest.status, "gold": quest.gold, "singing_resin": quest.wood, "basalt_bone": quest.stone,
                 "xp": quest.xp,
             }
             for slot, quest in current_quests(db, player_id)

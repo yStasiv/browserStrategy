@@ -10,17 +10,17 @@
             <img src="../static/images/gold-resource-icon.png" alt="Gold Icon" class="resource-icon"> Золото: {{ user.gold }}
         </span>
         <span class="resource">
-            <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Дерево: {{ user.wood }}
+            <img src="../static/images/wood-resource-icon.png" alt="Wood Icon" class="resource-icon"> Співоча смола: {{ user.singing_resin }}
         </span>
         <span class="resource">
-            <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Камінь: {{ user.stone }}
+            <img src="../static/images/stone-resourse-icon.png" alt="Stone Icon" class="resource-icon"> Базальтова кістка: {{ user.basalt_bone }}
         </span>
     </div>
 
     <div class="enterprise-image">
-        {% if enterprise.resource_type == 'wood' %}
+        {% if enterprise.resource_type == 'singing_resin' %}
             <img src="../static/images/sawmill_model.png" alt="Sawmill" class="sawmill-img">
-        {% elif enterprise.resource_type == 'stone' %}
+        {% elif enterprise.resource_type == 'basalt_bone' %}
             <img src="../static/images/mine_model.png" alt="Mine" class="sawmill-img">
         {% elif enterprise.resource_type == 'gold' %}
             <img src="../static/images/gold_mine_model.png" alt="Gold Mine" class="sawmill-img">

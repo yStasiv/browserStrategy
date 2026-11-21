@@ -60,7 +60,7 @@ def init_db():
     legacy_tables = [
         table for table in Base.metadata.sorted_tables
         if not table.name.startswith(("guild_", "world_"))
-        and table.name not in {"reward_transactions", "player_travel"}
+        and table.name not in {"reward_transactions", "player_travel", "player_resource_balances"}
     ]
     Base.metadata.create_all(bind=engine, tables=legacy_tables)
 

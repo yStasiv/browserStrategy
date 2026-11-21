@@ -1,57 +1,45 @@
 {% extends 'base.html' %}
-
-{% block title %}Перегляд персонажа{% endblock %}
-
+{% block title %}{{ item.name }} · Спорядження{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+{% endblock %}
 {% block body %}
-<div class="navigation-panel">
-    <a href="/item" class="nav-link">Мій персонаж</a>
-    <a href="/map" class="nav-link">Карта</a>
-    <a href="/guild" class="nav-link">Гільдія</a>
-    <a href="/char_tasks" class="nav-link">Завдання</a>
-    <a href="/castle" class="nav-link">Замок</a>
-</div>
-
-<div class="item-container" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; align-items: start;">
-    <div class="item-info">
-        <div class="item-header">
-            <h2>{{ item.name }}</h2>
+<main class="hero-dashboard">
+    <article class="hero-panel artifact-card">
+        <div class="artifact-display">
+            {% if item.image_url %}<img src="{{ item.image_url }}" alt="">{% else %}<span aria-hidden="true">◆</span>{% endif %}
         </div>
-        <p class="item-description">{{ item.description }}</p>
-        <div class="item-meta">
-            <p><strong>Тип:</strong>
-                {% if item.item_type == 'armor' %}Броня
-                {% elif item.item_type == 'one_handed_weapon' %}Одноручний меч
-                {% elif item.item_type == 'two_handed_weapon' %}Дворучний меч
-                {% else %}{{ item.item_type }}{% endif %}
-            </p>
-            <p><strong>Власник:</strong> {{ item.owner.username }}</p>
-            <p><strong>Міцність:</strong> {{ item.durability }} / {{ item.max_durability }}</p>
-            <p><strong>Необхідний рівень:</strong> {{ item.required_level }}</p>
-            <p><strong>Вартість предмета:</strong> {{ item.price }}</p>
-        </div>
-        <div class="item-stats">
-            <h3>Характеристики:</h3>
-            <ul>
-                {% for key, value in item.stats.items() %}
-                    <li>
-                        {% if key == 'melee_attack' %}⚔
-                        {% elif key == 'physical_defense' %}🛡
-                        {% elif key == 'initiative' %}⏳
-                        {% elif key == 'luck' %}🍀
-                        {% endif %}
-                        <strong>{{ key }}:</strong> {{ value }}
-                    </li>
+        <div class="artifact-details">
+            <p class="artifact-type">{{ item_type }}</p>
+            <h1>{{ item.name }}</h1>
+            {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+            <dl class="hero-public-rating artifact-properties">
+                {% if item.owner %}
+                <div><dt>Власник</dt><dd><a href="/player_info?id={{ item.owner.id }}">{{ item.owner.username }}</a></dd></div>
+                {% endif %}
+                {% if item.durability is not none and item.max_durability is not none %}
+                <div><dt>Міцність</dt><dd>{{ item.durability }} / {{ item.max_durability }}</dd></div>
+                {% endif %}
+                {% for listing in listings %}
+                <div><dt>У магазині</dt><dd>{{ listing.price }} золота · від рівня {{ listing.level_required }}</dd></div>
                 {% endfor %}
-            </ul>
+            </dl>
+            {% if bonuses %}
+            <h2>Бонуси</h2>
+            <dl class="hero-public-rating artifact-bonuses">
+                {% for name, value in bonuses %}
+                <div><dt>{{ name }}</dt><dd>{{ '%+g' | format(value) }}</dd></div>
+                {% endfor %}
+            </dl>
+            {% endif %}
+            {% if player %}
+            <nav class="artifact-links" aria-label="Переходи">
+                {% if item.owner_id == player.id %}<a class="hero-link" href="/inventory">До інвентарю</a>{% endif %}
+                {% if listings %}<a class="hero-link" href="/shop">До магазину</a>{% endif %}
+                <a class="hero-link" href="/player">До персонажа</a>
+            </nav>
+            {% endif %}
         </div>
-    </div>
-
-<div class="item-image-container" style="text-align: center;">
-        {% if item.image_url %}
-            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="item-image" style="width: 100px; height: 100px;">
-        {% endif %}
-        <p><a href="/shop?filter={{ item.name }}" class="shop-link">Переглянути в магазині</a></p>
-</div>
-
-</div>
+    </article>
+</main>
 {% endblock %}

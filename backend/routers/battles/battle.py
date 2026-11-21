@@ -6,7 +6,7 @@ import json
 import os
 from typing import Dict, List
 from ... import models, database
-from ...auth import get_current_user
+from ...auth import get_current_user, playable_users
 from ...engine.battle_service import replay_history
 from fastapi.templating import Jinja2Templates
 # from .battle_system import BattleSystem
@@ -24,13 +24,20 @@ async def battle_page(request: Request, db: Session = Depends(database.get_db)):
     return templates.TemplateResponse("battle.html", {"request": request, "player": player})
 
 @router.get("/battle/history")
-async def battle_history(request: Request, db: Session = Depends(database.get_db)):
-    player = await get_current_user(request, db)
-    if not player:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+async def battle_history(request: Request, db: Session = Depends(database.get_db), player_id: int | None = None):
+    viewer = await get_current_user(request, db)
+    if player_id is None and viewer is None:
+        raise HTTPException(401, "Увійди до гри.")
+    subject = viewer if player_id is None else playable_users(db).filter(models.User.id == player_id).first()
+    if subject is None:
+        raise HTTPException(404, "Персонажа не знайдено.")
     return templates.TemplateResponse("battle_history.html", {
-        "request": request, "player": player, "battles": replay_history(db, player, limit=None),
+        "request": request, "player": viewer, "subject": subject,
+        "public_history": player_id is not None,
+        "can_replay": viewer is not None and viewer.id == subject.id,
+        "battles": replay_history(db, subject, limit=None),
     })
+
 
 
 # @router.get("/battle")

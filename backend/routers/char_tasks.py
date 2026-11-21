@@ -124,8 +124,8 @@ class TaskHelper:
         user = db.query(models.User).filter(models.User.id == user_id).first()
         if user:
             user.gold += task.reward_gold
-            user.wood += task.reward_wood
-            user.stone += task.reward_stone
+            user.singing_resin += task.reward_wood
+            user.basalt_bone += task.reward_stone
             user.experience += task.reward_exp
 
             db.commit()
@@ -223,8 +223,8 @@ class TaskRoutes(TaskHelper):
         task = db.query(models.Task).filter(models.Task.id == task_id).first()
         user_task.is_completed = True
         current_user.gold += task.reward_gold
-        current_user.wood += task.reward_wood
-        current_user.stone += task.reward_stone
+        current_user.singing_resin += task.reward_wood
+        current_user.basalt_bone += task.reward_stone
         current_user.experience += task.reward_exp
 
         db.commit()

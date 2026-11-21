@@ -1,0 +1,21 @@
+<section class="hero-stat-panel" aria-label="Характеристики">
+    {% if not read_only %}<form action="/update-attribute" method="post">{% endif %}
+        <dl class="hero-stats">
+            {% for key, stat in profile.attributes.items() %}
+            <div tabindex="0" class="hero-stat-card">
+                <dt>
+                    {% if stat.image_url %}<img class="hero-stat-icon" src="{{ stat.image_url }}" alt="">
+                    {% else %}<span class="hero-stat-icon" aria-hidden="true">{{ stat.icon }}</span>{% endif %}
+                    <span class="hero-stat-tooltip">{{ stat.name }}</span>
+                </dt>
+                <dd><strong data-hero-stat="{{ key }}" title="{{ stat.name }} · база {{ stat.base }} · спорядження {{ stat.equipment }}">{{ stat.total }}</strong>
+                    {% if not read_only and key == 'knowledge' and player.pending_attribute_points and player.pending_attribute_points > 0 %}
+                    <button name="attribute" value="mind" aria-label="Підвищити знання">+</button>
+                    {% endif %}
+                </dd>
+            </div>
+            {% endfor %}
+        </dl>
+        {% if not read_only and player.pending_attribute_points %}<small>Вільні очки · {{ player.pending_attribute_points }}</small>{% endif %}
+    {% if not read_only %}</form>{% endif %}
+</section>

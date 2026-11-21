@@ -1,0 +1,11 @@
+{
+  "permanent": [
+    {"id": "gold", "name": "Золото", "icon": "/static/images/resources/00_gold.png", "active": true},
+    {"id": "singing_resin", "name": "Співоча смола", "icon": "/static/images/resources/01_singing_resin.png", "active": true},
+    {"id": "basalt_bone", "name": "Базальтова кістка", "icon": "/static/images/resources/02_basalt_bone.png", "active": true},
+    {"id": "whisper_dust", "name": "Шепіт-пил", "icon": "/static/images/resources/03_whisper_dust.png","active": true},
+    {"id": "pulse_spark", "name": "Пульс-іскра", "icon": "/static/images/resources/04_pulse_spark.png", "active": true},
+    {"id": "brand_salt", "name": "Клеймо-сіль","icon": "/static/images/resources/05_brand_salt.png", "active": true}
+  ],
+  "unique": {"id": "reserved_resource_7", "name":"Астраліт", "icon": "/static/images/resources/06_astralite.png","active": false}
+}

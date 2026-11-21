@@ -33,7 +33,7 @@ def sessions(tmp_path, monkeypatch):
         db.add_all([
             User(id=10, username="reader", level=8, gold=100, session_id="reader-session"),
             User(id=2, username="other", gold=100, session_id="other-session"),
-            Enterprise(id=1, name="Sawmill", resource_type="wood", resource_stored=10, item_price=2),
+            Enterprise(id=1, name="Sawmill", resource_type="singing_resin", resource_stored=10, item_price=2),
         ])
     yield factory
     engine.dispose()
@@ -48,14 +48,14 @@ def test_progress_rewards_and_snapshots(sessions):
         assert initial["level"] == 1
         assert len(initial["quests"]) == 5
         frozen = initial["quests"][-1]
-        guild.record_collection(db, 10, "small-purchase", "wood", 1)
+        guild.record_collection(db, 10, "small-purchase", "singing_resin", 1)
     with sessions.begin() as db:
-        guild.record_collection(db, 10, "small-purchase", "wood", 1)
+        guild.record_collection(db, 10, "small-purchase", "singing_resin", 1)
         db.flush()
         assert all(q["progress"] <= 1 for q in guild.board(db, 10)["quests"])
         assert all(q["progress"] == 0 for q in guild.board(db, 2)["quests"])
-        guild.record_collection(db, 10, "wood-purchase", "wood", 20)
-        guild.record_collection(db, 10, "stone-purchase", "stone", 20)
+        guild.record_collection(db, 10, "wood-purchase", "singing_resin", 20)
+        guild.record_collection(db, 10, "stone-purchase", "basalt_bone", 20)
     with sessions.begin() as db:
         completed = guild.board(db, 10)["quests"]
         assert all(q["status"] == "completed" for q in completed)
@@ -70,8 +70,8 @@ def test_progress_rewards_and_snapshots(sessions):
         assert after["xp"] == sum(q["xp"] for q in completed[:-1]) - guild.xp_threshold(1)
         assert after["claimed_count"] == 4
         assert db.get(User, 10).gold == 100 + sum(q["gold"] for q in completed[:-1])
-        assert db.get(User, 10).wood == sum(q["wood"] for q in completed[:-1])
-        assert db.get(User, 10).stone == sum(q["stone"] for q in completed[:-1])
+        assert db.get(User, 10).singing_resin == sum(q["singing_resin"] for q in completed[:-1])
+        assert db.get(User, 10).basalt_bone == sum(q["basalt_bone"] for q in completed[:-1])
         assert db.get(User, 10).level == 8
         assert after["quests"][-1]["required"] == frozen["required"]
         assert after["quests"][-1]["gold"] == frozen["gold"]
@@ -93,7 +93,7 @@ def test_replacements_and_utc_reset(sessions, monkeypatch):
     with sessions.begin() as db:
         guild.initialize(db, 10)
         db.flush()
-        guild.record_collection(db, 10, "partial", "wood", 1)
+        guild.record_collection(db, 10, "partial", "singing_resin", 1)
         db.flush()
         before = guild.board(db, 10)
         partial = next(q for q in before["quests"] if q["progress"])
@@ -126,8 +126,8 @@ def test_concurrent_mutations(sessions, operation, successes):
         guild.initialize(db, 10)
         db.flush()
         if operation == "claim":
-            guild.record_collection(db, 10, "wood-win", "wood", 20)
-            guild.record_collection(db, 10, "stone-win", "stone", 20)
+            guild.record_collection(db, 10, "wood-win", "singing_resin", 20)
+            guild.record_collection(db, 10, "stone-win", "basalt_bone", 20)
             db.flush()
         quests = guild.board(db, 10)["quests"]
 
@@ -219,10 +219,10 @@ def test_purchase_endpoint_and_guild_auth(sessions):
     assert call("POST", purchase, {"amount": 11})[0] == 409
     assert call("POST", purchase, {"amount": 3})[0] == 303
     response = json.loads(call("GET", "/api/guild")[1])
-    assert all(q["progress"] == 3 for q in response["quests"] if "деревини" in q["description"])
+    assert all(q["progress"] == 3 for q in response["quests"] if "співочої смоли" in q["description"])
     with sessions() as db:
         assert db.get(User, 10).gold == 94
-        assert db.get(User, 10).wood == 3
+        assert db.get(User, 10).singing_resin == 3
         assert db.get(Enterprise, 1).resource_stored == 7
     with sessions.begin() as db:
         db.get(User, 10).map_sector = "Forest"
@@ -277,7 +277,7 @@ def test_world_locations_protect_enterprises_and_guild(sessions, monkeypatch):
 
     with sessions.begin() as db:
         db.get(User, 10).is_admin = True
-        db.add(Enterprise(id=2, name="Mine", sector="Forest", resource_type="stone",
+        db.add(Enterprise(id=2, name="Mine", sector="Forest", resource_type="basalt_bone",
                           resource_stored=10, item_price=2))
 
     assert call("GET", "/map")[0] == 200
@@ -316,7 +316,7 @@ def test_world_locations_protect_enterprises_and_guild(sessions, monkeypatch):
     assert call("GET", "/enterprise/1")[0] == 403
     with sessions() as db:
         traveler = db.get(User, 10)
-        assert (traveler.map_sector, traveler.map_x, traveler.map_y, traveler.gold, traveler.stone) == (
+        assert (traveler.map_sector, traveler.map_x, traveler.map_y, traveler.gold, traveler.basalt_bone) == (
             "Forest", 83, 50, 98, 1
         )
         assert db.get(User, 2).map_sector == "Castle"
@@ -395,3 +395,154 @@ def test_hunts_and_faction_recruitment(sessions):
         replay = battle_service.battle_events(db, player, battle["id"], finished_only=True)
         assert replay["initial_state"]["hunt_key"] == "goblin"
         assert player.gold == before
+
+
+def test_character_dashboard_resources_equipment_and_registered_sections(sessions, tmp_path, monkeypatch):
+    from backend.models import EquippedItems, Item, PlayerResourceBalance
+    from backend.routers import item as artifact
+    from backend.routers.battles import battle as battle_pages
+    from backend.engine.battle_models import Battle, BattleParticipant
+    from backend.services import character_profile as profile
+
+    app = FastAPI()
+    app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+    app.include_router(player.router)
+    app.include_router(artifact.router)
+    app.include_router(battle_pages.router)
+
+    def get_db():
+        with sessions() as db:
+            yield db
+
+    app.dependency_overrides[database.get_db] = get_db
+
+    def page(cookie="session_id=reader-session"):
+        status, body = asyncio.run(asgi_request(app, "GET", "/player?id=2", cookie))
+        return status, body.decode()
+
+    with sessions.begin() as db:
+        hero = db.get(User, 10)
+        hero.level, hero.experience, hero.stamina = 2, 1500, 9
+        hero.gold, hero.singing_resin, hero.basalt_bone = 1200, 17, 19
+        db.add(PlayerResourceBalance(player_id=10, resource_id="whisper_dust", quantity=31))
+        db.add(PlayerResourceBalance(player_id=10, resource_id="reserved_resource_7", quantity=11))
+        item = Item(name="Срібний шолом", owner_id=10, stats={"physical_defense": 3})
+        db.add(item)
+        db.flush()
+        item_id = item.id
+        db.add(EquippedItems(user_id=10, helmet_id=item_id))
+        guild.initialize(db, 10)
+        db.add(Battle(id=71, mode="pve", status="finished", state={}, initial_state={}))
+        db.flush()
+        db.add(BattleParticipant(battle_id=71, side=0, user_id=10))
+        db.add(RewardTransaction(issuer_id=SYSTEM_PLAYER_ID, recipient_id=10, source="battle_v1",
+                                 source_key="71", gold=83, wood=0, stone=0, created_at=datetime(2026, 11, 21)))
+
+    assert page("username=reader")[0] == 401
+    status, html = page()
+    assert status == 200
+    assert 'id="hero-name"><a href="/player_info?id=10">reader<' in html
+    assert "/upload-avatar" not in html
+    assert html.count('class="hero-army-slot') == 8
+    assert '<a class="hero-link" href="/castle">Набрати війська</a>' in html
+    assert "Очки армії" not in html and "Налаштувати склад армії" not in html
+    assert html.index("Гільдії") < html.index("Спорядження")
+    status, public = asyncio.run(asgi_request(app, "GET", "/player_info?id=10", ""))
+    assert status == 200
+    assert b'class="hero-dashboard hero-public-profile"' in public and b'hero-gear-editor' not in public
+    assert b'/update-attribute' not in public
+    public_html = public.decode()
+    assert public_html.count('class="hero-army-slot') == 8
+    assert "Набрати війська" not in public_html
+    assert "Гільдія авантюристів" in public_html and "Статистика" in public_html
+    assert "/battle/history?player_id=10" in public_html and "/player_info/transfers?id=10" in public_html
+    status, battles = asyncio.run(asgi_request(app, "GET", "/battle/history?player_id=10", ""))
+    assert status == 200 and "Бій №71" in battles.decode() and b"/battle?replay=71" not in battles
+    status, transfers = asyncio.run(asgi_request(app, "GET", "/player_info/transfers?id=10", ""))
+    assert status == 200 and "Золото · 83" in transfers.decode()
+    assert f'data-hero-slot="head" href="/art_info?id={item_id}"' in html
+    assert f'data-hero-slot="head" href="/art_info?id={item_id}"'.encode() in public
+    assert 'data-hero-slot="belt" href="/inventory"' in html
+    assert b'data-hero-slot="belt" href="/inventory"' not in public
+    status, detail = asyncio.run(asgi_request(app, "GET", f"/art_info?id={item_id}", ""))
+    assert status == 200 and "Срібний шолом" in detail.decode()
+    assert b'class="hero-panel artifact-card"' in detail
+    assert asyncio.run(asgi_request(app, "GET", "/art_info?id=-1", ""))[0] == 404
+    assert 'value="1500" max="3000"' in html and "Бойовий рівень 2" in html
+    assert "Знання" in html and "Витривалість" not in html and "Срібний шолом" in html
+    assert 'data-hero-stat="defense"' in html and "спорядження 3" in html
+    assert html.count("data-hero-slot=") == 11
+    assert html.count("data-resource-id=") == 6
+    assert html.index('data-resource-id="gold"') < html.index("</nav>")
+    assert "1,2 тис." in html and "Співоча смола · 17" in html and "Шепіт-пил · 31" in html
+    assert "reserved_resource_7" not in html
+    assert "Вміння з’являться згодом." in public_html
+    assert "<h2>Вміння</h2>" not in html and "Останній бій" not in html
+    assert 'href="/guild"' in html and 'href="/inventory"' in html
+
+    catalog = json.loads(profile.RESOURCE_FILE.read_text(encoding="utf-8"))
+    catalog["unique"].update(name="Тестовий ресурс", active=True)
+    resource_file = tmp_path / "profile_resources.json"
+    resource_file.write_text(json.dumps(catalog), encoding="utf-8")
+    monkeypatch.setattr(profile, "RESOURCE_FILE", resource_file)
+    monkeypatch.setattr(profile, "GUILDS", ())
+    monkeypatch.setattr(profile, "FACTION_SKILLS", (
+        profile.ProgressFeature("test-faction", "Тестове вміння",
+                                lambda db, hero: {"available": True, "level": 3, "xp": 4, "next_xp": 8}),
+    ))
+    monkeypatch.setattr(profile, "SERVICES", profile.SERVICES + (
+        profile.Service("unavailable", "Прихований сервіс", "/unavailable", 99, available=lambda hero: False),
+    ))
+    _, html = page()
+    assert html.count("data-resource-id=") == 7
+    assert "Тестовий ресурс · 11" in html
+    assert "Поки немає доступних гільдій." in html
+    assert "Тестове вміння" not in html
+    status, public = asyncio.run(asgi_request(app, "GET", "/player_info?id=10", ""))
+    public_html = public.decode()
+    assert status == 200 and "Тестове вміння" in public_html and 'value="4" max="8"' in public_html
+    assert public_html.count("data-resource-id=") == 6
+    assert "Тестовий ресурс" not in public_html and "reserved_resource_7" not in public_html
+    assert 'href="/unavailable"' not in html
+    assert page("session_id=other-session")[1].count("data-resource-id=") == 6
+    with sessions.begin() as db:
+        db.get(PlayerResourceBalance, (10, "reserved_resource_7")).quantity = 0
+    assert page()[1].count("data-resource-id=") == 6
+
+
+def test_hero_endpoints_validate_equipment_and_update_stats_and_army(sessions):
+    from backend.models import Item
+
+    app = FastAPI()
+    app.include_router(player.router)
+
+    def get_db():
+        with sessions() as db:
+            yield db
+
+    app.dependency_overrides[database.get_db] = get_db
+
+    def call(method, path, payload=None):
+        status, body = asyncio.run(asgi_request(app, method, path, "session_id=reader-session", payload=payload))
+        return status, json.loads(body)
+
+    with sessions.begin() as db:
+        db.add_all([
+            Item(id=41, owner_id=10, name="Пояс", item_type="belt", stats={"luck": 2, "physical_defense": 3}),
+            Item(id=42, owner_id=2, name="Чужий пояс", item_type="belt"),
+        ])
+
+    assert call("POST", "/hero/equip", {"slot": "belt", "item_id": 42})[0] == 404
+    assert call("POST", "/hero/equip", {"slot": "acc_1", "item_id": 41})[0] == 422
+    status, state = call("POST", "/hero/equip", {"slot": "belt", "item_id": 41})
+    assert status == 200 and len(state["equipment"]) == 11
+    assert state["equipment"]["belt"]["item"]["id"] == 41
+    assert state["attributes"]["luck"]["total"] == 2
+    assert state["attributes"]["defense"]["total"] == 3
+    assert call("GET", "/hero/state")[1] == state
+    status, state = call("POST", "/hero/equip", {"slot": "belt", "item_id": None})
+    assert status == 200 and state["attributes"]["defense"]["total"] == 0
+    assert call("POST", "/hero/army/update", {"counts": {"peasant": 99}})[0] == 422
+    status, state = call("POST", "/hero/army/update", {"counts": {"peasant": 7, "archer": 0}})
+    assert status == 200 and state["army"]["spent"] == 2
+    assert state["army"]["squads"][0]["count"] == 7

@@ -1,0 +1,10 @@
+<ul class="hero-resources" aria-label="Ресурси персонажа">
+    {% for resource in profile.resources %}
+    <li tabindex="0" aria-label="{{ resource.name }} · {{ resource.quantity }}" data-resource-id="{{ resource.id }}" title="{{ resource.name }} · {{ resource.quantity }}{% if resource.description %} · {{ resource.description }}{% endif %}">
+        {% if resource.icon %}<img src="{{ resource.icon }}" alt="">
+        {% elif not resource.conditional %}<span class="hero-resource-gem" aria-hidden="true">◆</span>{% endif %}
+        <span class="hero-resource-tooltip" aria-hidden="true">{{ resource.name }}</span>
+        <strong aria-label="{{ resource.quantity }}">{{ resource.display_quantity }}</strong>
+    </li>
+    {% endfor %}
+</ul>

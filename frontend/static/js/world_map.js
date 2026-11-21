@@ -7,7 +7,7 @@
     const hunts = byId('world-hunts');
     const feedback = byId('world-feedback');
     const refresh = byId('world-refresh');
-    const icons = {wood: 'sawmill-icon.png', stone: 'mine-icon.png', gold: 'gold-mine-icon.png'};
+    const icons = {singing_resin: 'sawmill-icon.png', basalt_bone: 'mine-icon.png', gold: 'gold-mine-icon.png'};
     let state;
     let readAt;
     let busy = false;

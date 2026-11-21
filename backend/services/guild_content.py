@@ -13,13 +13,13 @@ class QuestTemplate(BaseModel):
     key: str = Field(min_length=1, max_length=64, pattern=r"^[a-z0-9_]+$")
     title: str = Field(min_length=1)
     category: Literal["collection", "delivery", "enemy_defeat", "hunting", "special"]
-    resource: Literal["wood", "stone"]
+    resource: Literal["singing_resin", "basalt_bone"]
     difficulty: str = Field(min_length=1, max_length=32)
     min_level: int = Field(ge=1)
     required: int = Field(ge=1)
     gold: int = Field(ge=0)
-    wood: int = Field(ge=0)
-    stone: int = Field(ge=0)
+    wood: int = Field(ge=0, validation_alias="singing_resin")
+    stone: int = Field(ge=0, validation_alias="basalt_bone")
     xp: int = Field(ge=0)
     enabled: bool
 

@@ -4,17 +4,17 @@
 <main lang="uk" class="guild-board">
     <link rel="stylesheet" href="{{ url_for('static', path='css/guild.css') }}">
     <header class="guild-board-header">
-        <h1>Історія боїв</h1>
-        <a href="/battle">До боїв</a>
+        <h1>Історія боїв{% if public_history %} · {{ subject.username }}{% endif %}</h1>
+        {% if public_history %}<a href="/player_info?id={{ subject.id }}">До профілю</a>{% else %}<a href="/battle">До боїв</a>{% endif %}
     </header>
     {% if battles %}
     <ul style="list-style: none; padding: 0; display: grid; gap: .5rem">
         {% for battle in battles %}
         <li class="guild-card">
-            {% if battle.available %}
+            {% if battle.available and can_replay %}
             <a href="/battle?replay={{ battle.id }}">Переглянути бій №{{ battle.id }}</a>
             {% else %}
-            <span>Бій №{{ battle.id }} · повтор недоступний</span>
+            <span>Бій №{{ battle.id }}{% if can_replay %} · повтор недоступний{% endif %}</span>
             {% endif %}
         </li>
         {% endfor %}

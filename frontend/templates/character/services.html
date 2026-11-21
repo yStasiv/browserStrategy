@@ -1,0 +1,10 @@
+{% if profile.services %}
+<section class="hero-panel hero-equipment-right">
+    <h2>Сервіси</h2>
+    <ul class="hero-services">
+        {% for service in profile.services %}
+        <li><a class="hero-link" href="{{ service.route }}">{% if service.icon %}<img src="{{ service.icon }}" alt="">{% endif %}{{ service.name }}</a></li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}

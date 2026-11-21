@@ -1,0 +1,9 @@
+<div class="player-resources" aria-label="Ресурси персонажа">
+    {% for resource in header_resources %}
+    <span class="resource" data-resource-id="{{ resource.id }}" title="{{ resource.name }} · {{ resource.quantity }}" aria-label="{{ resource.name }} · {{ resource.quantity }}">
+        {% if resource.icon %}<img class="resource-icon" src="{{ resource.icon }}" alt="">
+        {% elif not resource.conditional %}<span class="resource-icon" aria-hidden="true">◆</span>{% endif %}
+        {{ resource.display_quantity }}
+    </span>
+    {% endfor %}
+</div>

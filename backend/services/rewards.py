@@ -18,7 +18,7 @@ def issue_system_resources(
         created_at=datetime.now(timezone.utc).replace(tzinfo=None),
     ))
     db.flush()
-    balances = {"gold": User.gold + gold, "wood": User.wood + wood, "stone": User.stone + stone}
+    balances = {"gold": User.gold + gold, "singing_resin": User.singing_resin + wood, "basalt_bone": User.basalt_bone + stone}
     if experience:
         balances["experience"] = User.experience + experience
     db.execute(update(User).where(User.id == recipient_id).values(**balances))

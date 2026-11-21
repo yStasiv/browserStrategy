@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
+from sqlalchemy import (JSON, BigInteger, Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer,
                         String, UniqueConstraint, false, text)
 from sqlalchemy.orm import relationship
 
@@ -52,8 +52,8 @@ class User(Base):
 
     level = Column(Integer, default=1)
     gold = Column(Integer, default=0)
-    wood = Column(Integer, default=0)
-    stone = Column(Integer, default=0)
+    singing_resin = Column(Integer, default=0)
+    basalt_bone = Column(Integer, default=0)
     session_id = Column(String, unique=True, nullable=True)
 
     map_sector = Column(String, ForeignKey(WorldSector.key, name="fk_users_map_sector"), nullable=False, default="Castle")  # Сектор карти
@@ -95,6 +95,8 @@ class ItemType(str, Enum):
     ARMOR = "armor"
     BOOTS = "boots"
     BACK = "back"
+    BELT = "belt"
+    SHIELD = "shield"
 
 
 class Item(Base):
@@ -121,6 +123,7 @@ class EquippedItems(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     helmet_id = Column(Integer, ForeignKey("items.id"), nullable=True)
     armor_id = Column(Integer, ForeignKey("items.id"), nullable=True)
+    belt_id = Column(Integer, ForeignKey("items.id", name="fk_equipped_belt_item"), nullable=True)
     boots_id = Column(Integer, ForeignKey("items.id"), nullable=True)
     right_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
     left_hand_id = Column(Integer, ForeignKey("items.id"), nullable=True)
@@ -390,3 +393,15 @@ class RewardTransaction(Base):
     stone = Column(Integer, nullable=False)
     item_id = Column(Integer, ForeignKey("items.id", ondelete="SET NULL"))
     created_at = Column(DateTime, nullable=False)
+
+
+class PlayerResourceBalance(Base):
+    __tablename__ = "player_resource_balances"
+    __table_args__ = (
+        CheckConstraint("quantity >= 0", name="ck_player_resource_quantity"),
+        CheckConstraint("resource_id NOT IN ('gold', 'wood', 'stone', 'singing_resin', 'basalt_bone')", name="ck_player_resource_nonlegacy"),
+    )
+
+    player_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    resource_id = Column(String(64), primary_key=True)
+    quantity = Column(BigInteger, nullable=False)

@@ -1,0 +1,16 @@
+<section class="hero-identity" aria-labelledby="hero-name">
+    <div class="hero-portrait-frame">
+        <img class="hero-portrait{% if (player.fraction or '') | lower == 'darkelfe' %} hero-portrait-underground{% endif %}" src="/static/images/simple-elfe.png" alt="Портрет персонажа">
+    </div>
+    <div>
+        <h1 id="hero-name">{% if read_only %}{{ player.username }}{% else %}<a href="/player_info?id={{ player.id }}">{{ player.username }}</a>{% endif %}</h1>
+        <p>{% if player.is_system %} · Системний персонаж{% endif %}</p>
+        <p><strong>Бойовий рівень {{ player.level }}</strong>{% if profile.faction %} · {{ profile.faction }}{% endif %}</p>
+        {% if profile.next_level_exp %}
+        <label for="hero-xp">Досвід {{ player.experience }} / {{ profile.next_level_exp }}</label>
+        <progress id="hero-xp" value="{{ player.experience }}" max="{{ profile.next_level_exp }}"></progress>
+        {% else %}
+        <p>Максимальний рівень · {{ player.experience }} досвіду</p>
+        {% endif %}
+    </div>
+</section>

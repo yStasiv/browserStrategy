@@ -2,10 +2,15 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from pydantic import BaseModel, StrictInt
 
 from backend.auth import playable_users, session_player
 from backend import database, models, utils
 from backend.auth import get_current_user
+from backend.services.character_profile import dashboard, hero_state
+from backend.services.hero_equipment import change_equipment, lock_hero
+from backend.services.hero_army import save_roster
+from backend.engine.battle_service import get_active_battle_id
 
 logger = utils.setup_logger(__name__)
 
@@ -14,36 +19,6 @@ templates = Jinja2Templates(directory="frontend/templates")
 
 
 class PlayerHelper:
-
-    @staticmethod
-    def get_equiped_items(
-        pl_equipped_items: dict, db: Session = Depends(database.get_db)
-    ) -> dict:
-        """Get all equiped items"""
-        equipped_items = {}
-        if pl_equipped_items:
-            slots = {
-                "helmet_id": "Шолом",
-                "armor_id": "Броня",
-                "boots_id": "Чоботи",
-                "right_hand_id": "Права рука",
-                "left_hand_id": "Ліва рука",
-                "back_id": "Спина",
-                "jewelry_1_id": "Прикраса 1",
-                "jewelry_2_id": "Прикраса 2",
-                "jewelry_3_id": "Прикраса 3",
-                "jewelry_4_id": "Прикраса 4",
-            }
-
-            for slot_id, slot_name in slots.items():
-                item_id = getattr(pl_equipped_items, slot_id)
-                if item_id:
-                    item = (
-                        db.query(models.Item).filter(models.Item.id == item_id).first()
-                    )
-                    if item:
-                        equipped_items[slot_name] = item
-            return equipped_items
 
     @staticmethod
     def experience_needed_for_next_level(level: int) -> int:
@@ -93,12 +68,7 @@ async def player_info(
 ):
     player = playable_users(db).filter(models.User.id == id).first()
     if not player:
-        raise HTTPException(status_code=404, detail="Character not found")
-
-    # Отримуємо всі вдягнені предмети
-    equipped_items: dict = PlayerHelper().get_equiped_items(
-        pl_equipped_items=player.equipped_items, db=db
-    )
+        raise HTTPException(status_code=404, detail="Персонажа не знайдено.")
 
     # Отримуємо рейтинг гравця
     player_rating = db.query(models.PlayerRating).filter(
@@ -112,12 +82,17 @@ async def player_info(
         db.commit()
         db.refresh(player_rating)
 
+    profile = dashboard(db, player, PlayerHelper.experience_needed_for_next_level(player.level))
+    profile["resources"] = [resource for resource in profile["resources"] if not resource["conditional"]]
     return templates.TemplateResponse(
         "payer_info.html",
         {
             "request": request,
             "player": player,
-            "equipped_items": equipped_items if equipped_items else {},
+            "profile": profile,
+            "public_guilds": [dict(guild, route=None, requirements=None) for guild in profile["guilds"]],
+            "read_only": True,
+            "nav_player": session_player(request, db),
             "player_rating": player_rating
         },
     )
@@ -129,25 +104,14 @@ class PlayerRotes(PlayerHelper):
     async def character_page(request: Request, db: Session = Depends(database.get_db)):
         user = await get_current_user(request, db)
         if not user:
-            raise HTTPException(status_code=401, detail="Not authenticated")
+            raise HTTPException(status_code=401, detail="Увійди до гри.")
 
         PlayerHelper().update_user_level(user, db)
         next_level_exp = PlayerHelper().experience_needed_for_next_level(user.level)
 
-        # Отримуємо всі вдягнені предмети
-        equipped_items: dict = PlayerHelper().get_equiped_items(
-            pl_equipped_items=user.equipped_items, db=db
-        )
-
-        return templates.TemplateResponse(
-            "player.html",
-            {
-                "request": request,
-                "player": user,
-                "next_level_exp": next_level_exp,
-                "equipped_items": equipped_items if equipped_items else {},
-            },
-        )
+        return templates.TemplateResponse("player.html", {
+            "request": request, "player": user, "profile": dashboard(db, user, next_level_exp),
+        })
 
     @router.post("/update-attribute", response_class=RedirectResponse)
     async def update_attribute(
@@ -157,15 +121,15 @@ class PlayerRotes(PlayerHelper):
     ):
         user_session_id = request.cookies.get("session_id")
         if not user_session_id:
-            raise HTTPException(status_code=401, detail="Not logged in")
+            raise HTTPException(status_code=401, detail="Увійди до гри.")
 
         user = session_player(request, db)
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail="Персонажа не знайдено.")
 
         if user.pending_attribute_points <= 0:
             raise HTTPException(
-                status_code=400, detail="No pending attribute points available"
+                status_code=400, detail="Немає вільних очок характеристик."
             )
 
         attribute_update = {
@@ -184,3 +148,57 @@ class PlayerRotes(PlayerHelper):
             logger.error(HTTPException(status_code=400, detail="Invalid attribute"))
 
         return RedirectResponse(url="/player", status_code=303)
+
+
+def hero_player(request, db):
+    player = session_player(request, db)
+    if player is None:
+        raise HTTPException(401, "Увійди до гри.")
+    return player
+
+
+class HeroEquip(BaseModel):
+    slot: str
+    item_id: StrictInt | None
+
+
+class HeroArmyUpdate(BaseModel):
+    counts: dict[str, StrictInt]
+
+
+@router.get("/hero/state")
+def read_hero_state(request: Request, db: Session = Depends(database.get_db)):
+    return hero_state(db, hero_player(request, db))
+
+
+@router.post("/hero/equip")
+def equip_hero(body: HeroEquip, request: Request, db: Session = Depends(database.get_db)):
+    player = hero_player(request, db)
+    lock_hero(db, player)
+    if get_active_battle_id(db, player.id) is not None:
+        raise HTTPException(409, "Під час бою спорядження змінити неможливо.")
+    change_equipment(db, player, slot=body.slot, item_id=body.item_id, remove=body.item_id is None)
+    db.commit()
+    return hero_state(db, player)
+
+
+@router.post("/hero/army/update")
+def update_hero_army(body: HeroArmyUpdate, request: Request, db: Session = Depends(database.get_db)):
+    player = hero_player(request, db)
+    save_roster(db, player, body.counts)
+    return hero_state(db, player)
+
+
+@router.get("/player_info/transfers")
+def player_transfer_protocol(id: int, request: Request, db: Session = Depends(database.get_db)):
+    player = playable_users(db).filter(models.User.id == id).first()
+    if player is None:
+        raise HTTPException(404, "Персонажа не знайдено.")
+    receipt = models.RewardTransaction
+    entries = db.query(receipt).filter(receipt.recipient_id == player.id).order_by(
+        receipt.created_at.desc(), receipt.id.desc(),
+    ).all()
+    return templates.TemplateResponse("player_transfers.html", {
+        "request": request, "player": player, "nav_player": session_player(request, db),
+        "entries": entries,
+    })

@@ -219,7 +219,7 @@ async def buy_resources(
     wallet = {"gold": models.User.gold - total_cost}
     if resource == "gold":
         wallet["gold"] += amount
-    elif resource in {"wood", "stone"}:
+    elif resource in {"singing_resin", "basalt_bone"}:
         wallet[resource] = getattr(models.User, resource) + amount
     result = db.execute(
         update(models.User).where(models.User.id == user.id, models.User.gold >= total_cost)

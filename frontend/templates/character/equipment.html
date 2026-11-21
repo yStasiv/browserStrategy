@@ -1,0 +1,24 @@
+<section class="hero-panel hero-equipment-panel" aria-label="Спорядження">
+    <div class="hero-doll-scroll" tabindex="0" role="region" aria-label="Розташування слотів спорядження">
+        <div class="hero-paper-doll{% if (player.fraction or '') | lower == 'darkelfe' %} underground{% endif %}">
+            <div class="hero-silhouette" aria-hidden="true"></div>
+            {% for key, slot in profile.equipment.items() %}
+            {% if slot.item %}
+            <a class="hero-gear-slot" data-hero-slot="{{ key }}" href="/art_info?id={{ slot.item.id }}" title="{{ slot.item.name }}">
+            {% elif not read_only %}
+            <a class="hero-gear-slot" data-hero-slot="{{ key }}" href="/inventory" aria-label="{{ slot.name }} · до інвентарю">
+            {% else %}
+            <div class="hero-gear-slot" data-hero-slot="{{ key }}">
+            {% endif %}
+                <strong>{{ slot.name }}</strong>
+                <span class="hero-slot-item">
+                    {% if slot.item %}
+                    {% if slot.item.image_url %}<img src="{{ slot.item.image_url }}" alt="">{% endif %}
+                    {{ slot.item.name }}
+                    {% else %}Вільно{% endif %}
+                </span>
+            {% if slot.item or not read_only %}</a>{% else %}</div>{% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
