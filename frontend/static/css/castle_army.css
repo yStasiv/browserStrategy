@@ -1,0 +1,29 @@
+.castle-army {
+    max-width: 45rem;
+    margin: 1.5rem auto;
+    padding: clamp(1rem, 4vw, 2rem);
+    border: 1px solid #a98d62;
+    border-radius: .8rem;
+    background: #f3e9d2;
+    color: #382918;
+}
+.castle-army header, .army-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
+.castle-army h1 { margin: 0 0 .65rem; }
+.castle-army a { color: #365036; }
+.army-options { display: grid; gap: .75rem; }
+.army-option {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .3rem .75rem;
+    padding: .8rem 1rem;
+    border: 1px solid #cbb691;
+    border-radius: .45rem;
+    background: #f9f0de;
+}
+.army-option label, .army-option output { font-weight: 700; }
+.army-option input { grid-column: 1 / -1; width: 100%; min-height: 2rem; margin: 0; accent-color: #526747; }
+.army-option output, .army-max { text-align: right; }
+.army-min, .army-max { color: #695138; font-size: .9rem; }
+.army-footer { margin-top: 1rem; }
+.army-footer button { min-height: 2.75rem; padding: .5rem 1rem; border: 0; border-radius: .4rem; background: #3e5537; color: white; cursor: pointer; }
+.army-footer button:disabled { opacity: .55; cursor: default; }

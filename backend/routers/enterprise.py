@@ -1,12 +1,17 @@
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
+from backend.auth import session_player
 from backend import database, models
+from backend.services.guild import record_collection
+from backend.services.world import require_presence
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
@@ -87,9 +92,7 @@ async def enterprise_page(
     if not user_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
+    user = session_player(request, db)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -100,6 +103,7 @@ async def enterprise_page(
     )
     if not enterprise:
         raise HTTPException(status_code=404, detail="Enterprise not found")
+    require_presence(db, user, enterprise.sector)
 
     # Отримуємо список всіх працівників підприємства
     workers = (
@@ -108,7 +112,11 @@ async def enterprise_page(
         .all()
     )
 
+    # Release the player lock before production updates other players' balances.
+    db.commit()
     update_resources(db)
+    require_presence(db, user, enterprise.sector)
+    db.commit()
 
     return templates.TemplateResponse(
         "enterprise.html",
@@ -131,9 +139,7 @@ async def start_work(
     if not user_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
+    user = session_player(request, db)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -144,6 +150,7 @@ async def start_work(
     )
     if not enterprise:
         raise HTTPException(status_code=404, detail="Enterprise not found")
+    require_presence(db, user, enterprise.sector)
 
     current_time = datetime.now()
 
@@ -152,12 +159,6 @@ async def start_work(
 
     if enterprise.workers_count >= enterprise.max_workers:
         raise HTTPException(status_code=400, detail="No vacant positions")
-
-    # Перевіряємо, чи знаходиться гравець у правильному секторі
-    if user.map_sector != enterprise.sector:
-        raise HTTPException(
-            status_code=400, detail="You must be in the same sector as the enterprise"
-        )
 
     # Розраховуємо зарплату за годину
     salary_for_hour = enterprise.salary
@@ -189,15 +190,13 @@ async def buy_resources(
     enterprise_id: int,
     request: Request,
     db: Session = Depends(database.get_db),
-    amount: int = Form(...),
+    amount: int = Form(..., gt=0, le=2_147_483_647),
 ):
     user_session_id = request.cookies.get("session_id")
     if not user_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
+    user = session_player(request, db)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -208,29 +207,40 @@ async def buy_resources(
     )
     if not enterprise:
         raise HTTPException(status_code=404, detail="Enterprise not found")
+    require_presence(db, user, enterprise.sector)
 
     total_cost = amount * enterprise.item_price
+    if not 0 <= total_cost <= 2_147_483_647:
+        raise HTTPException(status_code=422, detail="Invalid purchase total")
 
-    if user.gold < total_cost:
+    resource = enterprise.resource_type
+    record_collection(db, user.id, uuid4().hex, resource, amount)
+
+    wallet = {"gold": models.User.gold - total_cost}
+    if resource == "gold":
+        wallet["gold"] += amount
+    elif resource in {"singing_resin", "basalt_bone"}:
+        wallet[resource] = getattr(models.User, resource) + amount
+    result = db.execute(
+        update(models.User).where(models.User.id == user.id, models.User.gold >= total_cost)
+        .values(**wallet)
+    )
+    if result.rowcount != 1:
         raise HTTPException(status_code=400, detail="Not enough gold")
 
-    if enterprise.resource_stored < amount:
-        raise HTTPException(status_code=400, detail="Not enough resources in storage")
-
-    # Віднімаємо золото у користувача і додаємо на баланс підприємства
-    user.gold -= total_cost
-    enterprise.balance += total_cost
-
-    # Віднімаємо ресурси зі складу
-    enterprise.resource_stored -= amount
-
-    # Додаємо ресурси користувачу
-    if enterprise.resource_type == "wood":
-        user.wood += amount
-    elif enterprise.resource_type == "stone":
-        user.stone += amount
-    elif enterprise.resource_type == "gold":
-        user.gold += amount
+    result = db.execute(
+        update(models.Enterprise).where(
+            models.Enterprise.id == enterprise_id,
+            models.Enterprise.resource_stored >= amount,
+            models.Enterprise.item_price == enterprise.item_price,
+            models.Enterprise.resource_type == resource,
+        ).values(
+            balance=models.Enterprise.balance + total_cost,
+            resource_stored=models.Enterprise.resource_stored - amount,
+        )
+    )
+    if result.rowcount != 1:
+        raise HTTPException(status_code=409, detail="Enterprise stock or price changed")
 
     db.commit()
     return RedirectResponse(url=f"/enterprise/{enterprise_id}", status_code=303)

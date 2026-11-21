@@ -1,28 +1,33 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from backend.auth import get_current_user as session_user
+from backend.services import guild, world
 from backend.database import get_db
 from backend.models import QuestScenario, Task, User, UserTask
-from backend.routers.admin import get_current_user
+
+async def get_current_user(request: Request, db: Session = Depends(get_db)):
+    user = await session_user(request, db)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Увійдіть до гри.")
+    return user
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
 
 
-@router.get("/guild")
+@router.get("/guild/scenarios")
 async def get_guild(
     request: Request,
     scenario_id: int = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if not current_user:
-        return RedirectResponse(url="/")
-
-    # Перевіряємо чи користувач в секторі Castle
-    if current_user.map_sector != "Castle":
+    if not guild_present(db, current_user):
         return templates.TemplateResponse(
             "adventure_guild.html",
             {
@@ -138,8 +143,7 @@ async def accept_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if not current_user:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    world.require_presence(db, current_user, "Castle")
 
     # Перевіряємо чи існує завдання
     task = db.query(Task).filter(Task.id == task_id).first()
@@ -166,4 +170,68 @@ async def accept_task(
     db.add(user_task)
     db.commit()
 
-    return RedirectResponse(url=f"/guild?scenario={task.scenario_id}", status_code=303)
+    return RedirectResponse(url=f"/guild/scenarios?scenario_id={task.scenario_id}", status_code=303)
+
+
+class ReplaceQuest(BaseModel):
+    confirm_progress_loss: bool = False
+
+
+@router.get("/guild")
+async def guild_page(request: Request, db: Session = Depends(get_db)):
+    user = await session_user(request, db)
+    if user is None:
+        return RedirectResponse(url="/")
+    in_castle = guild_present(db, user)
+    response = templates.TemplateResponse(
+        "guild_board.html", {"request": request, "user": user, "in_castle": in_castle}
+    )
+    if in_castle:
+        response.set_cookie("visited_guild", "true")
+    return response
+
+
+def guild_present(db, user):
+    journey, _ = world.resolve_location(db, user)
+    present = world.is_present(user, journey, "Castle")
+    db.commit()
+    return present
+
+
+def mutate_board(db, user, operation, *args):
+    world.require_presence(db, user, "Castle")
+    try:
+        operation(db, user.id, *args)
+        db.flush()
+        result = guild.board(db, user.id)
+        db.commit()
+    except guild.GuildError as exc:
+        db.rollback()
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    return result
+
+
+@router.get("/api/guild")
+def guild_board(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    world.require_presence(db, user, "Castle")
+    result = guild.board(db, user.id)
+    db.commit()
+    return result
+
+
+@router.post("/api/guild/initialize")
+def initialize_board(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    return mutate_board(db, user, guild.initialize)
+
+
+@router.post("/api/guild/quests/{quest_id}/claim")
+def claim_quest(quest_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    return mutate_board(db, user, guild.claim, quest_id)
+
+
+@router.post("/api/guild/quests/{quest_id}/replace")
+def replace_quest(
+    quest_id: int, body: ReplaceQuest, db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    return mutate_board(db, user, guild.replace, quest_id, body.confirm_progress_loss)

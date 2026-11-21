@@ -318,7 +318,7 @@ button:hover {
     border-radius: 4px;
 }
 
-a[href="/player"] {
+a[href="/player"]:not(.nav-link) {
     display: inline-block;
     margin-top: 20px;
     color: #ff0000;
@@ -326,7 +326,7 @@ a[href="/player"] {
     font-weight: bold;
 }
 
-a[href="/player"]:hover {
+a[href="/player"]:not(.nav-link):hover {
     text-decoration: underline; /* Підкреслення при наведенні */
 }
 

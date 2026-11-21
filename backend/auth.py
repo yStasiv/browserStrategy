@@ -1,13 +1,18 @@
-from fastapi import Request
 from sqlalchemy.orm import Session
 
 from backend import models
 
 
-async def get_current_user(request: Request, db: Session):
-    user_session_id = request.cookies.get("session_id")
-    if not user_session_id:
+def playable_users(db: Session):
+    return db.query(models.User).filter(models.User.is_active.is_(True))
+
+
+def session_player(request, db: Session):
+    session_id = request.cookies.get("session_id")
+    if not session_id:
         return None
-    return (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
+    return playable_users(db).filter(models.User.session_id == session_id).first()
+
+
+async def get_current_user(request, db: Session):
+    return session_player(request, db)

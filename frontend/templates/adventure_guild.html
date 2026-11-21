@@ -23,7 +23,7 @@
             <div class="scenarios-grid">
                 {% for scenario in scenarios %}
                 <div class="scenario-card {% if scenario.id == selected_scenario %}selected{% endif %}">
-                    <a href="/guild?scenario_id={{ scenario.id }}" class="scenario-link">
+                    <a href="/guild/scenarios?scenario_id={{ scenario.id }}" class="scenario-link">
                         <h3>{{ scenario.title }}</h3>
                         <p class="scenario-description">{{ scenario.description }}</p>
                         <div class="scenario-info">

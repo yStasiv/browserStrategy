@@ -1,0 +1,63 @@
+    {% set navigation_player = request.state.header_player if request.state.header_player is defined else (nav_player if nav_player is defined else player) %}
+    {% set header_resources = request.state.header_resources if request.state.header_resources is defined else (profile.resources if profile is defined and not read_only else []) %}
+    {% if navigation_player %}
+    <!-- Навігаційна панель -->
+    <nav class="main-nav" aria-label="Головна навігація">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="/player" class="nav-link"{% if request.url.path == "/player" %} aria-current="page"{% endif %}>
+
+                    Персонаж
+                </a>
+                <a href="/map" class="nav-link"{% if request.url.path == "/map" %} aria-current="page"{% endif %}>
+
+                    Карта
+                </a>
+                <a href="/castle" class="nav-link"{% if request.url.path == "/castle" %} aria-current="page"{% endif %}>
+
+                    Замок
+                </a>
+                <a href="/rating" class="nav-link"{% if request.url.path == "/rating" %} aria-current="page"{% endif %}>
+
+                    Рейтинг
+                </a>
+                {% if navigation_player.is_admin %}
+                <a href="/admin/enterprises" class="nav-link"{% if request.url.path == "/admin/enterprises" %} aria-current="page"{% endif %}>
+
+                    Керування підприємствами
+                </a>
+                {% endif %}
+            </div>
+            <div class="nav-center">
+                <div class="current-time" id="currentTime"></div>
+            </div>
+            <div class="nav-right">
+                {% if header_resources %}
+                {% include 'character/nav_resources.html' %}
+                {% endif %}
+                <div class="nav-item logout">
+                    <form action="/logout" method="post">
+                        <button type="submit" class="nav-btn logout-btn">
+
+                            Вийти
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    {% if navigation_player %}
+    <script>
+    function updateClock() {
+        const now = new Date();
+        const timeElement = document.getElementById('currentTime');
+        timeElement.textContent = now.toLocaleTimeString("uk-UA");
+    }
+
+    // Оновлюємо годинник кожну секунду
+    updateClock();
+    setInterval(updateClock, 1000);
+    </script>
+    {% endif %}

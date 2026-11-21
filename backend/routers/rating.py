@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from backend import database, models
-from backend.auth import get_current_user
+from backend.auth import get_current_user, playable_users
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
@@ -12,10 +12,10 @@ templates = Jinja2Templates(directory="frontend/templates")
 @router.get("/rating", response_class=HTMLResponse)
 async def rating_page(request: Request, db: Session = Depends(database.get_db)):
     # Отримуємо поточного користувача
-    player = await get_current_user(request, db)
+    current_player = await get_current_user(request, db)
     
     # Отримуємо всіх гравців
-    players = db.query(models.User).all()
+    players = playable_users(db).all()
     
     # Для кожного гравця перевіряємо наявність рейтингу
     for player in players:
@@ -41,6 +41,6 @@ async def rating_page(request: Request, db: Session = Depends(database.get_db)):
         {
             "request": request,
             "players": players,
-            "player": player
+            "player": current_player
         }
     ) 

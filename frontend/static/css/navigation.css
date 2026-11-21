@@ -1,155 +1,97 @@
-.main-nav {
-    background-color: #2c3e50;
-    padding: 6px 0;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.nav-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 20px;
-    height: 36px;
-}
-
-.nav-left {
-    display: flex;
-    gap: 15px;
-}
-
 .nav-link {
-    color: #000000;
+    color: #272012;
     text-decoration: none;
     display: flex;
     align-items: center;
     gap: 4px;
     padding: 4px 8px;
     border-radius: 4px;
-    transition: background-color 0.3s;
     font-weight: 500;
     font-size: 14px;
 }
+.nav-link:hover { background-color: #34495e; color: #fff; }
+.resource { display: inline-flex; align-items: center; gap: .3rem; font-size: .875rem; }
+.resource-icon { width: 1.125rem; height: 1.125rem; object-fit: contain; }
+.content { padding: 20px; }
 
-.nav-link:hover {
-    background-color: #34495e;
-    color: #ffffff;
+.main-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    color: #392718;
+    font-family: Georgia, serif;
+    background:
+        repeating-linear-gradient(115deg, #8e61210e 0 1px, transparent 1px 5px),
+        linear-gradient(#f8edcf, #e4c893);
+    border-bottom: 2px solid #96703e;
+    box-shadow: inset 0 1px #fff5d8, inset 0 -1px #f5e0ae, 0 3px 8px #65451d35;
 }
-
-.nav-icon {
-    width: 20px;
-    height: 20px;
-    background-color: #cccccc;
-    border-radius: 3px;
+.main-nav .nav-container {
+    max-width: 72rem;
+    margin-inline: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .4rem .75rem;
+    padding: .45rem 1rem;
+}
+.main-nav .nav-left,
+.main-nav .nav-right,
+.main-nav .player-resources {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .4rem;
+}
+.main-nav .nav-link,
+.main-nav .nav-btn {
+    box-sizing: border-box;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    height: 2.15rem;
+    min-height: 0;
+    margin-block: 0;
+    padding: .28rem .62rem;
+    border: 1px solid #b68a52;
+    border-radius: .28rem;
+    background: linear-gradient(#fff2d3, #ead3a1);
+    color: #46311d;
+    box-shadow: inset 0 0 0 1px #f9e8bc;
+    font: 600 .875rem Georgia, serif;
 }
-
-.nav-icon[alt="Character"]::before {
-    content: "👤";
+.main-nav .nav-btn { cursor: pointer; }
+.main-nav .logout-btn { margin: 0; }
+.main-nav .nav-link:hover,
+.main-nav .nav-btn:hover { background: #fff3d1; color: #392718; }
+.main-nav .nav-link[aria-current="page"] {
+    color: #fff3d8;
+    background: linear-gradient(#566748, #3d5037);
+    border-color: #485137;
+    box-shadow: inset 0 0 0 1px #ced0a05e;
 }
-
-.nav-icon[alt="Map"]::before {
-    content: "🗺️";
+.main-nav a:focus-visible,
+.main-nav button:focus-visible { outline: 2px solid #415537; outline-offset: 2px; }
+.main-nav .current-time {
+    padding: .28rem .5rem;
+    border: 1px solid #b68a5280;
+    border-radius: .28rem;
+    color: #5b4228;
+    background: #f7e7c5b0;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
-
-.nav-icon[alt="Castle"]::before {
-    content: "🏰";
+.main-nav .player-resources .resource {
+    padding: .16rem .34rem;
+    border-radius: .24rem;
+    background: #f7e7c5b0;
+    font-variant-numeric: tabular-nums;
 }
-
-.nav-right .user-resources {
-    display: flex;
-    gap: 15px;
-}
-
-.resource {
-    color: #000000;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-weight: 500;
-    font-size: 14px;
-}
-
-.resource-icon {
-    width: 18px;
-    height: 18px;
-    background-color: #cccccc;
-    border-radius: 3px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-}
-
-.resource-icon[alt="Gold"]::before {
-    content: "💰";
-}
-
-.resource-icon[alt="Wood"]::before {
-    content: "🌲";
-}
-
-.resource-icon[alt="Stone"]::before {
-    content: "🪨";
-}
-
-/* Додаємо відступ для основного контенту */
-.content {
-    margin-top: 48px;
-    padding: 20px;
-}
-
-/* Додаємо стилі для центральної частини з годинником */
-.nav-center {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 100px;
-}
-
-.current-time {
-    color: #000000;
-    font-weight: 500;
-    font-size: 14px;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 2px 8px;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-/* Оновлюємо медіа-запит для мобільної версії */
-@media (max-width: 768px) {
-    .nav-container {
-        height: auto;
-        flex-direction: column;
-        gap: 8px;
-        padding: 8px 20px;
-    }
-    
-    .nav-left {
-        width: 100%;
-        justify-content: space-around;
-    }
-
-    .nav-center {
-        order: -1; /* Переміщуємо годинник вгору на мобільних пристроях */
-        margin-bottom: 4px;
-    }
-    
-    .nav-right {
-        width: 100%;
-    }
-    
-    .user-resources {
-        justify-content: center;
-    }
+.main-nav .resource-icon { width: 1.24rem; height: 1.24rem; }
+.main-nav form { margin: 0; }
+@media (max-width: 48rem) {
+    .main-nav .nav-container { justify-content: center; padding-inline: .5rem; }
+    .main-nav .nav-left { width: 100%; justify-content: center; }
+    .main-nav .nav-link, .main-nav .nav-btn { height: 2.35rem; }
 }

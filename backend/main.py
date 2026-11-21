@@ -3,17 +3,21 @@ import asyncio
 import os
 
 import uvicorn
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, WebSocket
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend import database, utils
+from backend.auth import session_player
 from backend.tasks import check_workers
+from backend.services.character_profile import resources as character_resources
 from backend.websockets import manager
+from backend.engine import battle_api, battle_service
 
 from .routers import (admin, adventure_guild, auth, castle, char_tasks,
                       enterprise, help, inventory, map, shop, player,
-                      upload, item, rating)
+                      item, rating)
 from .routers.battles import battle
 
 logger = utils.setup_logger(__name__)
@@ -47,8 +51,6 @@ app.include_router(castle.router)
 logger.info("Castle router registered")
 app.include_router(char_tasks.router)
 logger.info("Char tasks router registered")
-app.include_router(upload.router)
-logger.info("Upload router registered")
 app.include_router(enterprise.router)
 logger.info("Enterprise router registered")
 app.include_router(map.router)
@@ -69,9 +71,31 @@ app.include_router(battle.router)
 logger.info("Battle router registered")
 app.include_router(rating.router)
 logger.info("Rating router registered")
-
+app.include_router(battle_api.router)
 
 # TODO: Run this just one time when app start
+@app.middleware("http")
+async def resume_active_battle(request: Request, call_next):
+    path = request.url.path
+    page_request = request.method == "GET" and not path.startswith(("/static/", "/avatars/", "/api/"))
+    if page_request and request.cookies.get("session_id"):
+        with database.SessionLocal() as session:
+            player = session_player(request, session)
+            if player:
+                navigation = (request.headers.get("sec-fetch-mode") == "navigate"
+                              or "text/html" in request.headers.get("accept", ""))
+                if (navigation and (path != "/battle" or "replay" in request.query_params)
+                        and battle_service.get_active_battle_id(session, player.id) is not None):
+                    return RedirectResponse("/battle", status_code=303, headers={"Cache-Control": "no-store"})
+                request.state.header_player = player
+                items = character_resources(session, player)
+                request.state.header_resources = (
+                    [item for item in items if not item["conditional"]]
+                    if path == "/player_info" else items
+                )
+    return await call_next(request)
+
+
 @app.on_event("startup")
 async def startup_event():
     # Підключення до бази даних
@@ -90,6 +114,12 @@ async def startup_event():
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    with database.SessionLocal() as session:
+        player = session_player(websocket, session)
+        authorized = player is not None and player.id == user_id
+    if not authorized:
+        await websocket.close(code=1008)
+        return
     await manager.connect(websocket, user_id)
     try:
         while True:

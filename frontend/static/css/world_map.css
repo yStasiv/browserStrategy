@@ -1,0 +1,58 @@
+.world-page {
+    display: grid;
+    grid-template-columns: minmax(0, 2.2fr) minmax(15rem, 1fr);
+    align-items: start;
+    gap: 1rem;
+    max-width: 75rem;
+    margin: 1rem auto;
+    padding: 0 1rem 1.5rem;
+    color: #32271c;
+    font-family: Georgia, serif;
+}
+
+.world-board {
+    background: #f7efdc;
+    border: 1px solid #bdab8c;
+    border-radius: 0.75rem;
+    padding: clamp(0.8rem, 2.5vw, 1.3rem);
+    min-width: 0;
+}
+
+.world-board h1, .world-board h2 { margin: 0 0 0.6rem; color: #3b2f2a; }
+.world-side { display: grid; gap: 1rem; }
+.world-art { position: relative; overflow: hidden; border-radius: 0.5rem; }
+.world-art img { width: 100%; height: auto; display: block; }
+
+.world-marker {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    width: 1.05rem;
+    height: 1.05rem;
+    background: #c8bda6;
+    border: 2px solid #382819;
+    box-shadow: 0 0 0 2px #f8ecce;
+}
+
+.world-board button.world-marker { min-height: 1.05rem; padding: 0; border: 2px solid #382819; }
+.world-marker.is-current { background: #ba6d23; }
+.world-board button.world-marker.is-adjacent { background: #5e813a; }
+.world-marker.is-destination { background: #e0b54b; }
+.world-marker.is-locked { background: #676362; }
+.world-sectors, .world-enterprises { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+.world-sectors { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); }
+.world-sectors li, .world-enterprises li { padding: 0.65rem; border: 1px solid #caba9c; border-radius: 0.45rem; }
+.world-sectors li.is-adjacent { border-color: #65814c; background: #ecf0df; }
+.world-sectors li.is-current { border-color: #996b35; background: #f8e1b8; }
+.world-sectors p, .world-enterprises p { margin: 0.3rem 0; }
+.world-board button { color: white; background: #3f5732; border: 0; min-height: 2.5rem; padding: 0.4rem 0.75rem; border-radius: 0.3rem; cursor: pointer; }
+.world-board button:focus-visible, .world-board a:focus-visible { outline: 2px solid #412710; outline-offset: 2px; }
+.world-board button:disabled { opacity: 0.55; cursor: default; }
+.world-board a { color: #354c2d; }
+.world-travel { margin-top: 0.8rem; }
+.world-travel progress { display: block; width: 100%; accent-color: #745230; }
+.world-enterprise-icon { width: 1.35rem; height: 1.35rem; object-fit: contain; vertical-align: middle; margin-right: 0.4rem; }
+
+@media (max-width: 48rem) {
+    .world-page { grid-template-columns: minmax(0, 1fr); }
+}

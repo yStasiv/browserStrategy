@@ -1,0 +1,86 @@
+.guild-board {
+    color: #f4e9d0;
+    max-width: 68rem;
+    margin: 1.5rem auto;
+    padding: 0 1rem 1.5rem;
+}
+
+.guild-board-header,
+.guild-card {
+    background: #27231e;
+    border: 1px solid #756040;
+    border-radius: 0.6rem;
+    padding: clamp(1rem, 3vw, 1.6rem);
+}
+
+.guild-board-header {
+    background: linear-gradient(105deg, #332a20, #242522);
+}
+
+.guild-board h1,
+.guild-board h2 {
+    color: #f7dfad;
+    font-family: Georgia, serif;
+    margin: 0 0 0.65rem;
+}
+
+.guild-board h1 { font-size: clamp(1.65rem, 5vw, 2.6rem); }
+.guild-board h2 { font-size: 1.3rem; }
+.guild-board-header label { display: block; margin-top: 0.6rem; }
+.guild-board-header p { margin: 0.75rem 0 0; }
+
+.guild-quests {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+    gap: 0.9rem;
+}
+
+.guild-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.guild-card p,
+.guild-card h2 { margin: 0; }
+
+.guild-card-meta { color: #e2c797; font-size: 0.9rem; }
+.guild-card.is-completed { border-color: #dfb365; }
+.guild-board progress { width: 100%; accent-color: #deb46c; }
+.guild-board-header progress { max-width: 32rem; }
+
+.guild-rewards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.8rem;
+    list-style: none;
+    margin: 0 0 0.4rem;
+    padding: 0;
+}
+
+.guild-rewards li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.guild-rewards img { width: 1.1rem; height: 1.1rem; object-fit: contain; }
+
+.guild-board button {
+    background: #e1b86f;
+    color: #241b0e;
+    border: 1px solid #f0cd8e;
+    border-radius: 0.35rem;
+    font: inherit;
+    font-weight: bold;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.85rem;
+    cursor: pointer;
+}
+
+.guild-card button { margin-top: auto; }
+.guild-board button:disabled { opacity: 0.57; cursor: default; }
+.guild-board button:focus-visible, .guild-board a:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+.guild-board a { color: #f1cf8e; }
+.guild-legacy { display: inline-block; margin-top: 1rem; }
+#guild-feedback { min-height: 1.5em; }

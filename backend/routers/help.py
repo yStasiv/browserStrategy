@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from backend.auth import session_player
 from backend import database, models
 
 router = APIRouter()
@@ -15,10 +16,6 @@ async def help_page(request: Request, db: Session = Depends(database.get_db)):
     user_session_id = request.cookies.get("session_id")
     user = None
     if user_session_id:
-        user = (
-            db.query(models.User)
-            .filter(models.User.session_id == user_session_id)
-            .first()
-        )
+        user = session_player(request, db)
 
     return templates.TemplateResponse("help.html", {"request": request, "user": user})

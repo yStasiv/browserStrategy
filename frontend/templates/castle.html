@@ -1,44 +1,33 @@
 {% extends 'base.html' %}
-
 {% block title %}Замок{% endblock %}
-
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/castle_army.css') }}">
+<script defer src="{{ url_for('static', path='js/castle_army.js') }}"></script>
+{% endblock %}
 {% block body %}
-<div class="castle-page">
-    <h1>Choose units</h1>
-
-    <!-- Набір Юнітів -->
-    <form action="/castle" method="post" id="choose-units-form">
-        <div class="unit-selection">
-            <div class="unit-grid">
-                {% for unit in available_units %}
-                <div class="unit-slot">
-                    <div class="unit-info">
-                        <img src="{{ unit.icon_url }}" alt="{{ unit.name }}", height="25px">
-                        <span>{{ unit.name }}</span>
-                        <span>Actual count: {{ user_units.get(unit.name, 0) }}</span>
-                        <input type="number" name="{{ unit.name }}" id="{{ unit.name }}" min="0" max="{{ unit.max_quantity }}" value={{ user_units.get(unit.name, 0) }}>
-                        <span> / {{ unit.max_units }}</span>
-                    </div>
-                </div>
-                {% endfor %}
+<main class="castle-army" lang="uk">
+    <header>
+        <h1>Армія замку</h1>
+        <a href="/battle">До боїв</a>
+    </header>
+    {% if saved %}<p role="status">Склад армії збережено.</p>{% endif %}
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    <form action="/castle" method="post" id="choose-units-form" data-slot-limit="{{ slot_limit }}">
+        <div class="army-options">
+            {% for unit in units %}
+            <div class="army-option">
+                <label for="army-{{ unit.key }}">{{ unit.name }}</label>
+                <output for="army-{{ unit.key }}">{{ unit.quantity }}</output>
+                <input type="range" name="{{ unit.key }}" id="army-{{ unit.key }}"
+                       min="0" max="{{ unit.limit }}" value="{{ unit.quantity }}" step="1">
+                <span class="army-min">0</span><span class="army-max">{{ unit.limit }}</span>
             </div>
-            <button type="submit">Набрати війська</button>
+            {% endfor %}
+        </div>
+        <div class="army-footer">
+            <span id="army-count" aria-live="polite">{{ units | selectattr('quantity') | list | length }} / {{ slot_limit }} загонів</span>
+            <button type="submit">Зберегти армію</button>
         </div>
     </form>
-
-    <!-- <div class="unit-info">  #todo: add info for each unit
-        <h2>Blue-Elfe</h2>
-        <img src="../static/images/exp-icon.png" alt="Blue-Elfe", height="50px">
-        <p>Лісова істота.</p>
-    </div> -->
-    <div class="castle-page-my-unit-list">
-        <h2>My units</h2>
-        <ul>
-            {% for unit, qty in user_units.items() %}
-                <li>{{ unit }}: {{ qty }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-    <a href="/player">Повернутися до персонажа</a>
-</div>
+</main>
 {% endblock %}

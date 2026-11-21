@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from backend.auth import playable_users, session_player
 from backend import database, models, utils
 from backend.routers.player import PlayerHelper
 
@@ -57,7 +58,7 @@ class TaskHelper:
 
         # Add this task for each users
         TaskHelper.update_tasks_for_users(
-            db, db_task, all_users=db.query(models.User).all()
+            db, db_task, all_users=playable_users(db).all()
         )
         return db_task
 
@@ -76,7 +77,7 @@ class TaskHelper:
             )
             .all()
         )
-        if user.id == 1:
+        if user.is_admin:
             tasks = (
                 db.query(models.UserTask)
                 .join(models.Task)
@@ -123,8 +124,8 @@ class TaskHelper:
         user = db.query(models.User).filter(models.User.id == user_id).first()
         if user:
             user.gold += task.reward_gold
-            user.wood += task.reward_wood
-            user.stone += task.reward_stone
+            user.singing_resin += task.reward_wood
+            user.basalt_bone += task.reward_stone
             user.experience += task.reward_exp
 
             db.commit()
@@ -172,16 +173,12 @@ class TaskRoutes(TaskHelper):
         if not user_session_id:
             raise HTTPException(status_code=401, detail="Not logged in")
 
-        user = (
-            db.query(models.User)
-            .filter(models.User.session_id == user_session_id)
-            .first()
-        )
+        user = session_player(request, db)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
         # Додавання завдання тільки для гравця з id = 1
-        if user.id == 1:
+        if user.is_admin:
             TaskHelper.create_task(
                 db,
                 title,
@@ -226,8 +223,8 @@ class TaskRoutes(TaskHelper):
         task = db.query(models.Task).filter(models.Task.id == task_id).first()
         user_task.is_completed = True
         current_user.gold += task.reward_gold
-        current_user.wood += task.reward_wood
-        current_user.stone += task.reward_stone
+        current_user.singing_resin += task.reward_wood
+        current_user.basalt_bone += task.reward_stone
         current_user.experience += task.reward_exp
 
         db.commit()

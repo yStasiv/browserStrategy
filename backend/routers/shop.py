@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from backend.auth import session_player
 from backend import database, models
 
 router = APIRouter()
@@ -16,9 +17,7 @@ async def shop_page(request: Request, db: Session = Depends(database.get_db)):
     if not user_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
+    user = session_player(request, db)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -42,9 +41,7 @@ async def buy_item(
     if not user_session_id:
         raise HTTPException(status_code=401, detail="Not logged in")
 
-    user = (
-        db.query(models.User).filter(models.User.session_id == user_session_id).first()
-    )
+    user = session_player(request, db)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 

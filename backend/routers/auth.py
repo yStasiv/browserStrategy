@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from backend.auth import playable_users
 from backend.routers.char_tasks import TaskHelper
 
 from .. import database, models
@@ -186,17 +187,14 @@ class AuthRotes:
         password: str = Form(...),
         db: Session = Depends(database.get_db),
     ):
-        user = db.query(models.User).filter(models.User.username == username).first()
-        if not user or not verify_password(password, user.password):
+        user = playable_users(db).filter(models.User.username == username).first()
+        if not user or not user.password or not verify_password(password, user.password):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
         response = RedirectResponse(url="/player", status_code=303)
 
         session_id = str(uuid.uuid4())
         response.set_cookie(key="session_id", value=session_id)
-        response.set_cookie(
-            key="username", value=user.username
-        )  # Зберігаємо ім'я в cookie (можна використовувати сесії або токени)
 
         user.session_id = session_id
         db.commit()
@@ -207,6 +205,7 @@ class AuthRotes:
     async def logout(response: Response):
         # Очищення куків (включаючи сесію)
         response.delete_cookie("session_id")
+        response.delete_cookie("username")
 
         # Перенаправлення користувача на головну сторінку або сторінку логіну після виходу
         return RedirectResponse(url="/", status_code=303)

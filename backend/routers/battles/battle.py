@@ -6,178 +6,202 @@ import json
 import os
 from typing import Dict, List
 from ... import models, database
-from ...auth import get_current_user
+from ...auth import get_current_user, playable_users
+from ...engine.battle_service import replay_history
 from fastapi.templating import Jinja2Templates
-from .battle_system import BattleSystem
+# from .battle_system import BattleSystem
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
 
 # Словник для зберігання активних битв
 active_battles = {}
-
 @router.get("/battle")
 async def battle_page(request: Request, db: Session = Depends(database.get_db)):
     player = await get_current_user(request, db)
     if not player:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Створюємо нову битву для користувача
-    battle_system = BattleSystem(user=player, db=db)
-    active_battles[player.id] = battle_system
-    
-    return templates.TemplateResponse(
-        "battle.html",
-        {
-            "request": request,
-            "player": player,
-            "battle_state": battle_system.get_state()
-        }
-    )
+    return templates.TemplateResponse("battle.html", {"request": request, "player": player})
 
-@router.post("/battle/start")
-async def start_battle(
-    mode: str = "pve",
-    request: Request = None,
-    db: Session = Depends(database.get_db)
-):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    battle_system = active_battles.get(user.id)
-    if not battle_system:
-        battle_system = BattleSystem(user=user, db=db)
-        active_battles[user.id] = battle_system
-    else:
-        # Оновлюємо сесію бази даних для існуючого екземпляра
-        battle_system.db = db
-    
-    state = battle_system.start_game(mode)
-    return state
+@router.get("/battle/history")
+async def battle_history(request: Request, db: Session = Depends(database.get_db), player_id: int | None = None):
+    viewer = await get_current_user(request, db)
+    if player_id is None and viewer is None:
+        raise HTTPException(401, "Увійди до гри.")
+    subject = viewer if player_id is None else playable_users(db).filter(models.User.id == player_id).first()
+    if subject is None:
+        raise HTTPException(404, "Персонажа не знайдено.")
+    return templates.TemplateResponse("battle_history.html", {
+        "request": request, "player": viewer, "subject": subject,
+        "public_history": player_id is not None,
+        "can_replay": viewer is not None and viewer.id == subject.id,
+        "battles": replay_history(db, subject, limit=None),
+    })
 
-@router.post("/battle/deploy")
-async def deploy_creature(
-    player: int,
-    type_name: str,
-    x: int,
-    y: int,
-    request: Request = None,
-    db: Session = Depends(database.get_db)
-):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    battle_system = active_battles.get(user.id)
-    if not battle_system:
-        raise HTTPException(status_code=404, detail="No active battle found")
-    
-    success, message = battle_system.place_creature(player, type_name, x, y)
-    return battle_system.get_state()
 
-@router.post("/battle/move")
-async def move_creature(
-    creature_id: str,
-    target_x: int,
-    target_y: int,
-    request: Request = None,
-    db: Session = Depends(database.get_db)
-):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    battle_system = active_battles.get(user.id)
-    if not battle_system:
-        raise HTTPException(status_code=404, detail="No active battle found")
-    
-    success, message = battle_system.move_creature(creature_id, target_x, target_y)
-    return battle_system.get_state()
 
-@router.post("/battle/attack")
-async def attack_creature(
-    attacker_id: str,
-    defender_id: str,
-    request: Request = None,
-    db: Session = Depends(database.get_db)
-):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    battle_system = active_battles.get(user.id)
-    if not battle_system:
-        raise HTTPException(status_code=404, detail="No active battle found")
-    
-    success, message = battle_system.attack_creature(attacker_id, defender_id)
-    return battle_system.get_state()
-
-@router.post("/battle/end_turn")
-async def end_turn_api(request: Request = None, db: Session = Depends(database.get_db)):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    battle_system = active_battles.get(user.id)
-    if not battle_system:
-        raise HTTPException(status_code=404, detail="No active battle found")
-    
-    # Оновлюємо сесію бази даних
-    battle_system.db = db
-    
-    success, message = battle_system.end_turn()
-    response = battle_system.get_state()
-    response['actionSuccess'] = success
-    if not success:
-        pass
-    return response
-
-@router.get("/battle/state")
-async def get_battle_state(
-    request: Request = None,
-    db: Session = Depends(database.get_db)
-):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    battle_system = active_battles.get(user.id)
-    if not battle_system:
-        raise HTTPException(status_code=404, detail="No active battle found")
-    
-    # Оновлюємо сесію бази даних
-    battle_system.db = db
-    
-    return battle_system.get_state()
-
-@router.get("/battle/rating")
-async def get_player_rating(
-    request: Request = None,
-    db: Session = Depends(database.get_db)
-):
-    player = await get_current_user(request, db)
-    if not player:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Отримуємо рейтинг гравця
-    player_rating = db.query(models.PlayerRating).filter(
-        models.PlayerRating.user_id == player.id
-    ).first()
-    
-    if not player_rating:
-        # Якщо рейтингу ще немає, створюємо новий
-        player_rating = models.PlayerRating(user_id=player.id)
-        db.add(player_rating)
-        db.commit()
-        db.refresh(player_rating)
-    
-    return {
-        "player": player,
-        "rating": player_rating.rating,
-        "wins": player_rating.wins,
-        "losses": player_rating.losses
-    }
+# @router.get("/battle")
+# async def battle_page(request: Request, db: Session = Depends(database.get_db)):
+#     player = await get_current_user(request, db)
+#     if not player:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#
+#     # Створюємо нову битву для користувача
+#     battle_system = BattleSystem(user=player, db=db)
+#     active_battles[player.id] = battle_system
+#
+#     return templates.TemplateResponse(
+#         "battle.html",
+#         {
+#             "request": request,
+#             "player": player,
+#             "battle_state": battle_system.get_state()
+#         }
+#     )
+#
+# @router.post("/battle/start")
+# async def start_battle(
+#     mode: str = "pve",
+#     request: Request = None,
+#     db: Session = Depends(database.get_db)
+# ):
+#     user = await get_current_user(request, db)
+#     if not user:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#
+#     battle_system = active_battles.get(user.id)
+#     if not battle_system:
+#         battle_system = BattleSystem(user=user, db=db)
+#         active_battles[user.id] = battle_system
+#     else:
+#         # Оновлюємо сесію бази даних для існуючого екземпляра
+#         battle_system.db = db
+#
+#     state = battle_system.start_game(mode)
+#     return state
+#
+# @router.post("/battle/deploy")
+# async def deploy_creature(
+#     player: int,
+#     type_name: str,
+#     x: int,
+#     y: int,
+#     request: Request = None,
+#     db: Session = Depends(database.get_db)
+# ):
+#     user = await get_current_user(request, db)
+#     if not user:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#
+#     battle_system = active_battles.get(user.id)
+#     if not battle_system:
+#         raise HTTPException(status_code=404, detail="No active battle found")
+#
+#     success, message = battle_system.place_creature(player, type_name, x, y)
+#     return battle_system.get_state()
+#
+# @router.post("/battle/move")
+# async def move_creature(
+#     creature_id: str,
+#     target_x: int,
+#     target_y: int,
+#     request: Request = None,
+#     db: Session = Depends(database.get_db)
+# ):
+#     user = await get_current_user(request, db)
+#     if not user:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#
+#     battle_system = active_battles.get(user.id)
+#     if not battle_system:
+#         raise HTTPException(status_code=404, detail="No active battle found")
+#
+#     success, message = battle_system.move_creature(creature_id, target_x, target_y)
+#     return battle_system.get_state()
+#
+# @router.post("/battle/attack")
+# async def attack_creature(
+#     attacker_id: str,
+#     defender_id: str,
+#     request: Request = None,
+#     db: Session = Depends(database.get_db)
+# ):
+#     user = await get_current_user(request, db)
+#     if not user:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#
+#     battle_system = active_battles.get(user.id)
+#     if not battle_system:
+#         raise HTTPException(status_code=404, detail="No active battle found")
+#
+#     success, message = battle_system.attack_creature(attacker_id, defender_id)
+#     return battle_system.get_state()
+#
+# @router.post("/battle/end_turn")
+# async def end_turn_api(request: Request = None, db: Session = Depends(database.get_db)):
+#     user = await get_current_user(request, db)
+#     if not user:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#
+#     battle_system = active_battles.get(user.id)
+#     if not battle_system:
+#         raise HTTPException(status_code=404, detail="No active battle found")
+#
+#     # Оновлюємо сесію бази даних
+#     battle_system.db = db
+#
+#     success, message = battle_system.end_turn()
+#     response = battle_system.get_state()
+#     response['actionSuccess'] = success
+#     if not success:
+#         pass
+#     return response
+#
+# @router.get("/battle/state")
+# async def get_battle_state(
+#     request: Request = None,
+#     db: Session = Depends(database.get_db)
+# ):
+#     user = await get_current_user(request, db)
+#     if not user:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#
+#     battle_system = active_battles.get(user.id)
+#     if not battle_system:
+#         raise HTTPException(status_code=404, detail="No active battle found")
+#
+#     # Оновлюємо сесію бази даних
+#     battle_system.db = db
+#
+#     return battle_system.get_state()
+#
+# @router.get("/battle/rating")
+# async def get_player_rating(
+#     request: Request = None,
+#     db: Session = Depends(database.get_db)
+# ):
+#     player = await get_current_user(request, db)
+#     if not player:
+#         raise HTTPException(status_code=401, detail="Not authenticated")
+#
+#     # Отримуємо рейтинг гравця
+#     player_rating = db.query(models.PlayerRating).filter(
+#         models.PlayerRating.user_id == player.id
+#     ).first()
+#
+#     if not player_rating:
+#         # Якщо рейтингу ще немає, створюємо новий
+#         player_rating = models.PlayerRating(user_id=player.id)
+#         db.add(player_rating)
+#         db.commit()
+#         db.refresh(player_rating)
+#
+#     return {
+#         "player": player,
+#         "rating": player_rating.rating,
+#         "wins": player_rating.wins,
+#         "losses": player_rating.losses
+#     }
 
 # @router.post("/battle/save-turn")
 # async def save_battle_turn(

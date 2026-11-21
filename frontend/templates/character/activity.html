@@ -1,0 +1,6 @@
+{% if profile.recent %}
+<section class="hero-panel">
+    <h2>Останній бій</h2>
+    <p>Бій №{{ profile.recent.id }} · {% if profile.recent.winner_side is none %}Нічия{% elif profile.recent.winner_side == profile.recent.side %}Перемога{% else %}Поразка{% endif %}</p>
+</section>
+{% endif %}

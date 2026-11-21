@@ -1,0 +1,2 @@
+SYSTEM_PLAYER_ID = 1
+SYSTEM_PLAYER_USERNAME = "володар лісу"
