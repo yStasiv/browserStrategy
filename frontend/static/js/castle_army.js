@@ -3,6 +3,13 @@ const sliders = [...armyForm.querySelectorAll('input[type="range"]')];
 const limit = Number(armyForm.dataset.slotLimit);
 const summary = document.querySelector('#army-count');
 
+for (const trigger of document.querySelectorAll('[data-castle-dialog]')) {
+    trigger.addEventListener('click', () => {
+        document.getElementById(trigger.dataset.castleDialog).showModal();
+    });
+}
+document.querySelector('.castle-dialog[data-open-on-load]')?.showModal();
+
 function updateArmy() {
     let stacks = 0;
     for (const slider of sliders) {

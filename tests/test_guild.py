@@ -16,11 +16,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from backend import database, db_base
-from backend.guild_models import GuildQuest, GuildQuestTemplate
+from backend.guild_models import ActivityGuildProgress, GuildProgress, GuildQuest, GuildQuestTemplate
 from backend.config import SYSTEM_PLAYER_ID
 from backend.models import Enterprise, RewardTransaction, User
 from backend.routers import admin, adventure_guild, enterprise, map as world_map, player
-from backend.services import guild, world
+from backend.services import activity_guilds, guild, world
 
 
 @pytest.fixture
@@ -395,6 +395,7 @@ def test_hunts_and_faction_recruitment(sessions):
         replay = battle_service.battle_events(db, player, battle["id"], finished_only=True)
         assert replay["initial_state"]["hunt_key"] == "goblin"
         assert player.gold == before
+        assert activity_guilds.progress(db, player.id, activity_guilds.HUNTERS)["xp"] == 1
 
 
 def test_character_dashboard_resources_equipment_and_registered_sections(sessions, tmp_path, monkeypatch):
@@ -432,6 +433,9 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
         item_id = item.id
         db.add(EquippedItems(user_id=10, helmet_id=item_id))
         guild.initialize(db, 10)
+        guild_progress = db.get(GuildProgress, 10)
+        guild_progress.level, guild_progress.xp, guild_progress.next_xp = 2, 138, 150
+        db.add(ActivityGuildProgress(player_id=10, guild=activity_guilds.workshop_key("jewelry"), points=12))
         db.add(Battle(id=71, mode="pve", status="finished", state={}, initial_state={}))
         db.flush()
         db.add(BattleParticipant(battle_id=71, side=0, user_id=10))
@@ -441,10 +445,10 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert page("username=reader")[0] == 401
     status, html = page()
     assert status == 200
-    assert 'id="hero-name"><a href="/player_info?id=10">reader<' in html
+    assert 'id="hero-name" title="reader"><a href="/player_info?id=10">reader<' in html
     assert "/upload-avatar" not in html
     assert html.count('class="hero-army-slot') == 8
-    assert '<a class="hero-link" href="/castle">Набрати війська</a>' in html
+    assert '<a class="hero-link" href="/castle?section=army">Набрати війська</a>' in html
     assert "Очки армії" not in html and "Налаштувати склад армії" not in html
     assert html.index("Гільдії") < html.index("Спорядження")
     status, public = asyncio.run(asgi_request(app, "GET", "/player_info?id=10", ""))
@@ -474,11 +478,22 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert html.count("data-hero-slot=") == 11
     assert html.count("data-resource-id=") == 6
     assert html.index('data-resource-id="gold"') < html.index("</nav>")
-    assert "1,2 тис." in html and "Співоча смола · 17" in html and "Шепіт-пил · 31" in html
+    assert "1,200" in html and "Співоча смола · 17" in html and "Шепіт-пил · 31" in html
     assert "reserved_resource_7" not in html
     assert "Вміння з’являться згодом." in public_html
     assert "<h2>Вміння</h2>" not in html and "Останній бій" not in html
-    assert 'href="/guild"' in html and 'href="/inventory"' in html
+    assert 'href="/inventory"' in html
+    for profile_html in (html, public_html):
+        assert 'href="/guild"' not in profile_html and "Доступна в Замку." not in profile_html
+        assert '<strong class="hero-guild-level" aria-label="Рівень 2">2</strong>' in profile_html
+        assert 'title="Поточні очки гільдії">138<' in profile_html
+        assert 'title="Очки до наступного рівня">+12<' in profile_html
+        assert '<progress value="138" max="150" aria-label="Прогрес до наступного рівня · Гільдія авантюристів">' in profile_html
+        assert "Братство ловців" in profile_html and "Спілка трудівників" in profile_html
+        assert "Колегія металознавців" in profile_html
+        assert '<details class="hero-guild-workshops">' in profile_html
+        assert '<progress value="12" max="100" aria-label="Прогрес до наступного рівня · Ювелірна справа">' in profile_html
+        assert 'aria-label="Прогрес до наступного рівня · Кузня"' not in profile_html
 
     catalog = json.loads(profile.RESOURCE_FILE.read_text(encoding="utf-8"))
     catalog["unique"].update(name="Тестовий ресурс", active=True)
@@ -546,3 +561,101 @@ def test_hero_endpoints_validate_equipment_and_update_stats_and_army(sessions):
     status, state = call("POST", "/hero/army/update", {"counts": {"peasant": 7, "archer": 0}})
     assert status == 200 and state["army"]["spent"] == 2
     assert state["army"]["squads"][0]["count"] == 7
+
+
+def test_work_and_metalworking_award_points_for_successful_actions(sessions, monkeypatch, tmp_path):
+    from backend.models import Item
+    from backend.routers import castle
+    from backend.services import castle_buildings
+
+    buildings = json.loads(castle_buildings.CATALOG_FILE.read_text(encoding="utf-8"))
+    buildings.extend([
+        {"id": "forest_tower", "name": "Лісова вежа", "factions": ["elfe"], "min_level": 9},
+        {"id": "dark_tower", "name": "Темна вежа", "factions": ["darkElfe"], "min_level": 1},
+    ])
+    catalog_file = tmp_path / "castle_buildings.json"
+    catalog_file.write_text(json.dumps(buildings), encoding="utf-8")
+    monkeypatch.setattr(castle_buildings, "CATALOG_FILE", catalog_file)
+
+    app = FastAPI()
+    app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+    app.include_router(castle.router)
+    app.include_router(enterprise.router)
+
+    def get_db():
+        with sessions() as db:
+            yield db
+
+    app.dependency_overrides[database.get_db] = get_db
+
+    def call(method, path, form=None):
+        return asyncio.run(asgi_request(app, method, path, "session_id=reader-session", form))
+
+    with sessions.begin() as db:
+        player = db.get(User, 10)
+        player.gold, player.singing_resin, player.basalt_bone = 1250, 10, 20
+        db.add_all([
+            Item(id=101, name="Перстень", item_type="jewelry", owner_id=10, durability=0, max_durability=100),
+            Item(id=102, name="Лук", item_type="bow", owner_id=2, durability=0, max_durability=100),
+            ActivityGuildProgress(player_id=10, guild=activity_guilds.METALWORKERS, points=99),
+        ])
+
+    assert call("POST", "/enterprise/1/start-work")[0] == 200
+    assert call("POST", "/enterprise/1/start-work")[0] == 400
+    status, body = call("GET", "/castle")
+    assert status == 200 and b'href="/castle/metalworking"' not in body
+    assert b'data-castle-dialog="castle-magic"' not in body
+    assert body.decode().count("<strong>Побудовано</strong>") == 2
+    assert "Лісова вежа" in body.decode() and "Темна вежа" not in body.decode()
+    assert call("POST", "/castle/build", {"building_id": "forest_tower"})[0] == 403
+    assert call("POST", "/castle/build", {"building_id": "dark_tower"})[0] == 404
+    assert call("GET", "/castle/metalworking")[0] == 403
+    assert call("POST", "/castle/build", {"building_id": "forge"})[0] == 303
+    assert call("POST", "/castle/build", {"building_id": "forge"})[0] == 409
+    assert call("POST", "/castle/build", {"building_id": "magic_school_1"})[0] == 303
+
+    status, body = call("GET", "/castle?section=army")
+    assert status == 200 and b'href="/castle/metalworking"' in body
+    assert b'data-open-on-load' in body and b'id="choose-units-form"' in body
+    for section in (b"building", b"army", b"skills", b"magic"):
+        assert b'data-castle-dialog="castle-' + section + b'"' in body
+    endpoint = "/castle/metalworking/repair"
+    unlock = "/castle/metalworking/unlock"
+    assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 403
+    assert call("POST", unlock, {"workshop": "jewelry"})[0] == 303
+    assert call("POST", unlock, {"workshop": "forge"})[0] == 409
+    status, body = call("GET", "/castle/metalworking")
+    assert status == 200 and "Перстень" in body.decode() and "Зачарувальня" in body.decode()
+    assert all(icon.encode() in body for icon in activity_guilds.WORKSHOP_ICONS.values())
+
+    with sessions.begin() as db:
+        db.get(ActivityGuildProgress, (10, activity_guilds.workshop_key("jewelry"))).points = 99
+
+    assert call("POST", endpoint, {"item_id": 102, "durability": 0})[0] == 409
+    assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 303
+    assert call("POST", unlock, {"workshop": "forge"})[0] == 303
+    assert call("POST", unlock, {"workshop": "armor"})[0] == 409
+    assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 409
+    assert call("POST", endpoint, {"item_id": 101, "durability": 5})[0] == 303
+
+    with sessions() as db:
+        player = db.get(User, 10)
+        assert (player.gold, player.singing_resin, player.basalt_bone) == (0, 0, 0)
+        assert db.get(Item, 101).durability == 15
+        assert db.get(Item, 102).durability == 0
+        assert activity_guilds.progress(db, 10, activity_guilds.WORKERS)["xp"] == 1
+        metalworking = activity_guilds.progress(db, 10, activity_guilds.METALWORKERS)
+        assert (metalworking["level"], metalworking["xp"]) == (2, 1)
+        workshops = activity_guilds.workshop_progress(db, 10)
+        assert (workshops["jewelry"]["level"], workshops["forge"]["level"]) == (1, 0)
+
+    with sessions.begin() as db:
+        db.get(ActivityGuildProgress, (10, activity_guilds.METALWORKERS)).points = 250
+    assert call("POST", unlock, {"workshop": "armor"})[0] == 303
+    assert call("POST", unlock, {"workshop": "enchanting"})[0] == 409
+    with sessions.begin() as db:
+        db.get(ActivityGuildProgress, (10, activity_guilds.METALWORKERS)).points = 450
+    assert call("POST", unlock, {"workshop": "enchanting"})[0] == 303
+    with sessions() as db:
+        assert set(activity_guilds.workshop_progress(db, 10)) == set(activity_guilds.WORKSHOPS)
+    assert [activity_guilds.repair_percent(level) for level in range(11)] == [5, *range(10, 100, 10), 95]

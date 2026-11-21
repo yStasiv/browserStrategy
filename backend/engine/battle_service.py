@@ -10,6 +10,7 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from .. import models
+from ..services.activity_guilds import HUNTERS, award_point
 from ..services.rewards import issue_system_resources
 from .battle_models import ArmySlot, Battle, BattleAction, BattleParticipant
 from ..engine import BattleState, IllegalAction, action_from_dict, create_battle, turn_info
@@ -116,6 +117,8 @@ def _settle(db: Session, battle_id: int, state: BattleState) -> None:
         gold = random.randint(*PVE_VICTORY_GOLD) if state.winner == p.side else 0
         issue_system_resources(db, p.user_id, "battle_v1", str(battle_id),
                                gold=gold, wood=0, stone=0, experience=xp)
+        if state.hunt_key and state.winner == p.side:
+            award_point(db, p.user_id, HUNTERS)
 
 
 def battle_experience(state, side):

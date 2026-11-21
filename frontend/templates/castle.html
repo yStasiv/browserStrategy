@@ -7,27 +7,91 @@
 {% block body %}
 <main class="castle-army" lang="uk">
     <header>
-        <h1>Армія замку</h1>
-        <a href="/battle">До боїв</a>
+        <h1>Замок</h1>
+        <nav aria-label="Замок">
+            <button class="castle-section" type="button" data-castle-dialog="castle-building" aria-haspopup="dialog">Будівництво</button>
+            <button class="castle-section" type="button" data-castle-dialog="castle-army" aria-haspopup="dialog">Військо</button>
+            <button class="castle-section" type="button" data-castle-dialog="castle-skills" aria-haspopup="dialog">Вміння</button>
+            {% if magic_school_built %}<button class="castle-section" type="button" data-castle-dialog="castle-magic" aria-haspopup="dialog">Школа магії</button>{% endif %}
+            {% if forge_built %}
+            <a class="castle-workshop-link castle-section" href="/castle/metalworking">Кузня</a>
+            {% endif %}
+            <a href="/battle">До боїв</a>
+        </nav>
     </header>
-    {% if saved %}<p role="status">Склад армії збережено.</p>{% endif %}
-    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
-    <form action="/castle" method="post" id="choose-units-form" data-slot-limit="{{ slot_limit }}">
-        <div class="army-options">
-            {% for unit in units %}
-            <div class="army-option">
-                <label for="army-{{ unit.key }}">{{ unit.name }}</label>
-                <output for="army-{{ unit.key }}">{{ unit.quantity }}</output>
-                <input type="range" name="{{ unit.key }}" id="army-{{ unit.key }}"
-                       min="0" max="{{ unit.limit }}" value="{{ unit.quantity }}" step="1">
-                <span class="army-min">0</span><span class="army-max">{{ unit.limit }}</span>
-            </div>
+    <dialog id="castle-building" class="castle-dialog" aria-labelledby="castle-building-title"
+            {% if building_error or request.query_params.get('section') == 'building' %}data-open-on-load{% endif %}>
+        <header>
+            <h2 id="castle-building-title">Будівництво</h2>
+            <form method="dialog"><button class="castle-section" type="submit">Закрити</button></form>
+        </header>
+        {% if building_error %}<p role="alert">{{ building_error.detail }}</p>{% endif %}
+        <div class="castle-building-list">
+            {% for building in buildings %}
+            <article class="castle-building-card">
+                <h3>{{ building.name }}</h3>
+                {% if building.description %}<p>{{ building.description }}</p>{% endif %}
+                {% if building.id in built %}
+                <p><strong>Побудовано</strong></p>
+                {% else %}
+                <p>Бойовий рівень {{ building.min_level }}</p>
+                {% if building.resources %}
+                <ul aria-label="Необхідні ресурси">
+                    {% for id, amount in building.resources.items() %}
+                    <li>{{ resource_names[id] }} · {{ "{:,}".format(amount) }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                <form action="/castle/build" method="post">
+                    <button class="castle-section" type="submit" name="building_id" value="{{ building.id }}"
+                            aria-label="Побудувати {{ building.name }}"{% if player.level < building.min_level %} disabled{% endif %}>Побудувати</button>
+                </form>
+                {% endif %}
+            </article>
+            {% else %}
+            <p>Поки немає доступних будівель.</p>
             {% endfor %}
         </div>
-        <div class="army-footer">
-            <span id="army-count" aria-live="polite">{{ units | selectattr('quantity') | list | length }} / {{ slot_limit }} загонів</span>
-            <button type="submit">Зберегти армію</button>
-        </div>
-    </form>
+    </dialog>
+    {% for id, title, empty in (
+        ('castle-skills', 'Вміння', 'Поки немає доступних навичок.'),
+        ('castle-magic', 'Школа магії', 'Поки немає доступних заклять.')
+    ) %}
+    {% if id != 'castle-magic' or magic_school_built %}
+    <dialog id="{{ id }}" class="castle-dialog" aria-labelledby="{{ id }}-title">
+        <header>
+            <h2 id="{{ id }}-title">{{ title }}</h2>
+            <form method="dialog"><button class="castle-section" type="submit">Закрити</button></form>
+        </header>
+        <p>{{ empty }}</p>
+    </dialog>
+    {% endif %}
+    {% endfor %}
+    <dialog id="castle-army" class="castle-dialog" aria-labelledby="castle-army-title"
+            {% if saved or error or request.query_params.get('section') == 'army' %}data-open-on-load{% endif %}>
+        <header>
+            <h2 id="castle-army-title">Військо</h2>
+            <form method="dialog"><button class="castle-section" type="submit">Закрити</button></form>
+        </header>
+        {% if saved %}<p role="status">Склад армії збережено.</p>{% endif %}
+        {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+        <form action="/castle" method="post" id="choose-units-form" data-slot-limit="{{ slot_limit }}">
+            <div class="army-options">
+                {% for unit in units %}
+                <div class="army-option">
+                    <label for="army-{{ unit.key }}">{{ unit.name }}</label>
+                    <output for="army-{{ unit.key }}">{{ unit.quantity }}</output>
+                    <input type="range" name="{{ unit.key }}" id="army-{{ unit.key }}"
+                           min="0" max="{{ unit.limit }}" value="{{ unit.quantity }}" step="1">
+                    <span class="army-min">0</span><span class="army-max">{{ unit.limit }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="army-footer">
+                <span id="army-count" aria-live="polite">{{ units | selectattr('quantity') | list | length }} / {{ slot_limit }} загонів</span>
+                <button type="submit">Зберегти армію</button>
+            </div>
+        </form>
+    </dialog>
 </main>
 {% endblock %}

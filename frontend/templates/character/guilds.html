@@ -1,0 +1,43 @@
+{% macro guild_progress(name, progress) %}
+<span class="hero-guild-progress">
+    {% if progress.next_xp %}
+    <span title="Поточні очки гільдії">{{ progress.xp }}</span>
+    <span title="Очки до наступного рівня">+{{ progress.remaining_xp }}</span>
+    {% else %}<span>Максимальний рівень</span>{% endif %}
+    <strong class="hero-guild-level" aria-label="Рівень {{ progress.level }}">{{ progress.level }}</strong>
+</span>
+{% if progress.next_xp %}
+<progress value="{{ progress.xp }}" max="{{ progress.next_xp }}" aria-label="Прогрес до наступного рівня · {{ name }}"></progress>
+{% endif %}
+{% endmacro %}
+
+<section class="hero-panel hero-guilds">
+    <h2>Гільдії</h2>
+    {% for guild in profile.guilds %}
+    <article class="hero-feature">
+        {% if guild.workshops %}
+        <details class="hero-guild-workshops">
+            <summary>
+                <span class="hero-guild-title">{% if guild.icon %}<img src="{{ guild.icon }}" alt=""> {% endif %}{{ guild.name }}</span>
+                {{ guild_progress(guild.name, guild) }}
+            </summary>
+            {% for workshop in guild.workshops %}
+            <div class="hero-guild-workshop">
+                <h4 class="hero-guild-title"><img src="{{ workshop.icon }}" alt=""> {{ workshop.name }}</h4>
+                {% if workshop.progress %}
+                {{ guild_progress(workshop.name, workshop.progress) }}
+                {% else %}
+                <p>Зачинено.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </details>
+        {% else %}
+        <h3 class="hero-guild-title">{% if guild.icon %}<img src="{{ guild.icon }}" alt=""> {% endif %}{{ guild.name }}</h3>
+        {{ guild_progress(guild.name, guild) }}
+        {% endif %}
+    </article>
+    {% else %}
+    <p>Поки немає доступних гільдій.</p>
+    {% endfor %}
+</section>

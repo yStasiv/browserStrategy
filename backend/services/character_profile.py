@@ -14,8 +14,8 @@ from backend.services.hero_army import army_options
 from backend.services.hero_equipment import ITEM_SLOTS, SLOT_LABELS, equipment_ids
 from backend.guild_models import GuildProgress
 from backend.models import Item, PlayerResourceBalance, User
-from backend.services.world import utc_now
-from backend.world_models import PlayerTravel
+from backend.services.guild import xp_threshold
+from backend.services import activity_guilds
 
 RESOURCE_FILE = Path(__file__).resolve().parents[2] / "content" / "character_resources.json"
 STAT_ICON_DIR = Path(__file__).resolve().parents[2] / "frontend" / "static" / "images" / "hero_stats"
@@ -39,16 +39,11 @@ PROFILE_STATS = {
     "morale": ("Бойовий дух", "morale", "⚑"),
     "initiative": ("Ініціатива", "initiative", "⌛"),
 }
+SPENDABLE_ATTRIBUTES = {
+    key: PROFILE_STATS[key][1] for key in ("attack", "defense", "spell_power", "knowledge")
+}
 STAT_LABELS.update({column: name for name, column, _ in PROFILE_STATS.values()})
 FACTIONS = {"elfe": "Ельфи", "darkelfe": "Темні ельфи", "admin": "Адміністрація", "system": "Системна"}
-
-
-def format_quantity(number):
-    for divisor, suffix in ((1_000_000_000, "млрд"), (1_000_000, "млн"), (1_000, "тис.")):
-        if number >= divisor:
-            compact = f"{number / divisor:.1f}".removesuffix(".0").replace(".", ",")
-            return f"{compact} {suffix}"
-    return str(number)
 
 
 def resources(db, player):
@@ -67,8 +62,7 @@ def resources(db, player):
     if unique.get("active") and unique.get("name") and (values.get(unique["id"]) or 0) > 0:
         visible.append(unique)
     return [
-        {**row, "conditional": row is unique, "quantity": values.get(row["id"], 0) or 0,
-         "display_quantity": format_quantity(values.get(row["id"], 0) or 0)}
+        {**row, "conditional": row is unique, "quantity": values.get(row["id"], 0) or 0}
         for row in visible
     ]
 
@@ -97,21 +91,33 @@ class Service:
 
 def adventurers_progress(db, player):
     progress = db.get(GuildProgress, player.id)
-    travel = db.get(PlayerTravel, player.id)
-    time = utc_now()
-    traveling = travel is not None and travel.arrives_at > time
-    sector = travel.destination if travel and not traveling else player.map_sector
-    available = not traveling and sector == "Castle"
+    level, xp, threshold = (progress.level, progress.xp, progress.next_xp) if progress else (1, 0, xp_threshold(1))
+    return {"level": level, "xp": xp, "next_xp": threshold, "remaining_xp": max(0, threshold - xp)}
+
+
+def metalworking_progress(db, player):
+    progress = activity_guilds.progress(db, player.id, activity_guilds.METALWORKERS)
+    unlocked = activity_guilds.workshop_progress(db, player.id)
     return {
-        "available": available, "level": progress.level if progress else None,
-        "xp": progress.xp if progress else None, "next_xp": progress.next_xp if progress else None,
+        **progress,
+        "workshops": [
+            {"name": name, "icon": activity_guilds.WORKSHOP_ICONS[key], "progress": unlocked.get(key)}
+            for key, (name, _) in activity_guilds.WORKSHOPS.items()
+        ],
     }
 
 
 GUILDS = (
     ProgressFeature("adventurers", "Гільдія авантюристів", adventurers_progress,
-                    icon="/static/images/guild-icon.png", requirements="Доступна в Замку.",
-                    route="/guild"),
+                    icon="/static/images/guild_icons/guild_adventurers.png"),
+    ProgressFeature(activity_guilds.HUNTERS, "Братство ловців",
+                    lambda db, player: activity_guilds.progress(db, player.id, activity_guilds.HUNTERS),
+                    icon="/static/images/guild_icons/guild_hunters.png"),
+    ProgressFeature(activity_guilds.WORKERS, "Спілка трудівників",
+                    lambda db, player: activity_guilds.progress(db, player.id, activity_guilds.WORKERS),
+                    icon="/static/images/guild_icons/guild_workers.png"),
+    ProgressFeature(activity_guilds.METALWORKERS, "Колегія металознавців", metalworking_progress,
+                    icon="/static/images/guild_icons/guild_metallurgists.png"),
 )
 FACTION_SKILLS: tuple[ProgressFeature, ...] = ()
 SERVICES = (
@@ -138,6 +144,11 @@ def progress_entries(db, player, registry):
     return entries
 
 
+def stat_icon_url(key):
+    icon_file = f"{key}.png"
+    return f"/static/images/hero_stats/{icon_file}" if (STAT_ICON_DIR / icon_file).is_file() else None
+
+
 def hero_state(db, player):
     ids = equipment_ids(player.equipped_items)
     owned = db.scalars(select(Item).where(Item.owner_id == player.id).order_by(Item.id)).all()
@@ -150,10 +161,8 @@ def hero_state(db, player):
                     if isinstance((item.stats or {}).get(column, 0), (int, float)))
         stored = getattr(player, column, None)
         base = (stored or 0) - bonus if hasattr(player, column) else 0
-        icon_file = f"{key}.png"
-        image_url = f"/static/images/hero_stats/{icon_file}" if (STAT_ICON_DIR / icon_file).is_file() else None
-        attributes[key] = {"name": name, "icon": icon, "image_url": image_url, "base": base, "equipment": bonus,
-                           "buildings": 0, "total": base + bonus}
+        attributes[key] = {"name": name, "icon": icon, "image_url": stat_icon_url(key), "base": base, "equipment": bonus,
+                           "buildings": 0, "total": base + bonus, "spendable": key in SPENDABLE_ATTRIBUTES}
 
     equipment = {}
     for slot, name in SLOT_LABELS.items():
@@ -188,6 +197,7 @@ def dashboard(db, player, next_level_exp):
                         .order_by(Battle.id.desc()).limit(1)).first()
     return {
         "resources": resources(db, player), **hero_state(db, player),
+        "reset_stat_icon": stat_icon_url("reset"),
         "next_level_exp": next_level_exp,
         "faction": FACTIONS.get((player.fraction or "").lower(), player.fraction),
         "guilds": progress_entries(db, player, GUILDS),

@@ -7,15 +7,17 @@
 {% block body %}
 <main class="hero-dashboard hero-public-profile">
     {% if not nav_player %}<p><a href="/player">Мій персонаж</a> · <a href="/rating">Рейтинг</a></p>{% endif %}
-    {% include 'character/resources.html' %}
     <div class="hero-panel hero-primary">
         {% include 'character/header.html' %}
-        {% include 'character/attributes.html' %}
+        <div class="hero-profile-details">
+            {% include 'character/resources.html' %}
+            {% include 'character/attributes.html' %}
+        </div>
         {% include 'character/army.html' %}
     </div>
     <div class="hero-screen hero-equipment-layout hero-equipment-three-columns">
         <div class="hero-public-sidebar">
-        {{ progression('Гільдії', public_guilds, 'Поки немає доступних гільдій.') }}
+        {% include 'character/guilds.html' %}
         <section class="hero-panel">
             <h2>Статистика</h2>
             <dl class="hero-public-rating">

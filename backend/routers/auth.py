@@ -1,10 +1,10 @@
 # backend/routers/auth.py
 import uuid
 
-from fastapi import (APIRouter, Depends, FastAPI, Form, HTTPException, Request,
-                     Response)
+from fastapi import APIRouter, Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from backend.auth import playable_users
@@ -202,13 +202,16 @@ class AuthRotes:
         return response
 
     @router.post("/logout")
-    async def logout(response: Response):
-        # Очищення куків (включаючи сесію)
+    def logout(request: Request, db: Session = Depends(database.get_db)):
+        session_id = request.cookies.get("session_id")
+        if session_id:
+            db.execute(update(models.User).where(models.User.session_id == session_id).values(session_id=None))
+            db.commit()
+
+        response = RedirectResponse(url="/login", status_code=303, headers={"Cache-Control": "no-store"})
         response.delete_cookie("session_id")
         response.delete_cookie("username")
-
-        # Перенаправлення користувача на головну сторінку або сторінку логіну після виходу
-        return RedirectResponse(url="/", status_code=303)
+        return response
 
     @router.get("/")
     async def root(request: Request):

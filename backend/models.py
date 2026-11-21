@@ -25,6 +25,7 @@ class User(Base):
     fraction = Column(String, default="Elfe")
 
     pending_attribute_points = Column(Integer, default=1)
+    attribute_allocations = Column(JSON, nullable=False, default=dict, server_default=text("'{}'"))
     # Основні характеристики
     stamina = Column(Integer, default=0)  # Здоров'я
     energy = Column(Integer, default=0)  # Енергія
@@ -405,3 +406,10 @@ class PlayerResourceBalance(Base):
     player_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     resource_id = Column(String(64), primary_key=True)
     quantity = Column(BigInteger, nullable=False)
+
+
+class CastleBuilding(Base):
+    __tablename__ = "castle_buildings"
+
+    player_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    building_id = Column(String(64), primary_key=True)

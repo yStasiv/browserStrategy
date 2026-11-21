@@ -1,6 +1,16 @@
 <section class="hero-stat-panel" aria-label="Характеристики">
     {% if not read_only %}<form action="/update-attribute" method="post">{% endif %}
         <dl class="hero-stats">
+            {% if not read_only %}
+            <div class="hero-stat-card hero-stat-reset-card">
+                <dt><button class="hero-stat-reset" type="submit" formaction="/reset-attributes"
+                            title="Скинути розподіл характеристик" aria-label="Скинути розподіл характеристик">
+                    {% if profile.reset_stat_icon %}<img class="hero-stat-icon" src="{{ profile.reset_stat_icon }}" alt="">
+                    {% else %}↺{% endif %}
+                </button></dt>
+                <dd>Скинути</dd>
+            </div>
+            {% endif %}
             {% for key, stat in profile.attributes.items() %}
             <div tabindex="0" class="hero-stat-card">
                 <dt>
@@ -9,8 +19,8 @@
                     <span class="hero-stat-tooltip">{{ stat.name }}</span>
                 </dt>
                 <dd><strong data-hero-stat="{{ key }}" title="{{ stat.name }} · база {{ stat.base }} · спорядження {{ stat.equipment }}">{{ stat.total }}</strong>
-                    {% if not read_only and key == 'knowledge' and player.pending_attribute_points and player.pending_attribute_points > 0 %}
-                    <button name="attribute" value="mind" aria-label="Підвищити знання">+</button>
+                    {% if not read_only and stat.spendable and player.pending_attribute_points %}
+                    <button name="attribute" value="{{ key }}" aria-label="Підвищити характеристику «{{ stat.name }}»">+</button>
                     {% endif %}
                 </dd>
             </div>

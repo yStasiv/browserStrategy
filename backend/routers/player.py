@@ -5,14 +5,12 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, StrictInt
 
 from backend.auth import playable_users, session_player
-from backend import database, models, utils
+from backend import database, models
 from backend.auth import get_current_user
-from backend.services.character_profile import dashboard, hero_state
+from backend.services.character_profile import dashboard, hero_state, SPENDABLE_ATTRIBUTES
 from backend.services.hero_equipment import change_equipment, lock_hero
 from backend.services.hero_army import save_roster
 from backend.engine.battle_service import get_active_battle_id
-
-logger = utils.setup_logger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
@@ -40,26 +38,18 @@ class PlayerHelper:
 
     @staticmethod
     def update_user_level(user: models.User, db: Session) -> None:
-        """Get user exp, check if lvl is correct and up lvl if needed"""
-        next_level_exp = PlayerHelper.experience_needed_for_next_level(user.level)
-
-        if next_level_exp is None:
-            # Якщо досягнуто максимальний рівень, нічого не робимо
+        threshold = PlayerHelper.experience_needed_for_next_level(user.level)
+        if threshold is None or user.experience < threshold:
             return
 
-        # Перевірка, чи є досвід для підвищення рівня  # TODO: перенести в функцію логування?
-        while int(user.experience) >= int(next_level_exp) and int(user.level) < 8:
-            user.level += 1  # Підвищуємо рівень
-            # user.experience -= next_level_exp  # Віднімаємо досвід для наступного рівня
-            next_level_exp = PlayerHelper.experience_needed_for_next_level(
-                user.level
-            )  # Обчислюємо досвід для наступного рівня
-            if next_level_exp is None:
-                # logger.info("Max lvl was claimed!")
-                db.commit()
-                break
-            user.pending_attribute_points += 1
-            db.commit()  # Зберігаємо зміни в базі даних
+        lock_hero(db, user)
+        starting_level = user.level
+        threshold = PlayerHelper.experience_needed_for_next_level(user.level)
+        while threshold is not None and user.experience >= threshold:
+            user.level += 1
+            threshold = PlayerHelper.experience_needed_for_next_level(user.level)
+        user.pending_attribute_points = (user.pending_attribute_points or 0) + user.level - starting_level
+        db.commit()
 
 
 @router.get("/player_info")
@@ -90,7 +80,6 @@ async def player_info(
             "request": request,
             "player": player,
             "profile": profile,
-            "public_guilds": [dict(guild, route=None, requirements=None) for guild in profile["guilds"]],
             "read_only": True,
             "nav_player": session_player(request, db),
             "player_rating": player_rating
@@ -119,34 +108,32 @@ class PlayerRotes(PlayerHelper):
         attribute: str = Form(...),
         db: Session = Depends(database.get_db),
     ):
-        user_session_id = request.cookies.get("session_id")
-        if not user_session_id:
-            raise HTTPException(status_code=401, detail="Увійди до гри.")
+        column = SPENDABLE_ATTRIBUTES.get(attribute)
+        if column is None:
+            raise HTTPException(400, "Невідома характеристика.")
 
-        user = session_player(request, db)
-        if not user:
-            raise HTTPException(status_code=404, detail="Персонажа не знайдено.")
+        user = hero_player(request, db)
+        lock_hero(db, user)
+        if (user.pending_attribute_points or 0) <= 0:
+            raise HTTPException(400, "Немає вільних очок характеристик.")
 
-        if user.pending_attribute_points <= 0:
-            raise HTTPException(
-                status_code=400, detail="Немає вільних очок характеристик."
-            )
+        allocations = dict(user.attribute_allocations)
+        allocations[column] = allocations.get(column, 0) + 1
+        setattr(user, column, (getattr(user, column) or 0) + 1)
+        user.attribute_allocations = allocations
+        user.pending_attribute_points -= 1
+        db.commit()
+        return RedirectResponse(url="/player", status_code=303)
 
-        attribute_update = {
-            "stamina": lambda u: setattr(u, "stamina", u.stamina + 1),
-            "energy": lambda u: setattr(u, "energy", u.energy + 1),
-            "agility": lambda u: setattr(u, "agility", u.agility + 1),
-            "mind": lambda u: setattr(u, "mind", u.mind + 1),
-        }
-        update_func = attribute_update.get(attribute, None)
-        if update_func is not None:
-            update_func(user)
-            user.pending_attribute_points -= 1
-            db.commit()
-
-        else:
-            logger.error(HTTPException(status_code=400, detail="Invalid attribute"))
-
+    @router.post("/reset-attributes", response_class=RedirectResponse)
+    async def reset_attributes(request: Request, db: Session = Depends(database.get_db)):
+        user = hero_player(request, db)
+        lock_hero(db, user)
+        for column, points in user.attribute_allocations.items():
+            setattr(user, column, getattr(user, column) - points)
+        user.pending_attribute_points = (user.pending_attribute_points or 0) + sum(user.attribute_allocations.values())
+        user.attribute_allocations = {}
+        db.commit()
         return RedirectResponse(url="/player", status_code=303)
 
 

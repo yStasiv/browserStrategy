@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Колегія металознавців{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+{% endblock %}
+{% block body %}
+<main class="hero-dashboard">
+    <a href="/castle">До Замку</a>
+    <h1>Колегія металознавців</h1>
+    <p><strong>Рівень {{ progress.level }}</strong> · Відкрито майстерень {{ unlocked_count }}/{{ progress.level }}</p>
+    {% if progress.next_xp %}
+    <p>{{ progress.xp }} +{{ progress.remaining_xp }}</p>
+    <progress value="{{ progress.xp }}" max="{{ progress.next_xp }}" aria-label="Прогрес Колегії металознавців"></progress>
+    {% endif %}
+    {% if repaired %}<p role="status">Міцність артефакту відновлено.</p>{% endif %}
+    <div class="hero-screen">
+        {% for key, name, specialization, items in workshops %}
+        <section id="{{ key }}" class="hero-panel">
+            <h2><img class="hero-workshop-icon" src="{{ workshop_icons[key] }}" alt=""> {{ name }}</h2>
+            {% if key == 'enchanting' %}
+            <p>Підсилення артефактів відкриється, коли з’являться особливі елементи.</p>
+            {% endif %}
+            {% if not specialization %}
+                {% if key == 'enchanting' and progress.level < 4 %}
+                <p>Доступна з четвертого рівня Колегії.</p>
+                {% elif unlocked_count < progress.level %}
+                <form action="/castle/metalworking/unlock" method="post">
+                    <button type="submit" class="hero-link" name="workshop" value="{{ key }}">Відкрити майстерню</button>
+                </form>
+                <p>Відкрита майстерня назавжди займає одне місце в Колегії.</p>
+                {% else %}
+                <p>Потрібен наступний рівень Колегії.</p>
+                {% endif %}
+            {% elif key != 'enchanting' %}
+            <p><strong>Рівень {{ specialization.level }}</strong> · Відновлення {{ repair_percent(specialization.level) }}% максимальної міцності за ремонт</p>
+            {% if specialization.next_xp %}
+            <p>{{ specialization.xp }} +{{ specialization.remaining_xp }}</p>
+            <progress value="{{ specialization.xp }}" max="{{ specialization.next_xp }}" aria-label="Прогрес · {{ name }}"></progress>
+            {% endif %}
+            {% for item in items %}
+            <form class="hero-feature" action="/castle/metalworking/repair" method="post">
+                <input type="hidden" name="item_id" value="{{ item.id }}">
+                <input type="hidden" name="durability" value="{{ item.durability }}">
+                <span>{{ item.name }} · {{ item.durability }}/{{ item.max_durability }}</span>
+                <button type="submit" class="hero-link" aria-label="Відремонтувати {{ item.name }}">Відремонтувати</button>
+            </form>
+            {% else %}
+            <p>Немає артефактів, які потребують ремонту.</p>
+            {% endfor %}
+            {% endif %}
+        </section>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}

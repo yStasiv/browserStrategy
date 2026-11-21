@@ -113,7 +113,7 @@ class TaskHelper:
                         db.query(models.User).filter(models.User.id == user_id).first()
                     )
                     if user:
-                        CharacterHelper().update_user_level(user, db)
+                        PlayerHelper.update_user_level(user, db)
 
             return user_task
         else:
