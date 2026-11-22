@@ -2,6 +2,9 @@
   {
     "key": "peasant",
     "name": "Селянин",
+    "description": "Ополченець, який тримає стрій у ближньому бою.",
+    "image_url": null,
+    "recruitment_points": 1,
     "attack": 1,
     "defense": 1,
     "dmg_min": 1,
@@ -18,6 +21,7 @@
     "abilities": [],
     "starter_count": 20,
     "recruitment": {
+      "building": "recruitment_hall",
       "factions": [],
       "min_level": 1,
       "max_count": 20
@@ -27,6 +31,9 @@
   {
     "key": "archer",
     "name": "Лучник",
+    "description": "Стрілець, який уражає ворогів здалеку, поки вони не підійшли впритул.",
+    "image_url": null,
+    "recruitment_points": 2,
     "attack": 6,
     "defense": 3,
     "dmg_min": 2,
@@ -45,6 +52,7 @@
     ],
     "starter_count": 10,
     "recruitment": {
+      "building": "archery_range",
       "factions": [],
       "min_level": 1,
       "max_count": 10
@@ -54,6 +62,9 @@
   {
     "key": "swordsman",
     "name": "Мечник",
+    "description": "Піхотинець із мечем для ближнього бою.",
+    "image_url": null,
+    "recruitment_points": 3,
     "attack": 10,
     "defense": 12,
     "dmg_min": 6,
@@ -70,6 +81,7 @@
     "abilities": [],
     "starter_count": 5,
     "recruitment": {
+      "building": "recruitment_hall",
       "factions": [],
       "min_level": 1,
       "max_count": 5
@@ -79,6 +91,9 @@
   {
     "key": "knight",
     "name": "Лицар",
+    "description": "Важкоозброєний боєць для удару по ворожому строю.",
+    "image_url": null,
+    "recruitment_points": 5,
     "attack": 16,
     "defense": 12,
     "dmg_min": 15,
@@ -95,6 +110,7 @@
     "abilities": [],
     "starter_count": 0,
     "recruitment": {
+      "building": "knight_stables",
       "factions": [
         "elfe"
       ],
@@ -106,6 +122,9 @@
   {
     "key": "goblin",
     "name": "Гоблін",
+    "description": "Дрібний боєць, небезпечний у численному загоні.",
+    "image_url": null,
+    "recruitment_points": 1,
     "attack": 4,
     "defense": 2,
     "dmg_min": 1,
@@ -131,6 +150,9 @@
   {
     "key": "skeleton",
     "name": "Скелет",
+    "description": "Оживлений скелет, якого темні ельфи можуть набирати до війська.",
+    "image_url": null,
+    "recruitment_points": 2,
     "attack": 5,
     "defense": 4,
     "dmg_min": 1,
@@ -147,6 +169,7 @@
     "abilities": [],
     "starter_count": 0,
     "recruitment": {
+      "building": "ossuary",
       "factions": [
         "darkElfe"
       ],
@@ -162,6 +185,9 @@
   {
     "key": "ogre",
     "name": "Огр",
+    "description": "Великий і витривалий боєць ближнього бою.",
+    "image_url": null,
+    "recruitment_points": 6,
     "attack": 13,
     "defense": 9,
     "dmg_min": 8,
@@ -187,6 +213,9 @@
   {
     "key": "dragon",
     "name": "Дракон",
+    "description": "Могутня істота з великим запасом здоров’я.",
+    "image_url": null,
+    "recruitment_points": 10,
     "attack": 20,
     "defense": 18,
     "dmg_min": 40,

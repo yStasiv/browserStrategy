@@ -89,3 +89,11 @@ class GuildEvent(Base):
     player_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     event_type = Column(String(32), primary_key=True)
     source_id = Column(String(64), primary_key=True)
+
+
+class ActivityGuildProgress(Base):
+    __tablename__ = "activity_guild_progress"
+
+    player_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    guild = Column(String(32), primary_key=True)
+    points = Column(Integer, nullable=False)

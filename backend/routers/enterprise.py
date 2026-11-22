@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from backend.auth import session_player
 from backend import database, models
+from backend.services.activity_guilds import WORKERS, award_point
 from backend.services.guild import record_collection
 from backend.services.world import require_presence
 
@@ -169,13 +170,24 @@ async def start_work(
             status_code=400, detail="Enterprise doesn't have enough money to pay salary"
         )
 
-    # Знімаємо зарплату з балансу підприємства одразу
-    enterprise.balance -= salary_for_hour
+    result = db.execute(
+        update(models.Enterprise).where(
+            models.Enterprise.id == enterprise_id,
+            models.Enterprise.workers_count < models.Enterprise.max_workers,
+            models.Enterprise.balance >= salary_for_hour,
+            models.Enterprise.salary == salary_for_hour,
+            models.Enterprise.sector == user.map_sector,
+        ).values(
+            balance=models.Enterprise.balance - salary_for_hour,
+            workers_count=models.Enterprise.workers_count + 1,
+        )
+    )
+    if result.rowcount != 1:
+        raise HTTPException(409, "Умови працевлаштування змінилися.")
 
     user.workplace = f"enterprise_{enterprise.id}"
     user.work_start_time = current_time
-    enterprise.workers_count += 1
-
+    award_point(db, user.id, WORKERS)
     db.commit()
     return {"status": "success"}
 

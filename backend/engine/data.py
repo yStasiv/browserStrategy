@@ -9,6 +9,7 @@ class Recruitment:
     factions: list[str]
     min_level: int
     max_count: int
+    building: str
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,12 @@ class UnitType:
     starter_count: int
     recruitment: Recruitment | None
     hunting: Hunting | None
+    recruitment_points: int
+    description: str = ""
+    image_url: str | None = None
+    luck: int = 0
+    morale: int = 0
+    knowledge: int = 0
 
 
 def load_creatures():
@@ -50,8 +57,11 @@ def load_creatures():
         if (unit.key in catalog or len(unit.size) != 2 or min(*unit.size, unit.hp, unit.initiative) < 1
                 or not 1 <= unit.dmg_min <= unit.dmg_max or not 0 <= unit.initiative <= 100_000
                 or min(unit.speed, unit.shots, unit.starter_count) < 0
+                or type(unit.recruitment_points) is not int or unit.recruitment_points < 0
                 or (unit.hunting and min(unit.hunting.min_level, unit.hunting.count) < 1)
-                or (unit.recruitment and min(unit.recruitment.min_level, unit.recruitment.max_count) < 1)
+                or (unit.recruitment and (
+                    not unit.recruitment.building or min(unit.recruitment.min_level, unit.recruitment.max_count) < 1
+                ))
                 or set(unit.abilities) != ({"ranged_attack"} if unit.shots else set())):
             raise ValueError(f"Некоректні параметри істоти: {unit.key}")
         catalog[unit.key] = unit

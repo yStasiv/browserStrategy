@@ -10,20 +10,116 @@
 .castle-army header, .army-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
 .castle-army h1 { margin: 0 0 .65rem; }
 .castle-army a { color: #365036; }
-.army-options { display: grid; gap: .75rem; }
-.army-option {
+.castle-army nav { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
+.castle-section {
+    padding: .45rem .7rem;
+    background: #f9f0de;
+    border: 1px solid #cbb691;
+    border-radius: .45rem;
+    color: #365036;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+.castle-dialog {
+    box-sizing: border-box;
+    width: min(40rem, calc(100% - 2rem));
+    max-height: calc(100% - 2rem);
+    padding: clamp(.8rem, 4vw, 1.5rem);
+    border: 1px solid #a98d62;
+    border-radius: .8rem;
+    background: #f3e9d2;
+    color: #382918;
+}
+.castle-dialog::backdrop { background: #24190c99; }
+.castle-dialog h2 { margin: .25rem 0; }
+.castle-dialog > header { margin-bottom: .8rem; }
+.castle-army-dialog { width: min(74rem, calc(100% - 2rem)); }
+.castle-section:disabled { opacity: .55; cursor: default; }
+.castle-building-list { display: grid; gap: .65rem; }
+.castle-built-list { margin-bottom: .75rem; }
+.castle-built-list summary { cursor: pointer; font-weight: 700; }
+.castle-built-list[open] summary { margin-bottom: .5rem; }
+.castle-building-card {
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: .3rem .75rem;
-    padding: .8rem 1rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: .6rem;
+    padding: .75rem;
     border: 1px solid #cbb691;
     border-radius: .45rem;
     background: #f9f0de;
 }
+.castle-building-card h3, .castle-building-card p { margin: 0 0 .45rem; }
+.castle-building-image {
+    display: grid;
+    place-items: center;
+    width: clamp(2.75rem, 12vw, 5rem);
+    aspect-ratio: 1;
+    border: 1px solid #cbb691;
+    border-radius: .3rem;
+    background: #f3e9d2;
+}
+.castle-building-image img { width: 100%; height: 100%; object-fit: contain; }
+.castle-building-cost { display: flex; gap: .55rem; overflow-x: auto; list-style: none; padding: 0; margin: 0; }
+.castle-building-cost li { display: flex; align-items: center; gap: .2rem; white-space: nowrap; }
+.castle-building-cost img { width: 1.25rem; height: 1.25rem; object-fit: contain; }
+.castle-building-card form { align-self: center; }
+.castle-build-action { display: grid; place-items: center; padding: .25rem; }
+.castle-build-action img { width: 2.4rem; height: 2.4rem; object-fit: contain; }
+.army-options {
+    --army-columns: 8;
+    --army-gap: .65rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--army-gap);
+}
+.army-option {
+    box-sizing: border-box;
+    flex: 0 0 calc((100% - (var(--army-columns) - 1) * var(--army-gap)) / var(--army-columns));
+    min-width: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    justify-items: center;
+    gap: .45rem;
+    padding: .65rem .35rem;
+    text-align: center;
+    overflow-wrap: anywhere;
+    border: 1px solid #cbb691;
+    border-radius: .45rem;
+    background: #f9f0de;
+}
+.army-option[data-unit-active] { border-color: #526747; }
+.army-unit-summary, .army-option-controls { display: grid; gap: .2rem; }
+.army-option-controls { justify-items: center; }
+.army-unit-preview {
+    box-sizing: border-box;
+    max-width: 34rem;
+    margin: 1rem auto 0;
+    padding: .8rem;
+    border: 1px solid #cbb691;
+    border-radius: .45rem;
+    background: #f9f0de;
+}
+.army-unit-preview h3 { margin: 0 0 .65rem; }
+.army-unit-preview .unit-info-overview { grid-template-columns: minmax(0, 6rem) minmax(0, 1fr); }
 .army-option label, .army-option output { font-weight: 700; }
-.army-option input { grid-column: 1 / -1; width: 100%; min-height: 2rem; margin: 0; accent-color: #526747; }
-.army-option output, .army-max { text-align: right; }
-.army-min, .army-max { color: #695138; font-size: .9rem; }
+.army-option input {
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 1.4rem;
+    height: 4.5rem;
+    margin: 0;
+    accent-color: #526747;
+}
+.army-limit { color: #695138; font-size: .8rem; }
 .army-footer { margin-top: 1rem; }
 .army-footer button { min-height: 2.75rem; padding: .5rem 1rem; border: 0; border-radius: .4rem; background: #3e5537; color: white; cursor: pointer; }
 .army-footer button:disabled { opacity: .55; cursor: default; }
+@media (max-width: 60rem) {
+    .army-options { --army-columns: 4; }
+}
+@media (max-width: 30rem) {
+    .army-options { --army-columns: 2; }
+}

@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
-{% from 'character/progression.html' import progression %}
 {% block title %}Персонаж{% endblock %}
 {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/unit_info.css') }}">
+<script defer src="{{ url_for('static', path='js/unit_info.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
 {% endblock %}
 {% block body %}
-<main class="hero-dashboard">
+<main class="hero-dashboard hero-own-profile">
     <div class="hero-panel hero-primary">
         {% include 'character/header.html' %}
         {% include 'character/attributes.html' %}
@@ -13,7 +14,7 @@
     </div>
     <div class="hero-screen">
         <div class="hero-equipment-layout hero-equipment-three-columns">
-            {{ progression('Гільдії', profile.guilds, 'Поки немає доступних гільдій.') }}
+            {% include 'character/guilds.html' %}
             {% include 'character/equipment.html' %}
             {% include 'character/services.html' %}
         </div>

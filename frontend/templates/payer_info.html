@@ -2,20 +2,24 @@
 {% from 'character/progression.html' import progression %}
 {% block title %}Перегляд персонажа{% endblock %}
 {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/unit_info.css') }}">
+<script defer src="{{ url_for('static', path='js/unit_info.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
 {% endblock %}
 {% block body %}
 <main class="hero-dashboard hero-public-profile">
     {% if not nav_player %}<p><a href="/player">Мій персонаж</a> · <a href="/rating">Рейтинг</a></p>{% endif %}
-    {% include 'character/resources.html' %}
     <div class="hero-panel hero-primary">
         {% include 'character/header.html' %}
-        {% include 'character/attributes.html' %}
+        <div class="hero-profile-details">
+            {% include 'character/resources.html' %}
+            {% include 'character/attributes.html' %}
+        </div>
         {% include 'character/army.html' %}
     </div>
     <div class="hero-screen hero-equipment-layout hero-equipment-three-columns">
         <div class="hero-public-sidebar">
-        {{ progression('Гільдії', public_guilds, 'Поки немає доступних гільдій.') }}
+        {% include 'character/guilds.html' %}
         <section class="hero-panel">
             <h2>Статистика</h2>
             <dl class="hero-public-rating">
