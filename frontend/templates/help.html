@@ -1,6 +1,10 @@
 {% extends 'base.html' %}
+{% from 'components/unit_info.html' import portrait %}
 
 {% block title %}Довідка{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/unit_info.css') }}">
+{% endblock %}
 
 {% block body %}
 <style>
@@ -59,6 +63,7 @@
 
 .help-content {
     flex: 1;
+    min-width: 0;
     padding: 2rem;
     background: white;
     border-radius: 8px;
@@ -110,6 +115,30 @@
 .tip::before {
     content: "💡 ";
 }
+
+.help-content .help-creatures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    gap: .65rem;
+    padding: 0;
+    list-style: none;
+}
+.help-content .help-creatures li { margin: 0; }
+.help-creatures a {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .45rem;
+    border: 1px solid #cbb691;
+    border-radius: .35rem;
+    color: #365036;
+}
+.help-creatures .unit-portrait { flex: 0 0 auto; }
+@media (max-width: 42rem) {
+    .help-container { flex-direction: column; padding: 1rem; gap: 1rem; }
+    .help-sidebar { flex: auto; }
+    .help-content { padding: 1rem; }
+}
 </style>
 
 <div class="help-container">
@@ -128,6 +157,7 @@
                 <li><a href="#basics" class="help-item" data-content="basics">Основи гри</a></li>
                 <li><a href="#interface" class="help-item" data-content="interface">Інтерфейс</a></li>
                 <li><a href="#resources" class="help-item" data-content="resources">Ресурси</a></li>
+                <li><a href="#creatures" class="help-item" data-content="creatures">Створіння</a></li>
             </ul>
         </div>
         <div class="help-section">
@@ -153,6 +183,15 @@
         </div>
     </div>
 </div>
+
+<template id="help-creatures">
+    <h2>Створіння</h2>
+    <ul class="help-creatures">
+        {% for creature in creatures %}
+        <li><a href="/unit_info?key={{ creature.key }}">{{ portrait(creature) }} {{ creature.name }}</a></li>
+        {% endfor %}
+    </ul>
+</template>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -352,13 +391,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функція для завантаження контенту
     function loadContent(contentKey) {
-        const content = contents[contentKey];
-        if (content) {
-            helpContent.innerHTML = content.content;
-            helpItems.forEach(i => i.classList.remove('active'));
-            document.querySelector(`[data-content="${contentKey}"]`).classList.add('active');
-            saveActiveSection(contentKey);
+        if (contentKey === 'creatures') {
+            helpContent.replaceChildren(document.getElementById('help-creatures').content.cloneNode(true));
+        } else if (Object.hasOwn(contents, contentKey)) {
+            helpContent.innerHTML = contents[contentKey].content;
+        } else {
+            return;
         }
+        helpItems.forEach(item => item.classList.toggle('active', item.dataset.content === contentKey));
+        saveActiveSection(contentKey);
     }
 
     // Обробник кліків
@@ -378,9 +419,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обробка хеша URL при прямому переході
     const hash = window.location.hash.slice(1);
-    if (hash && contents[hash]) {
+    if (hash) {
         loadContent(hash);
     }
 });
 </script>
-{% endblock %} 
+{% endblock %}

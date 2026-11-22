@@ -1,0 +1,250 @@
+[
+  {
+    "name": "Меч Лицаря",
+    "description": "Класичний одноручний меч, збалансований для бою. Лезо сталеве з легким вигином, руків'я обмотане чорною шкірою, хрестовина пряма, а на наверші гербовий знак.",
+    "item_type": "one_handed_weapon",
+    "image_url": "/static/images/items/knight_sword.png",
+    "stats": {
+      "melee_attack": 5
+    },
+    "shop_data": {
+      "price": 200,
+      "level": 3
+    },
+    "durability": 20,
+    "max_durability": 20
+  },
+  {
+    "name": "Клинок Вбивці",
+    "description": "Ллегкий та елегантний меч із загостреним кінцем. Лезо тонке, темного металу, руків'я загорнуте в червону тканину, а хрестовина вигнута, що додає стилю. Виглядає створеним для швидких і точних ударів.",
+    "item_type": "one_handed_weapon",
+    "image_url": "/static/images/items/assassin_blade.png",
+    "stats": {
+      "melee_attack": 4
+    },
+    "shop_data": {
+      "price": 350,
+      "level": 6
+    },
+    "durability": 18,
+    "max_durability": 18
+  },
+  {
+    "name": "Молот Титана",
+    "description": "В величезний дворукий бойовий молот. Головка з масивного темного металу, інкрустована магічними символами. Рукоятка обгорнута шкірою для кращого зчеплення. Випромінює силу та здатен оглушувати ворогів.",
+    "item_type": "two_handed_weapon",
+    "image_url": "/static/images/items/titan_hammer.png",
+    "stats": {
+      "melee_attack": 12,
+      "stamina": 5
+    },
+    "shop_data": {
+      "price": 800,
+      "level": 10
+    },
+    "durability": 25,
+    "max_durability": 25
+  },
+  {
+    "name": "Обладунок Льоду",
+    "description": "Крижаний панцир, що захищає від вогню.",
+    "item_type": "armor",
+    "image_url": "/static/images/items/ice_armor.svg",
+    "stats": {
+      "physical_defense": 10,
+      "magic_resistance": 5,
+      "stamina": 3
+    },
+    "shop_data": {
+      "price": 700,
+      "level": 8
+    },
+    "durability": 30,
+    "max_durability": 30
+  },
+  {
+    "name": "Кольчуга",
+    "description": "Середня броня з металевих кілець",
+    "item_type": "armor",
+    "image_url": "/static/images/items/chainmail.svg",
+    "stats": {
+      "physical_defense": 1,
+      "stamina": 3
+    },
+    "shop_data": {
+      "price": 100,
+      "level": 1
+    },
+    "durability": 12,
+    "max_durability": 12
+  },
+  {
+    "name": "Шолом Дракона",
+    "description": "Легендарний шолом, що входить у комплект 'Драконяча Лють'.",
+    "item_type": "helmet",
+    "image_url": "/static/images/items/dragon_helmet.svg",
+    "stats": {
+      "physical_defense": 5,
+      "magic_resistance": 3,
+      "stamina": 2
+    },
+    "shop_data": {
+      "price": 500,
+      "level": 7
+    },
+    "durability": 22,
+    "max_durability": 22
+  },
+  {
+    "name": "Чоботи Тіней",
+    "description": "Легкі чоботи, що допомагають зникати в тінях.",
+    "item_type": "boots",
+    "image_url": "/static/images/items/shadow_boots.svg",
+    "stats": {
+      "physical_defense": 2,
+      "magic_resistance": 2
+    },
+    "shop_data": {
+      "price": 400,
+      "level": 6
+    },
+    "durability": 18,
+    "max_durability": 18
+  },
+  {
+    "name": "Плащ Тіней",
+    "description": "Частина 'Сету Вбивці', робить власника менш помітним.",
+    "item_type": "back",
+    "image_url": "/static/images/items/shadow_cloak.svg",
+    "stats": {
+      "physical_defense": 3,
+      "magic_resistance": 5
+    },
+    "shop_data": {
+      "price": 650,
+      "level": 9
+    },
+    "durability": 20,
+    "max_durability": 20
+  },
+  {
+    "name": "Амулет Сили",
+    "description": "Підвищує фізичну силу носія.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/stamina_amulet.svg",
+    "stats": {
+      "stamina": 1
+    },
+    "shop_data": {
+      "price": 200,
+      "level": 2
+    },
+    "durability": 10,
+    "max_durability": 10
+  },
+  {
+    "name": "Кільце Захисту",
+    "description": "Збільшує броню власника.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/armor_ring.svg",
+    "stats": {
+      "physical_defense": 2
+    },
+    "shop_data": {
+      "price": 200,
+      "level": 2
+    },
+    "durability": 10,
+    "max_durability": 10
+  },
+  {
+    "name": "Перстень Влучності",
+    "description": "Підвищує точність у дальньому бою.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/accuracy_ring.svg",
+    "stats": {
+      "ranged_attack": 2
+    },
+    "shop_data": {
+      "price": 300,
+      "level": 3
+    },
+    "durability": 12,
+    "max_durability": 12
+  },
+  {
+    "name": "Амулет Мудрості",
+    "description": "Збільшує магічний потенціал носія.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/wisdom_amulet.svg",
+    "stats": {
+      "magic_power": 3,
+      "magic_resistance": 1
+    },
+    "shop_data": {
+      "price": 500,
+      "level": 5
+    },
+    "durability": 15,
+    "max_durability": 15
+  },
+  {
+    "name": "Смарагдовий Оберіг",
+    "description": "Захищає від магії природи.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/emerald_amulet.svg",
+    "stats": {
+      "magic_resistance": 4,
+      "stamina": 2
+    },
+    "shop_data": {
+      "price": 700,
+      "level": 7
+    },
+    "durability": 20,
+    "max_durability": 20
+  },
+  {
+    "name": "Криваве Кільце",
+    "description": "Посилює ближній бій ціною здоров'я.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/blood_ring.svg",
+    "stats": {
+      "melee_attack": 4,
+      "stamina": -1
+    },
+    "shop_data": {
+      "price": 900,
+      "level": 9
+    },
+    "durability": 25,
+    "max_durability": 25
+  },
+  {
+    "name": "Сапфіровий Амулет",
+    "description": "Древній амулет, що підвищує стійкість до магії.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/sapphire_amulet.svg",
+    "stats": {
+      "magic_resistance": 5
+    },
+    "shop_data": {
+      "price": 750,
+      "level": 8
+    },
+    "durability": 22,
+    "max_durability": 22
+  },
+  {
+    "name": "Легендарний меч",
+    "description": "Рідкісний могутній меч",
+    "item_type": "one_handed_weapon",
+    "image_url": "/static/images/items/legendary_sword.svg",
+    "stats": {},
+    "shop_data": {
+      "price": 1000,
+      "level": 10,
+      "quantity": 5
+    }
+  }
+]

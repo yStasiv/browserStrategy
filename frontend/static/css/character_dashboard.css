@@ -186,6 +186,31 @@
 .hero-army-squads { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); gap: .45rem; }
 .hero-army-squads li { background: linear-gradient(#fbefd0, #e9d2a4); border: 1px solid #b89159; border-radius: .3rem; padding: .45rem; }
 .hero-army-squads li { display: grid; align-content: center; justify-items: center; min-height: 4rem; text-align: center; }
+.hero-army-squads .hero-army-filled { container-type: inline-size; padding: 0; align-content: stretch; justify-items: stretch; }
+.hero-army-filled .unit-info-link { display: block; position: relative; min-height: 4rem; }
+.hero-army-filled .unit-portrait {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: inherit;
+}
+.hero-army-filled .unit-portrait img { object-fit: cover; }
+.unit-slot-count {
+    position: absolute;
+    pointer-events: none;
+    right: .15em;
+    bottom: .15em;
+    padding: .08em .2em;
+    border-radius: .2em;
+    background: #24190cdd;
+    color: #fff4d7;
+    font-size: 1rem;
+    font-size: 20cqi;
+    font-weight: 700;
+    line-height: 1;
+}
 .hero-army-empty { color: #685c48; border-style: dashed !important; }
 .hero-army-squads .hero-army-empty { background: radial-gradient(circle, #f5e6c1, #ead5ac); }
 

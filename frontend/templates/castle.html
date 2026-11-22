@@ -1,6 +1,13 @@
 {% extends 'base.html' %}
+{% macro building_preview(building) %}
+    <div class="castle-building-image" aria-hidden="true">
+        {% if building.image_url %}<img src="{{ building.image_url }}" alt="" loading="lazy">{% endif %}
+    </div>
+{% endmacro %}
+{% from 'components/unit_info.html' import portrait, stats %}
 {% block title %}Замок{% endblock %}
 {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/unit_info.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', path='css/castle_army.css') }}">
 <script defer src="{{ url_for('static', path='js/castle_army.js') }}"></script>
 {% endblock %}
@@ -26,27 +33,49 @@
             <form method="dialog"><button class="castle-section" type="submit">Закрити</button></form>
         </header>
         {% if building_error %}<p role="alert">{{ building_error.detail }}</p>{% endif %}
-        <div class="castle-building-list">
-            {% for building in buildings %}
-            <article class="castle-building-card">
-                <h3>{{ building.name }}</h3>
-                {% if building.description %}<p>{{ building.description }}</p>{% endif %}
-                {% if building.id in built %}
-                <p><strong>Побудовано</strong></p>
+        <details class="castle-built-list">
+            <summary>Побудовані будівлі</summary>
+            <div class="castle-building-list">
+                {% for building in buildings if building.id in built %}
+                <article class="castle-building-card">
+                    {{ building_preview(building) }}
+                    <div>
+                        <h3>{{ building.name }}</h3>
+                        {% if building.description %}<p>{{ building.description }}</p>{% endif %}
+                    </div>
+                </article>
                 {% else %}
-                <p>Бойовий рівень {{ building.min_level }}</p>
-                {% if building.resources %}
-                <ul aria-label="Необхідні ресурси">
-                    {% for id, amount in building.resources.items() %}
-                    <li>{{ resource_names[id] }} · {{ "{:,}".format(amount) }}</li>
-                    {% endfor %}
-                </ul>
-                {% endif %}
+                <p>Поки немає побудованих будівель.</p>
+                {% endfor %}
+            </div>
+        </details>
+        <div class="castle-building-list">
+            {% for building in buildings if building.id not in built %}
+            <article class="castle-building-card">
+                {{ building_preview(building) }}
+                <div>
+                    <h3>{{ building.name }}</h3>
+                    {% if building.description %}<p>{{ building.description }}</p>{% endif %}
+                    <p>Бойовий рівень {{ building.min_level }}</p>
+                    {% if building.resources %}
+                    <ul class="castle-building-cost" aria-label="Необхідні ресурси">
+                        {% for id, amount in building.resources.items() %}
+                        {% set resource = resource_catalog[id] %}
+                        <li title="{{ resource.name }}">
+                            {% if resource.icon %}<img src="{{ resource.icon }}" alt="{{ resource.name }}">
+                            {% else %}<span aria-label="{{ resource.name }}">◆</span>{% endif %}
+                            {{ "{:,}".format(amount) }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
                 <form action="/castle/build" method="post">
-                    <button class="castle-section" type="submit" name="building_id" value="{{ building.id }}"
-                            aria-label="Побудувати {{ building.name }}"{% if player.level < building.min_level %} disabled{% endif %}>Побудувати</button>
+                    <button class="castle-section castle-build-action" type="submit" name="building_id" value="{{ building.id }}"
+                            title="Побудувати {{ building.name }}" aria-label="Побудувати {{ building.name }}"{% if player.level < building.min_level %} disabled{% endif %}>
+                        <img src="{{ build_icon }}" alt="">
+                    </button>
                 </form>
-                {% endif %}
             </article>
             {% else %}
             <p>Поки немає доступних будівель.</p>
@@ -67,7 +96,7 @@
     </dialog>
     {% endif %}
     {% endfor %}
-    <dialog id="castle-army" class="castle-dialog" aria-labelledby="castle-army-title"
+    <dialog id="castle-army" class="castle-dialog castle-army-dialog" aria-labelledby="castle-army-title"
             {% if saved or error or request.query_params.get('section') == 'army' %}data-open-on-load{% endif %}>
         <header>
             <h2 id="castle-army-title">Військо</h2>
@@ -75,23 +104,39 @@
         </header>
         {% if saved %}<p role="status">Склад армії збережено.</p>{% endif %}
         {% if error %}<p role="alert">{{ error }}</p>{% endif %}
-        <form action="/castle" method="post" id="choose-units-form" data-slot-limit="{{ slot_limit }}">
+        <form action="/castle" method="post" id="choose-units-form" data-slot-limit="{{ slot_limit }}"
+              data-retained-squads="{{ retained_squads }}">
             <div class="army-options">
                 {% for unit in units %}
-                <div class="army-option">
-                    <label for="army-{{ unit.key }}">{{ unit.name }}</label>
-                    <output for="army-{{ unit.key }}">{{ unit.quantity }}</output>
-                    <input type="range" name="{{ unit.key }}" id="army-{{ unit.key }}"
-                           min="0" max="{{ unit.limit }}" value="{{ unit.quantity }}" step="1">
-                    <span class="army-min">0</span><span class="army-max">{{ unit.limit }}</span>
+                <div class="army-option" data-army-unit="{{ unit.key }}"{% if loop.first %} data-unit-active{% endif %}>
+                    {{ portrait(unit.unit) }}
+                    <div class="army-unit-summary">
+                        <label for="army-{{ unit.key }}">{{ unit.name }}</label>
+                        <span>Шкода {{ unit.unit.dmg_min }}–{{ unit.unit.dmg_max }}</span>
+                    </div>
+                    <div class="army-option-controls">
+                        <output for="army-{{ unit.key }}">{{ unit.quantity }}</output>
+                        <span class="army-limit">{{ unit.limit }}</span>
+                        <input type="range" name="{{ unit.key }}" id="army-{{ unit.key }}"
+                               min="0" max="{{ unit.limit }}" value="{{ unit.quantity }}" step="1" aria-orientation="vertical">
+                        <span class="army-limit">0</span>
+                    </div>
                 </div>
+                {% else %}
+                <p class="army-empty">Поки немає загонів, доступних для найму.</p>
                 {% endfor %}
             </div>
             <div class="army-footer">
-                <span id="army-count" aria-live="polite">{{ units | selectattr('quantity') | list | length }} / {{ slot_limit }} загонів</span>
-                <button type="submit">Зберегти армію</button>
+                <button type="submit"{% if not units %} disabled{% endif %}>Зберегти армію</button>
             </div>
         </form>
+        {% for unit in units %}
+        <section class="army-unit-preview" data-unit-preview="{{ unit.key }}"
+                 aria-labelledby="army-preview-title-{{ unit.key }}"{% if not loop.first %} hidden{% endif %}>
+            <h3 id="army-preview-title-{{ unit.key }}">{{ unit.name }}</h3>
+            {{ stats(unit.unit) }}
+        </section>
+        {% endfor %}
     </dialog>
 </main>
 {% endblock %}

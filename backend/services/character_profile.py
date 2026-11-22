@@ -6,6 +6,8 @@ from typing import Callable
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend.config import LEGACY_BALANCES, RESOURCE_FILE
+
 from backend.engine.battle_models import ArmySlot, Battle, BattleParticipant
 from backend.engine.data import DEFAULT_ARMY, UNITS
 from backend.engine.battle_service import user_level
@@ -17,9 +19,7 @@ from backend.models import Item, PlayerResourceBalance, User
 from backend.services.guild import xp_threshold
 from backend.services import activity_guilds
 
-RESOURCE_FILE = Path(__file__).resolve().parents[2] / "content" / "character_resources.json"
 STAT_ICON_DIR = Path(__file__).resolve().parents[2] / "frontend" / "static" / "images" / "hero_stats"
-LEGACY_BALANCES = {"gold", "singing_resin", "basalt_bone"}
 
 ATTRIBUTES = {"stamina": "Витривалість", "energy": "Енергія", "agility": "Спритність", "mind": "Розум"}
 COMBAT_STATS = {
@@ -126,6 +126,7 @@ SERVICES = (
     Service("battle", "Почати бій", "/battle", 30),
     Service("battle_history", "Історія боїв", "/battle/history", 40),
     Service("quests", "Журнал завдань", "/char_tasks", 50),
+    Service("help", "Довідка по грі", "/help", 60),
 )
 
 
@@ -182,7 +183,7 @@ def hero_state(db, player):
     options = army_options(db, player)
     saved = db.scalars(select(ArmySlot).where(ArmySlot.user_id == player.id).order_by(ArmySlot.slot)).all()
     roster = [(entry.unit_key, entry.count) for entry in saved if entry.count > 0] if saved else DEFAULT_ARMY
-    squads = [{"key": key, "name": UNITS[key].name, "icon": UNITS[key].icon, "count": count}
+    squads = [{"key": key, "name": UNITS[key].name, "icon": UNITS[key].icon, "unit": UNITS[key], "count": count}
               for key, count in roster if key in UNITS]
     limit = field_rules(user_level(player), "pve").max_slots
     return {"attributes": attributes, "equipment": equipment,

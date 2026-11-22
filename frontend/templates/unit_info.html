@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% from 'components/unit_info.html' import stats %}
+{% block title %}{{ unit.name }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/unit_info.css') }}">
+{% endblock %}
+{% block body %}
+<main class="unit-info-page">
+    <h1>{{ unit.name }}</h1>
+    {{ stats(unit) }}
+</main>
+{% endblock %}

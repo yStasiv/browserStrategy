@@ -2,7 +2,8 @@
   {
     "id": "recruitment_hall",
     "name": "Зала ополчення",
-    "description": "Місце для набору селян до війська.",
+    "description": "Місце для набору селян і мечників до війська.",
+    "image_url": null,
     "factions": [],
     "min_level": 1,
     "resources": {},
@@ -12,6 +13,7 @@
     "id": "archery_range",
     "name": "Лучний двір",
     "description": "Місце для набору лучників до війська.",
+    "image_url": null,
     "factions": [],
     "min_level": 1,
     "resources": {},
@@ -21,6 +23,7 @@
     "id": "forge",
     "name": "Кузня",
     "description": "Відкриває майстерні Колегії металознавців.",
+    "image_url": null,
     "factions": [],
     "min_level": 5,
     "resources": {"gold": 5000, "basalt_bone": 10, "pulse_spark": 10}
@@ -29,8 +32,27 @@
     "id": "magic_school_1",
     "name": "Школа магії 1 рівня",
     "description": "Відкриває розділ Школи магії.",
+    "image_url": null,
     "factions": [],
     "min_level": 3,
     "resources": {"gold": 750, "singing_resin": 10, "basalt_bone": 10}
+  },
+  {
+    "id": "knight_stables",
+    "name": "Лицарські стайні",
+    "description": "Дозволяють набирати лицарів.",
+    "image_url": null,
+    "factions": ["elfe"],
+    "min_level": 4,
+    "resources": {"gold": 2000, "basalt_bone": 15}
+  },
+  {
+    "id": "ossuary",
+    "name": "Костниця",
+    "description": "Дозволяє набирати скелетів.",
+    "image_url": null,
+    "factions": ["darkElfe"],
+    "min_level": 2,
+    "resources": {"gold": 1000, "basalt_bone": 10}
   }
 ]

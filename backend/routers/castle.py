@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from .. import database
 from ..auth import session_player
 from ..engine.battle_service import get_active_battle_id, user_level
+from ..engine.data import UNITS
 from ..guild_models import ActivityGuildProgress
 from ..models import Item
 from ..services import activity_guilds, castle_buildings
@@ -29,16 +30,22 @@ def require_player(request, db):
 
 
 def render_castle(request, db, player, error=None, building_error=None):
-    entries, resource_names = castle_buildings.catalog()
+    entries, resource_catalog = castle_buildings.catalog()
     built = castle_buildings.built_ids(db, player, entries)
+    army = army_options(db, player, built)
+    build_icon = (
+        "/static/images/buildings/build.png" if castle_buildings.BUILD_ICON_FILE.is_file()
+        else "/static/images/guild_icons/workshop_weapons.png"
+    )
     return templates.TemplateResponse("castle.html", {
-        "request": request, "player": player, "units": army_options(db, player),
+        "request": request, "player": player, "units": [unit for unit in army if unit["recruitable"]],
+        "retained_squads": sum(not unit["recruitable"] and unit["quantity"] > 0 for unit in army),
         "slot_limit": field_rules(user_level(player), "pve").max_slots,
         "buildings": [
             building for building in entries.values()
             if castle_buildings.available_to_faction(building, player)
         ],
-        "built": built, "resource_names": resource_names,
+        "built": built, "resource_catalog": resource_catalog, "build_icon": build_icon,
         "forge_built": castle_buildings.FORGE in built,
         "magic_school_built": castle_buildings.MAGIC_SCHOOL in built,
         "building_error": building_error,
@@ -50,6 +57,14 @@ def render_castle(request, db, player, error=None, building_error=None):
 def castle_page(request: Request, db: Session = Depends(database.get_db)):
     player = require_player(request, db)
     return render_castle(request, db, player)
+
+
+@router.get("/unit_info", response_class=HTMLResponse)
+def unit_info(request: Request, key: str):
+    unit = UNITS.get(key)
+    if unit is None:
+        raise HTTPException(404, "Юніта не знайдено.")
+    return templates.TemplateResponse("unit_info.html", {"request": request, "unit": unit})
 
 
 @router.post("/castle/build")

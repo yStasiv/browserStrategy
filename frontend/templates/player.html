@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% block title %}Персонаж{% endblock %}
 {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/unit_info.css') }}">
+<script defer src="{{ url_for('static', path='js/unit_info.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
 {% endblock %}
 {% block body %}
