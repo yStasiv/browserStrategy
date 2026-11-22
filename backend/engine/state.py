@@ -32,6 +32,7 @@ class Stack:
     defending: bool = False
     waited: bool = False       # «чекати» можна один раз за весь бій
     retaliated: bool = False   # вже контратакував з початку свого останнього ходу
+    summoned: bool = False
 
     def cells(self) -> List[Tuple[int, int]]:
         return [(self.x + i, self.y + j) for i in range(self.w) for j in range(self.h)]
@@ -50,6 +51,7 @@ class BattleState:
     surrendered: Optional[int] = None   # сторона, що здалася
 
     hunt_key: Optional[str] = None
+    summoning: Dict[str, dict] = field(default_factory=dict)
 
     def active(self) -> Optional[Stack]:
         if self.status != "active" or self.active_id is None:
@@ -66,6 +68,11 @@ class BattleState:
         snapshot = asdict(self)
         if self.hunt_key is None:
             del snapshot["hunt_key"]
+        if not self.summoning:
+            del snapshot["summoning"]
+        for stack in snapshot["stacks"].values():
+            if not stack["summoned"]:
+                del stack["summoned"]
         return snapshot
 
     @classmethod

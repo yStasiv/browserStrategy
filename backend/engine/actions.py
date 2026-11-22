@@ -31,7 +31,12 @@ class Skip:
     pass
 
 
-Action = (Move, Attack, Wait, Defend, Skip)
+@dataclass(frozen=True)
+class Summon:
+    element: str
+
+
+Action = (Move, Attack, Wait, Defend, Skip, Summon)
 
 
 def _coordinates(value):
@@ -54,6 +59,8 @@ def action_from_dict(d: dict):
         return Defend()
     if t == "skip":
         return Skip()
+    if t == "summon" and isinstance(d.get("element"), str):
+        return Summon(d["element"])
     raise ValueError(f"unknown action type: {t!r}")
 
 
@@ -64,6 +71,8 @@ def action_to_dict(a) -> dict:
     if isinstance(a, Attack):
         return {"type": "attack", "target_id": a.target_id,
                 "from_pos": list(a.from_pos) if a.from_pos else None}
+    if isinstance(a, Summon):
+        return {"type": "summon", "element": a.element}
     for cls, name in ((Wait, "wait"), (Defend, "defend"), (Skip, "skip")):
         if isinstance(a, cls):
             return {"type": name}

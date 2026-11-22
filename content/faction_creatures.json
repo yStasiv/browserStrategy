@@ -1,0 +1,878 @@
+{
+  "elves": [
+    {
+      "key": "sylven",
+      "name": "Сільвен-вісник",
+      "tier": 1,
+      "icon": "🍃",
+      "speed": 4,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "elves_recruitment_tier_1",
+        "min_level": 1,
+        "max_count": 20
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Сільвен-вісник",
+          "image_url": null,
+          "attack": 2,
+          "defense": 2,
+          "hp": 5,
+          "initiative": 10,
+          "dmg_min": 1,
+          "dmg_max": 2,
+          "army_points_cost": 1
+        },
+        {
+          "form": 2,
+          "name": "Сільвен-стежовик",
+          "image_url": null,
+          "attack": 3,
+          "defense": 3,
+          "hp": 6,
+          "initiative": 11,
+          "dmg_min": 2,
+          "dmg_max": 3,
+          "army_points_cost": 2,
+          "building": "elves_recruitment_tier_1_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Сільвен-вітрохід",
+          "image_url": null,
+          "attack": 4,
+          "defense": 4,
+          "hp": 7,
+          "initiative": 12,
+          "dmg_min": 3,
+          "dmg_max": 4,
+          "army_points_cost": 3,
+          "building": "elves_recruitment_tier_1_form_3"
+        }
+      ]
+    },
+    {
+      "key": "bark_guard",
+      "name": "Кора-страж",
+      "tier": 2,
+      "icon": "🌳",
+      "speed": 4,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "elves_recruitment_tier_2",
+        "min_level": 1,
+        "max_count": 14
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Кора-страж",
+          "image_url": null,
+          "attack": 4,
+          "defense": 5,
+          "hp": 12,
+          "initiative": 10,
+          "dmg_min": 2,
+          "dmg_max": 4,
+          "army_points_cost": 2
+        },
+        {
+          "form": 2,
+          "name": "Ясеневий бастіон",
+          "image_url": null,
+          "attack": 5,
+          "defense": 6,
+          "hp": 14,
+          "initiative": 11,
+          "dmg_min": 3,
+          "dmg_max": 5,
+          "army_points_cost": 3,
+          "building": "elves_recruitment_tier_2_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Дубовий колос",
+          "image_url": null,
+          "attack": 6,
+          "defense": 7,
+          "hp": 16,
+          "initiative": 12,
+          "dmg_min": 4,
+          "dmg_max": 6,
+          "army_points_cost": 4,
+          "building": "elves_recruitment_tier_2_form_3"
+        }
+      ]
+    },
+    {
+      "key": "moon_archer",
+      "name": "Луностріл",
+      "tier": 3,
+      "icon": "🏹",
+      "speed": 4,
+      "shots": 10,
+      "abilities": [
+        "ranged_attack"
+      ],
+      "recruitment": {
+        "building": "recruitment_tier_3",
+        "min_level": 3,
+        "max_count": 10
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Луностріл",
+          "image_url": null,
+          "attack": 6,
+          "defense": 6,
+          "hp": 18,
+          "initiative": 11,
+          "dmg_min": 3,
+          "dmg_max": 5,
+          "army_points_cost": 3
+        },
+        {
+          "form": 2,
+          "name": "Срібний луностріл",
+          "image_url": null,
+          "attack": 7,
+          "defense": 7,
+          "hp": 21,
+          "initiative": 12,
+          "dmg_min": 4,
+          "dmg_max": 6,
+          "army_points_cost": 4,
+          "building": "recruitment_tier_3_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Зоряний луностріл",
+          "image_url": null,
+          "attack": 8,
+          "defense": 8,
+          "hp": 24,
+          "initiative": 13,
+          "dmg_min": 5,
+          "dmg_max": 7,
+          "army_points_cost": 5,
+          "building": "recruitment_tier_3_form_3"
+        }
+      ]
+    },
+    {
+      "key": "mirel",
+      "name": "Мірель-ткаля",
+      "tier": 4,
+      "icon": "🪄",
+      "speed": 5,
+      "shots": 10,
+      "abilities": [
+        "ranged_attack"
+      ],
+      "recruitment": {
+        "building": "recruitment_tier_4",
+        "min_level": 4,
+        "max_count": 8
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Мірель-ткаля",
+          "image_url": null,
+          "attack": 8,
+          "defense": 8,
+          "hp": 25,
+          "initiative": 11,
+          "dmg_min": 4,
+          "dmg_max": 7,
+          "army_points_cost": 4
+        },
+        {
+          "form": 2,
+          "name": "Мірель-чарівниця",
+          "image_url": null,
+          "attack": 9,
+          "defense": 9,
+          "hp": 30,
+          "initiative": 12,
+          "dmg_min": 5,
+          "dmg_max": 8,
+          "army_points_cost": 5,
+          "building": "recruitment_tier_4_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Мірель-віщунка",
+          "image_url": null,
+          "attack": 10,
+          "defense": 10,
+          "hp": 35,
+          "initiative": 13,
+          "dmg_min": 6,
+          "dmg_max": 9,
+          "army_points_cost": 6,
+          "building": "recruitment_tier_4_form_3"
+        }
+      ]
+    },
+    {
+      "key": "blade_dancer",
+      "name": "Клинкотан",
+      "tier": 5,
+      "icon": "⚔",
+      "speed": 5,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "recruitment_tier_5",
+        "min_level": 5,
+        "max_count": 6
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Клинкотан",
+          "image_url": null,
+          "attack": 11,
+          "defense": 10,
+          "hp": 34,
+          "initiative": 12,
+          "dmg_min": 6,
+          "dmg_max": 9,
+          "army_points_cost": 6
+        },
+        {
+          "form": 2,
+          "name": "Вихровий клинкотан",
+          "image_url": null,
+          "attack": 13,
+          "defense": 12,
+          "hp": 40,
+          "initiative": 13,
+          "dmg_min": 7,
+          "dmg_max": 10,
+          "army_points_cost": 7,
+          "building": "recruitment_tier_5_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Гранд-клинкотан",
+          "image_url": null,
+          "attack": 15,
+          "defense": 14,
+          "hp": 46,
+          "initiative": 14,
+          "dmg_min": 8,
+          "dmg_max": 11,
+          "army_points_cost": 8,
+          "building": "recruitment_tier_5_form_3"
+        }
+      ]
+    },
+    {
+      "key": "faun_rider",
+      "name": "Фавн-вершник",
+      "tier": 6,
+      "icon": "🦌",
+      "speed": 6,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "recruitment_tier_6",
+        "min_level": 6,
+        "max_count": 5
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Фавн-вершник",
+          "image_url": null,
+          "attack": 14,
+          "defense": 13,
+          "hp": 46,
+          "initiative": 12,
+          "dmg_min": 8,
+          "dmg_max": 12,
+          "army_points_cost": 8
+        },
+        {
+          "form": 2,
+          "name": "Світловий фавн-вершник",
+          "image_url": null,
+          "attack": 16,
+          "defense": 15,
+          "hp": 55,
+          "initiative": 13,
+          "dmg_min": 9,
+          "dmg_max": 14,
+          "army_points_cost": 10,
+          "building": "recruitment_tier_6_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Зоряний фавн-вершник",
+          "image_url": null,
+          "attack": 18,
+          "defense": 17,
+          "hp": 64,
+          "initiative": 14,
+          "dmg_min": 10,
+          "dmg_max": 16,
+          "army_points_cost": 12,
+          "building": "recruitment_tier_6_form_3"
+        }
+      ]
+    },
+    {
+      "key": "arborent",
+      "name": "Арборент",
+      "tier": 7,
+      "icon": "🌲",
+      "speed": 5,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "recruitment_tier_7",
+        "min_level": 7,
+        "max_count": 3
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Молодий арборент",
+          "image_url": null,
+          "attack": 22,
+          "defense": 21,
+          "hp": 85,
+          "initiative": 13,
+          "dmg_min": 14,
+          "dmg_max": 21,
+          "army_points_cost": 13
+        },
+        {
+          "form": 2,
+          "name": "Арборент",
+          "image_url": null,
+          "attack": 26,
+          "defense": 25,
+          "hp": 102,
+          "initiative": 14,
+          "dmg_min": 16,
+          "dmg_max": 24,
+          "army_points_cost": 16,
+          "building": "recruitment_tier_7_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Пра-арборент",
+          "image_url": null,
+          "attack": 30,
+          "defense": 29,
+          "hp": 119,
+          "initiative": 15,
+          "dmg_min": 18,
+          "dmg_max": 27,
+          "army_points_cost": 19,
+          "building": "recruitment_tier_7_form_3"
+        }
+      ]
+    },
+    {
+      "key": "solaris",
+      "name": "Соларіс-фенікс",
+      "tier": 8,
+      "icon": "🔥",
+      "speed": 6,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "recruitment_tier_8",
+        "min_level": 8,
+        "max_count": 2
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Іскра соларіса",
+          "image_url": null,
+          "attack": 32,
+          "defense": 30,
+          "hp": 145,
+          "initiative": 14,
+          "dmg_min": 23,
+          "dmg_max": 34,
+          "army_points_cost": 20
+        },
+        {
+          "form": 2,
+          "name": "Соларіс-фенікс",
+          "image_url": null,
+          "attack": 38,
+          "defense": 36,
+          "hp": 174,
+          "initiative": 15,
+          "dmg_min": 26,
+          "dmg_max": 39,
+          "army_points_cost": 25,
+          "building": "recruitment_tier_8_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Верховний соларіс-фенікс",
+          "image_url": null,
+          "attack": 44,
+          "defense": 42,
+          "hp": 203,
+          "initiative": 16,
+          "dmg_min": 29,
+          "dmg_max": 44,
+          "army_points_cost": 30,
+          "building": "recruitment_tier_8_form_3"
+        }
+      ]
+    }
+  ],
+  "underground_elves": [
+    {
+      "key": "shade",
+      "name": "Шейд-нищівник",
+      "tier": 1,
+      "icon": "🌑",
+      "speed": 4,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "underground_elves_recruitment_tier_1",
+        "min_level": 1,
+        "max_count": 20
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Шейд-нищівник",
+          "image_url": null,
+          "attack": 3,
+          "defense": 3,
+          "hp": 6,
+          "initiative": 10,
+          "dmg_min": 1,
+          "dmg_max": 3,
+          "army_points_cost": 1
+        },
+        {
+          "form": 2,
+          "name": "Шейд-лазутчик",
+          "image_url": null,
+          "attack": 4,
+          "defense": 4,
+          "hp": 7,
+          "initiative": 11,
+          "dmg_min": 2,
+          "dmg_max": 4,
+          "army_points_cost": 2,
+          "building": "underground_elves_recruitment_tier_1_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Шейд-примара",
+          "image_url": null,
+          "attack": 5,
+          "defense": 5,
+          "hp": 8,
+          "initiative": 12,
+          "dmg_min": 3,
+          "dmg_max": 5,
+          "army_points_cost": 3,
+          "building": "underground_elves_recruitment_tier_1_form_3"
+        }
+      ]
+    },
+    {
+      "key": "crystal_shell",
+      "name": "Кристалопанцир",
+      "tier": 2,
+      "icon": "💎",
+      "speed": 4,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "underground_elves_recruitment_tier_2",
+        "min_level": 1,
+        "max_count": 14
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Кварцовий кристалопанцир",
+          "image_url": null,
+          "attack": 5,
+          "defense": 6,
+          "hp": 13,
+          "initiative": 10,
+          "dmg_min": 2,
+          "dmg_max": 5,
+          "army_points_cost": 2
+        },
+        {
+          "form": 2,
+          "name": "Базальтовий кристалопанцир",
+          "image_url": null,
+          "attack": 6,
+          "defense": 7,
+          "hp": 15,
+          "initiative": 11,
+          "dmg_min": 3,
+          "dmg_max": 6,
+          "army_points_cost": 3,
+          "building": "underground_elves_recruitment_tier_2_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Іридієвий кристалопанцир",
+          "image_url": null,
+          "attack": 7,
+          "defense": 8,
+          "hp": 17,
+          "initiative": 12,
+          "dmg_min": 4,
+          "dmg_max": 7,
+          "army_points_cost": 4,
+          "building": "underground_elves_recruitment_tier_2_form_3"
+        }
+      ]
+    },
+    {
+      "key": "toxin_sting",
+      "name": "Токсин-жало",
+      "tier": 3,
+      "icon": "🦂",
+      "speed": 4,
+      "shots": 10,
+      "abilities": [
+        "ranged_attack"
+      ],
+      "recruitment": {
+        "building": "recruitment_tier_3",
+        "min_level": 3,
+        "max_count": 10
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Токсин-жало",
+          "image_url": null,
+          "attack": 7,
+          "defense": 7,
+          "hp": 20,
+          "initiative": 11,
+          "dmg_min": 3,
+          "dmg_max": 6,
+          "army_points_cost": 3
+        },
+        {
+          "form": 2,
+          "name": "Ядоносний токсин-жало",
+          "image_url": null,
+          "attack": 8,
+          "defense": 8,
+          "hp": 23,
+          "initiative": 12,
+          "dmg_min": 4,
+          "dmg_max": 7,
+          "army_points_cost": 4,
+          "building": "recruitment_tier_3_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Чорний токсин-жало",
+          "image_url": null,
+          "attack": 9,
+          "defense": 9,
+          "hp": 26,
+          "initiative": 13,
+          "dmg_min": 5,
+          "dmg_max": 8,
+          "army_points_cost": 5,
+          "building": "recruitment_tier_3_form_3"
+        }
+      ]
+    },
+    {
+      "key": "noctis",
+      "name": "Ноктіс-жриця",
+      "tier": 4,
+      "icon": "🌘",
+      "speed": 5,
+      "shots": 10,
+      "abilities": [
+        "ranged_attack"
+      ],
+      "recruitment": {
+        "building": "recruitment_tier_4",
+        "min_level": 4,
+        "max_count": 8
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Ноктіс-послушниця",
+          "image_url": null,
+          "attack": 9,
+          "defense": 9,
+          "hp": 28,
+          "initiative": 11,
+          "dmg_min": 4,
+          "dmg_max": 8,
+          "army_points_cost": 4
+        },
+        {
+          "form": 2,
+          "name": "Ноктіс-жриця",
+          "image_url": null,
+          "attack": 10,
+          "defense": 10,
+          "hp": 33,
+          "initiative": 12,
+          "dmg_min": 5,
+          "dmg_max": 9,
+          "army_points_cost": 5,
+          "building": "recruitment_tier_4_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Ноктіс-владичиця",
+          "image_url": null,
+          "attack": 11,
+          "defense": 11,
+          "hp": 38,
+          "initiative": 13,
+          "dmg_min": 6,
+          "dmg_max": 10,
+          "army_points_cost": 6,
+          "building": "recruitment_tier_4_form_3"
+        }
+      ]
+    },
+    {
+      "key": "shadow_cutter",
+      "name": "Тінеріз",
+      "tier": 5,
+      "icon": "🗡",
+      "speed": 5,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "recruitment_tier_5",
+        "min_level": 5,
+        "max_count": 6
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Тінеріз",
+          "image_url": null,
+          "attack": 12,
+          "defense": 11,
+          "hp": 38,
+          "initiative": 12,
+          "dmg_min": 6,
+          "dmg_max": 10,
+          "army_points_cost": 6
+        },
+        {
+          "form": 2,
+          "name": "Подвійний тінеріз",
+          "image_url": null,
+          "attack": 14,
+          "defense": 13,
+          "hp": 44,
+          "initiative": 13,
+          "dmg_min": 7,
+          "dmg_max": 11,
+          "army_points_cost": 7,
+          "building": "recruitment_tier_5_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Безликий тінеріз",
+          "image_url": null,
+          "attack": 16,
+          "defense": 15,
+          "hp": 50,
+          "initiative": 14,
+          "dmg_min": 8,
+          "dmg_max": 12,
+          "army_points_cost": 8,
+          "building": "recruitment_tier_5_form_3"
+        }
+      ]
+    },
+    {
+      "key": "basilisk_rider",
+      "name": "Василіск-наїзник",
+      "tier": 6,
+      "icon": "🦎",
+      "speed": 6,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "recruitment_tier_6",
+        "min_level": 6,
+        "max_count": 5
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Вершник василіска",
+          "image_url": null,
+          "attack": 15,
+          "defense": 14,
+          "hp": 51,
+          "initiative": 12,
+          "dmg_min": 8,
+          "dmg_max": 13,
+          "army_points_cost": 8
+        },
+        {
+          "form": 2,
+          "name": "Василіск-наїзник",
+          "image_url": null,
+          "attack": 17,
+          "defense": 16,
+          "hp": 60,
+          "initiative": 13,
+          "dmg_min": 9,
+          "dmg_max": 15,
+          "army_points_cost": 10,
+          "building": "recruitment_tier_6_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Глибинний василіск-наїзник",
+          "image_url": null,
+          "attack": 19,
+          "defense": 18,
+          "hp": 69,
+          "initiative": 14,
+          "dmg_min": 10,
+          "dmg_max": 17,
+          "army_points_cost": 12,
+          "building": "recruitment_tier_6_form_3"
+        }
+      ]
+    },
+    {
+      "key": "abyss_hydra",
+      "name": "Абіс-гідра",
+      "tier": 7,
+      "icon": "🐍",
+      "speed": 5,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "recruitment_tier_7",
+        "min_level": 7,
+        "max_count": 3
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Болотна абіс-гідра",
+          "image_url": null,
+          "attack": 23,
+          "defense": 22,
+          "hp": 95,
+          "initiative": 13,
+          "dmg_min": 14,
+          "dmg_max": 22,
+          "army_points_cost": 13
+        },
+        {
+          "form": 2,
+          "name": "Абіс-гідра",
+          "image_url": null,
+          "attack": 27,
+          "defense": 26,
+          "hp": 112,
+          "initiative": 14,
+          "dmg_min": 16,
+          "dmg_max": 25,
+          "army_points_cost": 16,
+          "building": "recruitment_tier_7_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Безодня абіс-гідра",
+          "image_url": null,
+          "attack": 31,
+          "defense": 30,
+          "hp": 129,
+          "initiative": 15,
+          "dmg_min": 18,
+          "dmg_max": 28,
+          "army_points_cost": 19,
+          "building": "recruitment_tier_7_form_3"
+        }
+      ]
+    },
+    {
+      "key": "obscuro",
+      "name": "Обскуро-дракон",
+      "tier": 8,
+      "icon": "🐉",
+      "speed": 6,
+      "shots": 0,
+      "abilities": [],
+      "recruitment": {
+        "building": "recruitment_tier_8",
+        "min_level": 8,
+        "max_count": 2
+      },
+      "forms": [
+        {
+          "form": 1,
+          "name": "Молодий обскуро-дракон",
+          "image_url": null,
+          "attack": 33,
+          "defense": 31,
+          "hp": 163,
+          "initiative": 14,
+          "dmg_min": 23,
+          "dmg_max": 35,
+          "army_points_cost": 20
+        },
+        {
+          "form": 2,
+          "name": "Обскуро-дракон",
+          "image_url": null,
+          "attack": 39,
+          "defense": 37,
+          "hp": 192,
+          "initiative": 15,
+          "dmg_min": 26,
+          "dmg_max": 40,
+          "army_points_cost": 25,
+          "building": "recruitment_tier_8_form_2"
+        },
+        {
+          "form": 3,
+          "name": "Владика обскуро-драконів",
+          "image_url": null,
+          "attack": 45,
+          "defense": 43,
+          "hp": 221,
+          "initiative": 16,
+          "dmg_min": 29,
+          "dmg_max": 45,
+          "army_points_cost": 30,
+          "building": "recruitment_tier_8_form_3"
+        }
+      ]
+    }
+  ]
+}

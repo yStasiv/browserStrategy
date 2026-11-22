@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapte
 from sqlalchemy import select
 
 from backend.config import LEGACY_BALANCES, RESOURCE_FILE
+from backend.engine.data import faction_key
 from backend.models import CastleBuilding, PlayerResourceBalance
 
 
@@ -28,6 +29,8 @@ class Building(BaseModel):
     min_level: int = Field(strict=True, ge=1)
     resources: dict[str, Cost] = Field(default_factory=dict)
     built_by_default: bool = False
+    built_on_registration: bool = False
+    requires: list[str] = Field(default_factory=list)
 
 
 def catalog():
@@ -41,6 +44,8 @@ def catalog():
         unknown = building.resources.keys() - resource_catalog.keys()
         if unknown:
             raise ValueError(f"Невідомі ресурси для {building.id}: {', '.join(sorted(unknown))}")
+        if set(building.requires) - entries.keys():
+            raise ValueError(f"Невідомі вимоги до будівлі {building.id}.")
     return entries, resource_catalog
 
 
@@ -53,9 +58,20 @@ def built_ids(db, player, entries):
 
 
 def available_to_faction(building, player):
-    return not building.factions or (player.fraction or "").casefold() in {
-        faction.casefold() for faction in building.factions
-    }
+    return not building.factions or faction_key(player.fraction) in {faction_key(value) for value in building.factions}
+
+
+def grant_starter_buildings(db, player):
+    entries, _ = catalog()
+    db.add_all([
+        CastleBuilding(player_id=player.id, building_id=building.id)
+        for building in entries.values()
+        if building.built_on_registration and available_to_faction(building, player)
+    ])
+
+
+def school_level(built):
+    return max((level for level in range(1, 8) if f"magic_school_{level}" in built), default=0)
 
 
 def build(db, player, building_id):
@@ -64,10 +80,14 @@ def build(db, player, building_id):
     building = entries.get(building_id)
     if building is None or not available_to_faction(building, player):
         raise HTTPException(404, "Ця будівля недоступна для твоєї фракції.")
-    if building_id in built_ids(db, player, entries):
+    built = built_ids(db, player, entries)
+    if building_id in built:
         raise HTTPException(409, "Цю будівлю вже побудовано.")
     if player.level < building.min_level:
         raise HTTPException(403, f"Потрібен бойовий рівень {building.min_level}.")
+    missing = [entries[key].name for key in building.requires if key not in built]
+    if missing:
+        raise HTTPException(403, f"Спочатку побудуй: {', '.join(missing)}.")
 
     balances = {}
     for resource, cost in building.resources.items():

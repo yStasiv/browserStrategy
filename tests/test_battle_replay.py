@@ -11,7 +11,7 @@ from backend import database, db_base
 from backend.engine import battle_api, battle_service, create_battle
 from backend.engine.actions import Defend, action_to_dict
 from backend.engine.ai import choose_action
-from backend.engine.battle_models import Battle
+from backend.engine.battle_models import ArmySlot, Battle
 from backend.engine.events import reconstruct
 from backend.engine.flow import play_turn
 from backend.engine.setup import FieldRules
@@ -28,6 +28,11 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
         db.add_all([
             User(id=10, username="fighter", level=4, gold=100, experience=0, session_id="fighter-token"),
             User(id=11, username="outsider", session_id="outsider-token"),
+        ])
+        db.flush()
+        db.add_all([
+            ArmySlot(user_id=10, slot=slot, unit_key=key, count=count)
+            for slot, (key, count) in enumerate((("peasant", 20), ("archer", 10), ("swordsman", 5)))
         ])
     monkeypatch.setattr(battle_service.secrets, "randbits", lambda _: 42)
 
@@ -142,6 +147,8 @@ def test_legacy_active_battle_replays_from_checkpoint(tmp_path, monkeypatch):
     sessions = sessionmaker(engine, autoflush=False)
     with sessions.begin() as db:
         db.add(User(id=10, username="legacy", level=4, gold=0, experience=0))
+        db.flush()
+        db.add(ArmySlot(user_id=10, slot=0, unit_key="archer", count=10))
     with sessions() as db:
         player = db.get(User, 10)
         battle = battle_service.start_pve(db, player, "training")

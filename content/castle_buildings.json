@@ -1,23 +1,187 @@
 [
   {
-    "id": "recruitment_hall",
-    "name": "Зала ополчення",
-    "description": "Місце для набору селян і мечників до війська.",
+    "id": "elves_recruitment_tier_1",
+    "name": "Гай вісників",
+    "description": "Відкриває найм істоти «Сільвен-вісник».",
     "image_url": null,
-    "factions": [],
+    "factions": [
+      "elves"
+    ],
     "min_level": 1,
     "resources": {},
-    "built_by_default": true
+    "built_on_registration": true
   },
   {
-    "id": "archery_range",
-    "name": "Лучний двір",
-    "description": "Місце для набору лучників до війська.",
+    "id": "elves_recruitment_tier_1_form_2",
+    "name": "Гай вісників · форма 2",
+    "description": "Відкриває найм істоти «Сільвен-стежовик».",
     "image_url": null,
-    "factions": [],
+    "factions": [
+      "elves"
+    ],
+    "min_level": 1,
+    "resources": {
+      "gold": 700,
+      "basalt_bone": 4
+    },
+    "requires": [
+      "elves_recruitment_tier_1"
+    ]
+  },
+  {
+    "id": "elves_recruitment_tier_1_form_3",
+    "name": "Гай вісників · форма 3",
+    "description": "Відкриває найм істоти «Сільвен-вітрохід».",
+    "image_url": null,
+    "factions": [
+      "elves"
+    ],
+    "min_level": 1,
+    "resources": {
+      "gold": 1050,
+      "basalt_bone": 6
+    },
+    "requires": [
+      "elves_recruitment_tier_1_form_2"
+    ]
+  },
+  {
+    "id": "elves_recruitment_tier_2",
+    "name": "Діброва стражів",
+    "description": "Відкриває найм істоти «Кора-страж».",
+    "image_url": null,
+    "factions": [
+      "elves"
+    ],
     "min_level": 1,
     "resources": {},
-    "built_by_default": true
+    "built_on_registration": true
+  },
+  {
+    "id": "elves_recruitment_tier_2_form_2",
+    "name": "Діброва стражів · форма 2",
+    "description": "Відкриває найм істоти «Ясеневий бастіон».",
+    "image_url": null,
+    "factions": [
+      "elves"
+    ],
+    "min_level": 2,
+    "resources": {
+      "gold": 1400,
+      "basalt_bone": 8
+    },
+    "requires": [
+      "elves_recruitment_tier_2"
+    ]
+  },
+  {
+    "id": "elves_recruitment_tier_2_form_3",
+    "name": "Діброва стражів · форма 3",
+    "description": "Відкриває найм істоти «Дубовий колос».",
+    "image_url": null,
+    "factions": [
+      "elves"
+    ],
+    "min_level": 2,
+    "resources": {
+      "gold": 2100,
+      "basalt_bone": 12
+    },
+    "requires": [
+      "elves_recruitment_tier_2_form_2"
+    ]
+  },
+  {
+    "id": "underground_elves_recruitment_tier_1",
+    "name": "Притулок шейдів",
+    "description": "Відкриває найм істоти «Шейд-нищівник».",
+    "image_url": null,
+    "factions": [
+      "undergroundElves"
+    ],
+    "min_level": 1,
+    "resources": {},
+    "built_on_registration": true
+  },
+  {
+    "id": "underground_elves_recruitment_tier_1_form_2",
+    "name": "Притулок шейдів · форма 2",
+    "description": "Відкриває найм істоти «Шейд-лазутчик».",
+    "image_url": null,
+    "factions": [
+      "undergroundElves"
+    ],
+    "min_level": 1,
+    "resources": {
+      "gold": 700,
+      "basalt_bone": 4
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_1"
+    ]
+  },
+  {
+    "id": "underground_elves_recruitment_tier_1_form_3",
+    "name": "Притулок шейдів · форма 3",
+    "description": "Відкриває найм істоти «Шейд-примара».",
+    "image_url": null,
+    "factions": [
+      "undergroundElves"
+    ],
+    "min_level": 1,
+    "resources": {
+      "gold": 1050,
+      "basalt_bone": 6
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_1_form_2"
+    ]
+  },
+  {
+    "id": "underground_elves_recruitment_tier_2",
+    "name": "Кристальна печера",
+    "description": "Відкриває найм істоти «Кристалопанцир».",
+    "image_url": null,
+    "factions": [
+      "undergroundElves"
+    ],
+    "min_level": 1,
+    "resources": {},
+    "built_on_registration": true
+  },
+  {
+    "id": "underground_elves_recruitment_tier_2_form_2",
+    "name": "Кристальна печера · форма 2",
+    "description": "Відкриває найм істоти «Базальтовий кристалопанцир».",
+    "image_url": null,
+    "factions": [
+      "undergroundElves"
+    ],
+    "min_level": 2,
+    "resources": {
+      "gold": 1400,
+      "basalt_bone": 8
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_2"
+    ]
+  },
+  {
+    "id": "underground_elves_recruitment_tier_2_form_3",
+    "name": "Кристальна печера · форма 3",
+    "description": "Відкриває найм істоти «Іридієвий кристалопанцир».",
+    "image_url": null,
+    "factions": [
+      "undergroundElves"
+    ],
+    "min_level": 2,
+    "resources": {
+      "gold": 2100,
+      "basalt_bone": 12
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_2_form_2"
+    ]
   },
   {
     "id": "forge",
@@ -26,7 +190,11 @@
     "image_url": null,
     "factions": [],
     "min_level": 5,
-    "resources": {"gold": 5000, "basalt_bone": 10, "pulse_spark": 10}
+    "resources": {
+      "gold": 5000,
+      "basalt_bone": 10,
+      "pulse_spark": 10
+    }
   },
   {
     "id": "magic_school_1",
@@ -35,24 +203,408 @@
     "image_url": null,
     "factions": [],
     "min_level": 3,
-    "resources": {"gold": 750, "singing_resin": 10, "basalt_bone": 10}
-  },
-  {
-    "id": "knight_stables",
-    "name": "Лицарські стайні",
-    "description": "Дозволяють набирати лицарів.",
-    "image_url": null,
-    "factions": ["elfe"],
-    "min_level": 4,
-    "resources": {"gold": 2000, "basalt_bone": 15}
+    "resources": {
+      "gold": 750,
+      "singing_resin": 10,
+      "basalt_bone": 10
+    }
   },
   {
     "id": "ossuary",
     "name": "Костниця",
     "description": "Дозволяє набирати скелетів.",
     "image_url": null,
-    "factions": ["darkElfe"],
+    "factions": [
+      "undergroundElves"
+    ],
     "min_level": 2,
-    "resources": {"gold": 1000, "basalt_bone": 10}
+    "resources": {
+      "gold": 1000,
+      "basalt_bone": 10
+    }
+  },
+  {
+    "id": "magic_school_2",
+    "name": "Школа магії 2 рівня",
+    "description": "Покращення Школи магії ельфів.",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 2,
+    "resources": {
+      "gold": 1500,
+      "singing_resin": 20
+    },
+    "requires": [
+      "magic_school_1"
+    ]
+  },
+  {
+    "id": "magic_school_3",
+    "name": "Школа магії 3 рівня",
+    "description": "Покращення Школи магії ельфів.",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 3,
+    "resources": {
+      "gold": 2250,
+      "singing_resin": 30
+    },
+    "requires": [
+      "magic_school_2"
+    ]
+  },
+  {
+    "id": "magic_school_4",
+    "name": "Школа магії 4 рівня",
+    "description": "Покращення Школи магії ельфів.",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 4,
+    "resources": {
+      "gold": 3000,
+      "singing_resin": 40
+    },
+    "requires": [
+      "magic_school_3"
+    ]
+  },
+  {
+    "id": "magic_school_5",
+    "name": "Школа магії 5 рівня",
+    "description": "Покращення Школи магії ельфів.",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 5,
+    "resources": {
+      "gold": 3750,
+      "singing_resin": 50
+    },
+    "requires": [
+      "magic_school_4"
+    ]
+  },
+  {
+    "id": "magic_school_6",
+    "name": "Школа магії 6 рівня",
+    "description": "Покращення Школи магії ельфів.",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 6,
+    "resources": {
+      "gold": 4500,
+      "singing_resin": 60
+    },
+    "requires": [
+      "magic_school_5"
+    ]
+  },
+  {
+    "id": "magic_school_7",
+    "name": "Школа магії 7 рівня",
+    "description": "Покращення Школи магії ельфів.",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 7,
+    "resources": {
+      "gold": 5250,
+      "singing_resin": 70
+    },
+    "requires": [
+      "magic_school_6"
+    ]
+  },
+  {
+    "id": "recruitment_tier_3",
+    "name": "Зала третього рангу",
+    "description": "Дозволяє наймати істот 3-го рангу своєї фракції.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 3,
+    "resources": {
+      "gold": 1050,
+      "basalt_bone": 6
+    }
+  },
+  {
+    "id": "recruitment_tier_3_form_2",
+    "name": "Зала третього рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 3,
+    "resources": {
+      "gold": 2100,
+      "basalt_bone": 12
+    },
+    "requires": [
+      "recruitment_tier_3"
+    ]
+  },
+  {
+    "id": "recruitment_tier_3_form_3",
+    "name": "Зала третього рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 3,
+    "resources": {
+      "gold": 3150,
+      "basalt_bone": 18
+    },
+    "requires": [
+      "recruitment_tier_3_form_2"
+    ]
+  },
+  {
+    "id": "recruitment_tier_4",
+    "name": "Зала четвертого рангу",
+    "description": "Дозволяє наймати істот 4-го рангу своєї фракції.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 4,
+    "resources": {
+      "gold": 1400,
+      "basalt_bone": 8
+    }
+  },
+  {
+    "id": "recruitment_tier_4_form_2",
+    "name": "Зала четвертого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 4,
+    "resources": {
+      "gold": 2800,
+      "basalt_bone": 16
+    },
+    "requires": [
+      "recruitment_tier_4"
+    ]
+  },
+  {
+    "id": "recruitment_tier_4_form_3",
+    "name": "Зала четвертого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 4,
+    "resources": {
+      "gold": 4200,
+      "basalt_bone": 24
+    },
+    "requires": [
+      "recruitment_tier_4_form_2"
+    ]
+  },
+  {
+    "id": "recruitment_tier_5",
+    "name": "Зала п’ятого рангу",
+    "description": "Дозволяє наймати істот 5-го рангу своєї фракції.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 5,
+    "resources": {
+      "gold": 1750,
+      "basalt_bone": 10
+    }
+  },
+  {
+    "id": "recruitment_tier_5_form_2",
+    "name": "Зала п’ятого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 5,
+    "resources": {
+      "gold": 3500,
+      "basalt_bone": 20
+    },
+    "requires": [
+      "recruitment_tier_5"
+    ]
+  },
+  {
+    "id": "recruitment_tier_5_form_3",
+    "name": "Зала п’ятого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 5,
+    "resources": {
+      "gold": 5250,
+      "basalt_bone": 30
+    },
+    "requires": [
+      "recruitment_tier_5_form_2"
+    ]
+  },
+  {
+    "id": "recruitment_tier_6",
+    "name": "Зала шостого рангу",
+    "description": "Дозволяє наймати істот 6-го рангу своєї фракції.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 6,
+    "resources": {
+      "gold": 2100,
+      "basalt_bone": 12
+    }
+  },
+  {
+    "id": "recruitment_tier_6_form_2",
+    "name": "Зала шостого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 6,
+    "resources": {
+      "gold": 4200,
+      "basalt_bone": 24
+    },
+    "requires": [
+      "recruitment_tier_6"
+    ]
+  },
+  {
+    "id": "recruitment_tier_6_form_3",
+    "name": "Зала шостого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 6,
+    "resources": {
+      "gold": 6300,
+      "basalt_bone": 36
+    },
+    "requires": [
+      "recruitment_tier_6_form_2"
+    ]
+  },
+  {
+    "id": "recruitment_tier_7",
+    "name": "Зала сьомого рангу",
+    "description": "Дозволяє наймати істот 7-го рангу своєї фракції.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 7,
+    "resources": {
+      "gold": 2450,
+      "basalt_bone": 14
+    }
+  },
+  {
+    "id": "recruitment_tier_7_form_2",
+    "name": "Зала сьомого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 7,
+    "resources": {
+      "gold": 4900,
+      "basalt_bone": 28
+    },
+    "requires": [
+      "recruitment_tier_7"
+    ]
+  },
+  {
+    "id": "recruitment_tier_7_form_3",
+    "name": "Зала сьомого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 7,
+    "resources": {
+      "gold": 7350,
+      "basalt_bone": 42
+    },
+    "requires": [
+      "recruitment_tier_7_form_2"
+    ]
+  },
+  {
+    "id": "recruitment_tier_8",
+    "name": "Зала восьмого рангу",
+    "description": "Дозволяє наймати істот 8-го рангу своєї фракції.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 8,
+    "resources": {
+      "gold": 2800,
+      "basalt_bone": 16
+    }
+  },
+  {
+    "id": "recruitment_tier_8_form_2",
+    "name": "Зала восьмого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 8,
+    "resources": {
+      "gold": 5600,
+      "basalt_bone": 32
+    },
+    "requires": [
+      "recruitment_tier_8"
+    ]
+  },
+  {
+    "id": "recruitment_tier_8_form_3",
+    "name": "Зала восьмого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "factions": [
+      "elves",
+      "underground_elves"
+    ],
+    "min_level": 8,
+    "resources": {
+      "gold": 8400,
+      "basalt_bone": 48
+    },
+    "requires": [
+      "recruitment_tier_8_form_2"
+    ]
   }
 ]

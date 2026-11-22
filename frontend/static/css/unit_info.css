@@ -1,4 +1,5 @@
 .unit-portrait {
+    position: relative;
     display: grid;
     place-items: center;
     width: 3rem;
@@ -9,6 +10,17 @@
     border-radius: .3rem;
     background: #f3e9d2;
     font-size: 1.5rem;
+}
+.unit-portrait-form {
+    position: absolute;
+    top: .16rem;
+    left: .16rem;
+    padding: 0 .18rem;
+    border-radius: .2rem;
+    background: #526747;
+    color: #fff4d7;
+    font-size: .65rem;
+    line-height: 1.25;
 }
 .unit-portrait img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .unit-info-link { display: inline-block; text-decoration: none; }

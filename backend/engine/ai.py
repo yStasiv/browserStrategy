@@ -13,7 +13,7 @@ def choose_action(state: BattleState):
     enemies = [s for s in state.stacks.values() if s.owner != actor.owner]
 
     if is_ranged(state, actor):
-        return Attack(max(enemies, key=lambda e: expected_damage(actor, e)).id)
+        return Attack(max(enemies, key=lambda e: expected_damage(actor, e, ranged=True)).id)
 
     dist = reachable(state, actor)
     best = None

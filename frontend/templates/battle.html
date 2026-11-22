@@ -84,6 +84,7 @@
                 background: #1e293b; border: 2px solid #3b82f6; border-radius: 0.4rem; }
         .chip.enemy { border-color: #ef4444; }
         .chip.first { box-shadow: 0 0 0 2px #facc15; }
+        .chip.hl { border-color: #fff; background: #475569; }
         .chip .badge { font-size: 0.6rem; min-width: 1rem; }
 
         #log { height: 14rem; overflow-y: auto; font-size: 0.8rem; line-height: 1.3; }
@@ -159,6 +160,14 @@
                     <button id="btn-defend" class="btn alt flex-1" title="Захист (D)">Захист</button>
                     <button id="btn-surrender" class="btn danger flex-1" title="Здатися">Здатись</button>
                 </div>
+                <section id="summon-actions" class="hidden bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Виклик елементалів">
+                    <p id="summon-energy"></p>
+                    <p id="summon-status" aria-live="polite"></p>
+                    <div id="summon-controls" class="space-y-2">
+                        <label class="block">Елементаль <select id="summon-element" class="bg-slate-800"></select></label>
+                        <button id="btn-summon" type="button" class="btn">Викликати</button>
+                    </div>
+                </section>
                 <div id="log" class="bg-slate-800 rounded-lg p-2"></div>
             </aside>
         </div>
@@ -210,6 +219,7 @@
     let busy = false;
     let auto = false;
     let deploymentStack = null;
+    let hoveredStackId = null;
     let replay = null;
     let playing = false;
     let playbackGeneration = 0;
@@ -251,6 +261,10 @@
     // ---------- Допоміжне ----------
     const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
     const uv = (unit) => UNIT_VIEW[unit] || { emoji: '❓', name: unit };
+    const unitTitle = (key) => {
+        const unit = uv(key);
+        return unit.form ? `${unit.name} · ранг ${unit.tier}, форма ${unit.form}/3` : unit.name;
+    };
 
     function toast(text, ms = 2800) {
         el.toast.textContent = text;
@@ -365,9 +379,13 @@
             if (!d) {
                 d = document.createElement('div');
                 d.innerHTML = '<div class="icon"></div><span class="flag"></span><span class="badge"></span>';
-                d.addEventListener('click', () => onStackClick(s.id));
-                d.addEventListener('mouseenter', () => onStackHover(s.id));
-                d.addEventListener('mouseleave', clearHover);
+                d.addEventListener('click', (event) => onStackClick(s.id, event));
+                d.addEventListener('mousemove', (event) => onStackHover(s.id, event));
+                d.addEventListener('mouseenter', (event) => onStackHover(s.id, event));
+                d.addEventListener('mouseleave', () => {
+                    highlightInitiative(null);
+                    clearHover();
+                });
                 el.stacks.appendChild(d);
                 stackEls[s.id] = d;
             }
@@ -381,18 +399,27 @@
             d.style.height = 'calc(var(--cell) * ' + s.h + ')';
             d.children[0].style.fontSize = 'calc(var(--cell) * ' + (0.5 * Math.min(s.w, s.h)) + ')';
             d.children[0].textContent = u.emoji;
-            d.children[1].textContent = s.defending ? '🛡' : '';
+            d.children[1].textContent = s.defending ? '🛡' : s.summoned ? '✦' : '';
             d.children[2].textContent = s.count;
-            d.title = u.name + ': ' + s.count + ' шт., HP верхнього: ' + s.top_hp +
+            d.title = unitTitle(s.unit) + ': ' + s.count + ' шт., HP верхнього: ' + s.top_hp +
                       (s.shots_left > 0 ? ', пострілів: ' + s.shots_left : '');
         }
         for (const id of Object.keys(stackEls)) {
             if (!stacks[id]) {
+                if (hoveredStackId === id) highlightInitiative(null);
                 const d = stackEls[id];
                 d.classList.add('dead');
                 setTimeout(() => d.remove(), 450);
                 delete stackEls[id];
             }
+        }
+    }
+
+    function highlightInitiative(id) {
+        if (hoveredStackId === id) return;
+        hoveredStackId = id;
+        for (const chip of el.initiative.children) {
+            chip.classList.toggle('hl', chip.dataset.stackId === id);
         }
     }
 
@@ -409,6 +436,8 @@
             if (!s) continue;
             const c = document.createElement('div');
             c.className = 'chip' + (isAlly(f.id) ? '' : ' enemy') + (first ? ' first' : '');
+            c.dataset.stackId = f.id;
+            c.classList.toggle('hl', f.id === hoveredStackId);
             first = false;
             c.textContent = uv(s.unit).emoji;
             const b = document.createElement('span');
@@ -439,6 +468,28 @@
         });
     }
 
+    function renderSummoning(canCast) {
+        const st = view.state;
+        const magic = st.summoning?.[view.my_side];
+        const visible = Boolean(magic && !view.deployment);
+        $('summon-actions').classList.toggle('hidden', !visible);
+        if (!visible) return;
+        $('summon-energy').textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
+        const summon = Object.values(st.stacks).find(stack => stack.owner === view.my_side && stack.summoned);
+        $('summon-status').textContent = summon
+            ? `${uv(summon.unit).name} ×${summon.count} · HP верхнього ${summon.top_hp}/${uv(summon.unit).hp}`
+            : 'Активного елементаля немає';
+        $('summon-controls').classList.toggle('hidden', Boolean(replay) || view.status !== 'active');
+        const select = $('summon-element');
+        const selected = select.value;
+        select.replaceChildren(...magic.elements.map(key => new Option(uv('elemental_' + key).name, key)));
+        if (magic.elements.includes(selected)) select.value = selected;
+        select.disabled = !canCast;
+        const button = $('btn-summon');
+        button.textContent = `Викликати · ${magic.cost} енергії`;
+        button.disabled = !canCast || magic.energy < magic.cost || !magic.elements.length;
+    }
+
     function renderPanel() {
         const st = view.state;
         const a = activeStack();
@@ -446,13 +497,15 @@
         const deploying = Boolean(view.deployment);
         $('battle-actions').classList.toggle('hidden', Boolean(replay) || deploying);
         $('deployment-actions').classList.toggle('hidden', !deploying);
+        const can = myTurn && !busy && !auto;
+        renderSummoning(can);
 
         if (deploying) {
             const owned = Object.values(st.stacks).filter(stack => stack.owner === view.my_side);
             if (!owned.some(stack => stack.id === deploymentStack)) deploymentStack = owned[0]?.id;
             const select = $('deployment-stack');
             select.replaceChildren(...owned.map(stack =>
-                new Option(uv(stack.unit).name + ' ×' + stack.count, stack.id)));
+                new Option(unitTitle(stack.unit) + ' ×' + stack.count, stack.id)));
             select.value = deploymentStack;
             select.disabled = busy;
             const split = $('deployment-split');
@@ -472,14 +525,13 @@
         } else if (a) {
             const u = uv(a.unit);
             el.turnText.textContent = replay ? 'Хід · ' + u.name : (myTurn ? 'Ваш хід' : 'Хід суперника…');
-            el.activeInfo.textContent = u.emoji + ' ' + u.name + ' ×' + a.count + ' (HP верхнього: ' + a.top_hp + ')' +
+            el.activeInfo.textContent = u.emoji + ' ' + unitTitle(a.unit) + ' ×' + a.count + ' (HP верхнього: ' + a.top_hp + ')' +
                 (a.shots_left > 0
                     ? (view.turn && !view.turn.ranged
                         ? ', ворог поруч — ближній бій (постріли: ' + a.shots_left + ')'
                         : ', постріли: ' + a.shots_left)
                     : '');
         }
-        const can = myTurn && !busy && !auto;
         $('btn-auto').disabled = view.status !== 'active';
         $('btn-auto').setAttribute('aria-pressed', String(auto));
         $('btn-auto').textContent = auto ? 'Авто увімкнено' : 'Авто';
@@ -504,24 +556,58 @@
         }
     }
 
-    function pickFrom(t, a) {
-        // null = б'ємо з місця; інакше — найближча з дозволених позицій (ближній бій)
-        if (t.from.some((p) => p[0] === a.x && p[1] === a.y)) return null;
-        const here = [a.x, a.y];
-        return t.from.slice().sort((p, q) => cheb(p, here) - cheb(q, here))[0];
+    function attackAim(target, event) {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const offsetX = (event.clientX - bounds.left) / bounds.width;
+        const offsetY = (event.clientY - bounds.top) / bounds.height;
+        const x = target.x + offsetX * target.w;
+        const y = target.y + offsetY * target.h;
+        const dx = offsetX - 0.5;
+        const dy = offsetY - 0.5;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 0.08) return null;
+
+        const directions = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+        const sector = (Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8;
+        const [sideX, sideY] = directions[sector];
+        return [
+            sideX === 0 ? x : target.x + (sideX > 0 ? target.w + 0.5 : -0.5),
+            sideY === 0 ? y : target.y + (sideY > 0 ? target.h + 0.5 : -0.5),
+        ];
     }
 
-    function onStackHover(id) {
+    function attackOrigin(positions, actor, aim) {
+        const current = [actor.x, actor.y];
+        function distance([x, y]) {
+            if (!aim) return 0;
+            const dx = Math.max(x + 0.5 - aim[0], 0, aim[0] - (x + actor.w - 0.5));
+            const dy = Math.max(y + 0.5 - aim[1], 0, aim[1] - (y + actor.h - 0.5));
+            return dx * dx + dy * dy;
+        }
+        return positions.reduce((best, position) => {
+            if (!best) return position;
+            const difference = distance(position) - distance(best);
+            return difference < 0 || (difference === 0 && cheb(position, current) < cheb(best, current))
+                ? position : best;
+        }, null);
+    }
+
+    function pickFrom(target, options, event) {
+        if (view.turn.ranged) return null;
+        return attackOrigin(options.from, activeStack(), attackAim(target, event));
+    }
+
+    function onStackHover(id, event) {
         clearHover();
         if (!view) return;
         const s = view.state.stacks[id];
+        highlightInitiative(s ? id : null);
         if (!s || isAlly(id)) return;
         footprint(s.x, s.y, s.w, s.h).forEach((c) => c.classList.add('hit'));
         if (!view.turn) return;
         const t = view.turn.targets.find((q) => q.id === id);
         if (!t) return;
         const a = activeStack();
-        const pos = pickFrom(t, a);
+        const pos = pickFrom(s, t, event);
         if (pos) footprint(pos[0], pos[1], a.w, a.h).forEach((c) => c.classList.add('from'));  // звідси загін вдарить
     }
 
@@ -582,6 +668,9 @@
                     break;
                 case 'skip':
                     logLine(stackName(e.stack) + ' пропускає хід', cls);
+                    break;
+                case 'summon':
+                    logLine(`Викликано ${uv(e.unit).name} ×${e.count}${e.replaced ? ' · попередній загін замінено' : ''}`, cls);
                     break;
                 case 'surrender':
                     logLine(e.side === view.my_side ? 'Ви здалися' : 'Суперник здався', 'sys');
@@ -701,15 +790,16 @@
         if (view.turn.move.some((p) => p[0] === ax && p[1] === ay)) send({ type: 'move', x: ax, y: ay });
     }
 
-    function onStackClick(id) {
+    function onStackClick(id, event) {
         if (view?.deployment) { selectDeploymentStack(id); return; }
         if (!view || !view.turn) return;
         const t = view.turn.targets.find((q) => q.id === id);
         if (!t) return;
-        send({ type: 'attack', target_id: id, from_pos: pickFrom(t, activeStack()) });
+        send({ type: 'attack', target_id: id, from_pos: pickFrom(view.state.stacks[id], t, event) });
     }
 
     el.btnWait.addEventListener('click', () => send({ type: 'wait' }));
+    $('btn-summon').addEventListener('click', () => send({type: 'summon', element: $('summon-element').value}));
     el.btnDefend.addEventListener('click', () => send({ type: 'defend' }));
     el.btnSurrender.addEventListener('click', () => el.confirm.classList.remove('hidden'));
     $('confirm-yes').addEventListener('click', doSurrender);
@@ -779,6 +869,7 @@
         view = null;
         auto = false;
         deploymentStack = null;
+        hoveredStackId = null;
     }
 
     function showMenu() {
@@ -892,6 +983,7 @@
             move: 'рухається', attack: `завдає ${entry.damage} шкоди`,
             retaliation: `контратакує, ${entry.damage} шкоди`, defend: 'у захисті',
             wait: 'чекає', skip: 'пропускає хід', surrender: 'Сторона здалася',
+            summon: `викликає ${uv(entry.unit).name} ×${entry.count}`,
             battle_end: 'Бій завершено',
         };
         logLine(actor ? `${stackName(actor)} ${description[entry.type]}` : description[entry.type], 'sys');

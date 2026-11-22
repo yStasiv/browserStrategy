@@ -11,10 +11,11 @@ from sqlalchemy.orm import Session
 
 from .. import models
 from ..services.activity_guilds import HUNTERS, award_point
+from ..services import castle_buildings
 from ..services.rewards import issue_system_resources
-from .battle_models import ArmySlot, Battle, BattleAction, BattleParticipant
+from .battle_models import Battle, BattleAction, BattleParticipant
 from ..engine import BattleState, IllegalAction, action_from_dict, create_battle, turn_info
-from ..engine.data import DEFAULT_ARMY, PVE_SCENARIOS, UNITS, UNIT_PRESENTATION
+from ..engine.data import PVE_SCENARIOS, SUMMONING, UNITS, UNIT_PRESENTATION, faction_key
 from ..engine.flow import NotYourTurn, Step, advance_ai, play_turn, surrender_turn
 from ..engine.rules import forecast
 from .actions import action_to_dict
@@ -23,6 +24,8 @@ from .deployment import place, slot_limit
 from .setup import ZONE_COLS
 from .rules import init_timeline
 from .events import SCHEMA_VERSION, initial_events
+from .roster import saved_army
+from .summoning import available_elements, hp_pool, max_energy
 
 
 class BattleError(Exception):
@@ -44,18 +47,6 @@ class Conflict(BattleError):
 def user_level(user) -> int:
     # TODO: підставте реальне поле бойового рівня з models.User
     return int(getattr(user, "combat_level", None) or getattr(user, "level", None) or 1)
-
-
-# ---------- армія ----------
-
-def get_army(db: Session, user_id: int) -> List[tuple]:
-    slots = db.query(ArmySlot).filter(ArmySlot.user_id == user_id).order_by(ArmySlot.slot).all()
-    if not slots:  # новий персонаж отримує армію за замовчуванням
-        for i, (key, count) in enumerate(DEFAULT_ARMY):
-            db.add(ArmySlot(user_id=user_id, slot=i, unit_key=key, count=count))
-        db.flush()
-        return list(DEFAULT_ARMY)
-    return [(s.unit_key, s.count) for s in slots]
 
 
 # ---------- представлення для клієнта ----------
@@ -198,13 +189,26 @@ def start_pve(db: Session, user, scenario_key: str, *, hunting=False) -> dict:
     if level < scenario["min_level"]:
         raise Forbidden("рівень занадто низький для цього сценарію")
 
+    army = saved_army(db, user.id)
+    if not army:
+        raise BattleError("Спочатку набери військо в Замку.")
     try:
-        state = create_battle(get_army(db, user.id), scenario["army"],
+        state = create_battle(army, scenario["army"],
                               seed=secrets.randbits(31), level=level, mode="pve")
     except ValueError as e:
         raise BattleError(str(e))
     if hunting:
         state.hunt_key = scenario_key
+    if faction_key(user.fraction) == "elves":
+        entries, _ = castle_buildings.catalog()
+        school = castle_buildings.school_level(castle_buildings.built_ids(db, user, entries))
+        if school:
+            energy = max_energy(user.mind or 0)
+            state.summoning["0"] = {
+                "school_level": school, "energy": energy, "max_energy": energy,
+                "hp_pool": hp_pool(user.magic_power or 0), "cost": SUMMONING["energy_cost"],
+                "elements": available_elements(school),
+            }
     state.status = DEPLOYMENT
     state.active_id = None
     battle = Battle(mode="pve", level=level, status=DEPLOYMENT, state=state.to_dict(), version=0)

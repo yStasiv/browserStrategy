@@ -4,6 +4,7 @@ const BattleEvents = (() => {
         UNIT_MOVED: 'move', UNIT_ATTACKED: 'attack', COUNTERATTACK: 'retaliation',
         UNIT_DEFENDED: 'defend', UNIT_WAITED: 'wait', UNIT_SKIPPED: 'skip',
         SIDE_SURRENDERED: 'surrender', BATTLE_FINISHED: 'battle_end',
+        ELEMENTAL_SUMMONED: 'summon',
     };
 
     function logEvent(event) {

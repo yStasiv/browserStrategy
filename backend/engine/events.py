@@ -8,6 +8,7 @@ TYPES = {
     "move": "UNIT_MOVED", "attack": "UNIT_ATTACKED", "retaliation": "COUNTERATTACK",
     "defend": "UNIT_DEFENDED", "wait": "UNIT_WAITED", "skip": "UNIT_SKIPPED",
     "surrender": "SIDE_SURRENDERED", "battle_end": "BATTLE_FINISHED",
+    "summon": "ELEMENTAL_SUMMONED",
 }
 
 
@@ -68,7 +69,7 @@ def action_events(before, after, legacy):
 
     old, new = before.to_dict(), after.to_dict()
     result[-1]["changes"] = {
-        "fields": {key: value for key, value in new.items() if key != "stacks" and old[key] != value},
+        "fields": {key: value for key, value in new.items() if key != "stacks" and old.get(key) != value},
         "stacks": {key: value for key, value in new["stacks"].items() if old["stacks"].get(key) != value},
         "removed_stacks": sorted(old["stacks"].keys() - new["stacks"].keys()),
     }

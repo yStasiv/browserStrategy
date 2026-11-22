@@ -20,12 +20,7 @@
     "icon": "🧑‍🌾",
     "abilities": [],
     "starter_count": 20,
-    "recruitment": {
-      "building": "recruitment_hall",
-      "factions": [],
-      "min_level": 1,
-      "max_count": 20
-    },
+    "recruitment": null,
     "hunting": null
   },
   {
@@ -51,12 +46,7 @@
       "ranged_attack"
     ],
     "starter_count": 10,
-    "recruitment": {
-      "building": "archery_range",
-      "factions": [],
-      "min_level": 1,
-      "max_count": 10
-    },
+    "recruitment": null,
     "hunting": null
   },
   {
@@ -80,12 +70,7 @@
     "icon": "⚔️",
     "abilities": [],
     "starter_count": 5,
-    "recruitment": {
-      "building": "recruitment_hall",
-      "factions": [],
-      "min_level": 1,
-      "max_count": 5
-    },
+    "recruitment": null,
     "hunting": null
   },
   {
@@ -109,14 +94,7 @@
     "icon": "🐴",
     "abilities": [],
     "starter_count": 0,
-    "recruitment": {
-      "building": "knight_stables",
-      "factions": [
-        "elfe"
-      ],
-      "min_level": 4,
-      "max_count": 2
-    },
+    "recruitment": null,
     "hunting": null
   },
   {
@@ -171,7 +149,7 @@
     "recruitment": {
       "building": "ossuary",
       "factions": [
-        "darkElfe"
+        "undergroundElves"
       ],
       "min_level": 2,
       "max_count": 10

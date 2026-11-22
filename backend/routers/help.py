@@ -5,10 +5,19 @@ from sqlalchemy.orm import Session
 
 from backend.auth import session_player
 from backend import database
-from backend.engine.data import UNITS
+from backend.engine.data import FACTION_ROSTERS, SUMMONING, UNITS
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
+
+
+@router.get("/creatures/catalog")
+def creature_catalog():
+    return {
+        "factions": FACTION_ROSTERS,
+        "summoning": SUMMONING,
+        "units": UNITS,
+    }
 
 
 @router.get("/help", response_class=HTMLResponse)

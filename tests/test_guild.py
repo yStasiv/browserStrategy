@@ -325,6 +325,7 @@ def test_world_locations_protect_enterprises_and_guild(sessions, monkeypatch):
 def test_castle_sliders_save_the_army_used_by_battle(sessions):
     from backend.engine import battle_service
     from backend.engine.battle_models import ArmySlot
+    from backend.models import CastleBuilding
     from backend.routers import castle
 
     app = FastAPI()
@@ -340,42 +341,50 @@ def test_castle_sliders_save_the_army_used_by_battle(sessions):
     def call(method, form=None):
         return asyncio.run(asgi_request(app, method, "/castle", "session_id=reader-session", form))
 
+    with sessions.begin() as db:
+        db.add_all([
+            CastleBuilding(player_id=10, building_id="recruitment_tier_3"),
+            CastleBuilding(player_id=10, building_id="recruitment_hall"),
+            ArmySlot(user_id=10, slot=0, unit_key="peasant", count=7),
+            ArmySlot(user_id=10, slot=1, unit_key="knight", count=1),
+            ArmySlot(user_id=10, slot=2, unit_key="elves_moon_archer_3", count=2),
+        ])
     status, page = call("GET")
     assert status == 200 and b'type="range"' in page
     assert b'data-unit-dialog="unit-info-archer"' not in page
     assert b'id="army-count"' not in page
     assert b'/static/js/dialog.js' in page
-    assert b'data-unit-preview="peasant"' in page
-    assert b'aria-labelledby="army-preview-title-archer" hidden' in page
+    assert b'data-unit-preview="elves_moon_archer_1"' in page
+    assert b'data-unit-preview="elves_moon_archer_3"' not in page
+    assert b'data-replaces-retained' in page
     assert b'aria-orientation="vertical"' in page
     assert b'id="army-knight"' not in page
     status, info = asyncio.run(asgi_request(app, "GET", "/unit_info?key=archer", ""))
-    assert status == 200 and "Очки найму" in info.decode() and "Усе поле бою" in info.decode()
+    assert status == 200 and "Очки найму" in info.decode()
+    assert "Дальність пострілів" in info.decode() and b"<dd>6</dd>" in info
     assert "Шкода" in info.decode() and 'title="Лучник"' in info.decode()
     assert asyncio.run(asgi_request(app, "GET", "/unit_info?key=unknown", ""))[0] == 404
     assert call("POST", {"knight": 1})[0] == 422
-    assert call("POST", {"peasant": 99, "archer": 0, "swordsman": 0})[0] == 422
-    assert call("POST", {"peasant": 0, "archer": 0, "swordsman": 0})[0] == 422
-    assert call("POST", {"peasant": 7, "archer": 0, "swordsman": 2})[0] == 303
-
-    with sessions.begin() as db:
-        db.add(ArmySlot(user_id=10, slot=2, unit_key="knight", count=1))
-    status, page = call("GET")
-    assert status == 200 and b'id="army-knight"' not in page
-    assert b'data-retained-squads="1"' in page
+    assert call("POST", {"peasant": 7, "archer": 0, "swordsman": 0})[0] == 422
+    assert call("POST", {"elves_moon_archer_1": 99})[0] == 422
+    assert b'data-retained-squads="3"' in page
     assert call("POST", {"knight": 0})[0] == 422
-    assert call("POST", {"peasant": 7})[0] == 303
+    assert call("POST", {"form:elves_moon_archer": "elves_moon_archer_1", "line:elves_moon_archer": 2})[0] == 303
+    status, page = asyncio.run(asgi_request(app, "GET", "/castle?saved=1", "session_id=reader-session"))
+    assert status == 200 and b'class="army-saved"' in page
+    assert "Склад армії збережено".encode() not in page
 
     with sessions() as db:
         player = db.get(User, 10)
         battle = battle_service.start_pve(db, player, "training")
         army = [(stack["unit"], stack["count"]) for stack in battle["state"]["stacks"].values()
                 if stack["owner"] == 0]
-        assert army == [("peasant", 7), ("swordsman", 2), ("knight", 1)]
+        assert army == [("elves_moon_archer_1", 2), ("peasant", 7), ("knight", 1)]
 
 
 def test_hunts_and_faction_recruitment(sessions):
     from backend.engine import battle_service
+    from backend.engine.battle_models import ArmySlot
     from backend.models import CastleBuilding
     from backend.routers.castle import army_options
     from backend.services import world
@@ -386,14 +395,18 @@ def test_hunts_and_faction_recruitment(sessions):
         assert "knight" not in {unit["key"] for unit in army_options(db, player)}
         db.add(CastleBuilding(player_id=10, building_id="knight_stables"))
         db.flush()
-        assert "knight" in {unit["key"] for unit in army_options(db, player)}
+        assert "knight" not in {unit["key"] for unit in army_options(db, player)}
         assert "skeleton" not in {unit["key"] for unit in army_options(db, player)}
-        player.fraction = "darkElfe"
+        player.fraction = "undergroundElves"
         assert "skeleton" not in {unit["key"] for unit in army_options(db, player)}
         db.add(CastleBuilding(player_id=10, building_id="ossuary"))
         db.flush()
         assert "skeleton" in {unit["key"] for unit in army_options(db, player)}
         assert "knight" not in {unit["key"] for unit in army_options(db, player)}
+        db.add_all([
+            ArmySlot(user_id=10, slot=slot, unit_key=key, count=count)
+            for slot, (key, count) in enumerate((("peasant", 20), ("archer", 10), ("swordsman", 5)))
+        ])
 
     with sessions.begin() as db:
         other = db.get(User, 2)
@@ -432,7 +445,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     from backend.routers import help as game_help
     from backend.engine.data import UNITS
     from backend.routers.battles import battle as battle_pages
-    from backend.engine.battle_models import Battle, BattleParticipant
+    from backend.engine.battle_models import ArmySlot, Battle, BattleParticipant
     from backend.services import character_profile as profile
 
     app = FastAPI()
@@ -456,6 +469,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
         hero = db.get(User, 10)
         hero.level, hero.experience, hero.stamina = 2, 1500, 9
         hero.gold, hero.singing_resin, hero.basalt_bone = 1200, 17, 19
+        db.add(ArmySlot(user_id=10, slot=0, unit_key="archer", count=7))
         db.add(PlayerResourceBalance(player_id=10, resource_id="whisper_dust", quantity=31))
         db.add(PlayerResourceBalance(player_id=10, resource_id="reserved_resource_7", quantity=11))
         item = Item(name="Срібний шолом", owner_id=10, stats={"physical_defense": 3})
@@ -524,6 +538,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
         assert unit.name.encode() in help_body
     for profile_html in (html, public_html):
         assert 'data-unit-dialog="unit-info-archer"' in profile_html
+        assert 'data-unit-dialog="unit-info-peasant"' not in profile_html
         assert 'id="unit-info-archer"' in profile_html
         assert 'href="/guild"' not in profile_html and "Доступна в Замку." not in profile_html
         assert '<strong class="hero-guild-level" aria-label="Рівень 2">2</strong>' in profile_html
@@ -567,7 +582,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
 
 
 def test_hero_endpoints_validate_equipment_and_update_stats_and_army(sessions):
-    from backend.models import Item
+    from backend.models import CastleBuilding, Item
 
     app = FastAPI()
     app.include_router(player.router)
@@ -584,6 +599,7 @@ def test_hero_endpoints_validate_equipment_and_update_stats_and_army(sessions):
 
     with sessions.begin() as db:
         db.add_all([
+            CastleBuilding(player_id=10, building_id="recruitment_tier_3"),
             Item(id=41, owner_id=10, name="Пояс", item_type="belt", stats={"luck": 2, "physical_defense": 3}),
             Item(id=42, owner_id=2, name="Чужий пояс", item_type="belt"),
         ])
@@ -599,8 +615,10 @@ def test_hero_endpoints_validate_equipment_and_update_stats_and_army(sessions):
     status, state = call("POST", "/hero/equip", {"slot": "belt", "item_id": None})
     assert status == 200 and state["attributes"]["defense"]["total"] == 0
     assert call("POST", "/hero/army/update", {"counts": {"peasant": 99}})[0] == 422
-    status, state = call("POST", "/hero/army/update", {"counts": {"peasant": 7, "archer": 0}})
-    assert status == 200 and state["army"]["spent"] == 2
+    assert call("POST", "/hero/army/update", {"counts": {"elves_moon_archer_2": 7}})[0] == 422
+    status, state = call("POST", "/hero/army/update", {"counts": {"elves_moon_archer_1": 7}})
+    assert status == 200 and state["army"]["spent"] == 1
+    assert state["army"]["squads"][0]["key"] == "elves_moon_archer_1"
     assert state["army"]["squads"][0]["count"] == 7
 
 
@@ -616,7 +634,7 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     buildings.extend([
         {"id": "forest_tower", "name": "Лісова вежа", "factions": ["elfe"], "min_level": 9,
          "image_url": "/static/images/buildings/forest_tower.png"},
-        {"id": "dark_tower", "name": "Темна вежа", "factions": ["darkElfe"], "min_level": 1},
+        {"id": "dark_tower", "name": "Темна вежа", "factions": ["undergroundElves"], "min_level": 1},
     ])
     catalog_file = tmp_path / "castle_buildings.json"
     catalog_file.write_text(json.dumps(buildings), encoding="utf-8")
@@ -652,7 +670,7 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     assert status == 200 and b'href="/castle/metalworking"' not in body
     assert b'data-castle-dialog="castle-magic"' not in body
     built_section = body.split(b'<details class="castle-built-list">', 1)[1].split(b"</details>", 1)[0]
-    assert built_section.count(b'class="castle-building-card"') == 2
+    assert b'class="castle-building-card"' not in built_section
     assert b'/static/images/buildings/forest_tower.png' in body
     assert b'/static/images/resources/00_gold.png' in body
     assert b'class="castle-section castle-build-action"' in body
@@ -710,3 +728,153 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     with sessions() as db:
         assert set(activity_guilds.workshop_progress(db, 10)) == set(activity_guilds.WORKSHOPS)
     assert [activity_guilds.repair_percent(level) for level in range(11)] == [5, *range(10, 100, 10), 95]
+
+
+def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
+    from backend.engine import battle_api, battle_service
+    from backend.engine.battle_models import ArmySlot
+    from backend.engine.events import reconstruct
+    from backend.engine.summoning import squad_health
+    from backend.models import CastleBuilding
+    from backend.routers import castle, help as game_help
+
+    assert squad_health(67, 20) == (4, 7)
+    assert squad_health(60, 20) == (3, 20)
+    assert squad_health(0, 20) == (0, 0)
+    monkeypatch.setattr(battle_service.secrets, "randbits", lambda _: 42)
+    app = FastAPI()
+    app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+    for router in (castle.router, battle_api.router, game_help.router):
+        app.include_router(router)
+
+    def get_db():
+        with sessions() as db:
+            yield db
+
+    app.dependency_overrides[database.get_db] = get_db
+
+    def call(method, path, *, form=None, payload=None, token="reader-session"):
+        return asyncio.run(asgi_request(app, method, path, f"session_id={token}", form, payload))
+
+    status, body = call("GET", "/creatures/catalog")
+    catalog = json.loads(body)
+    assert status == 200
+    for faction, lines in catalog["factions"].items():
+        assert len(lines) == 8 and [line["tier"] for line in lines] == list(range(1, 9))
+        for line in lines:
+            assert [form["form"] for form in line["forms"]] == [1, 2, 3]
+            assert f"{faction}_{line['key']}_3" in catalog["units"]
+    assert len(catalog["summoning"]["elementals"]) == 6
+
+    with sessions.begin() as db:
+        elf = db.get(User, 10)
+        elf.fraction, elf.mind, elf.magic_power = "elfe", 1, 5
+        elf.gold, elf.basalt_bone = 10000, 100
+        other = db.get(User, 2)
+        other.fraction = "undergroundElves"
+        db.add_all([
+            CastleBuilding(player_id=10, building_id="magic_school_1"),
+            CastleBuilding(player_id=10, building_id="magic_school_2"),
+            CastleBuilding(player_id=2, building_id="magic_school_1"),
+            ArmySlot(user_id=2, slot=0, unit_key="underground_elves_shade_1", count=20),
+        ])
+
+    status, body = call("GET", "/castle?section=army")
+    assert status == 200 and b'name="form:elves_sylven"' not in body
+    assert b'name="form:underground_elves_shade"' not in body
+    assert call("POST", "/castle/build", form={"building_id": "magic_school_4"})[0] == 403
+    assert call("POST", "/api/battles/pve", payload={"scenario": "training"})[0] == 400
+    assert call("POST", "/castle/build", form={"building_id": "recruitment_tier_3"})[0] == 303
+    assert call("POST", "/castle/build", form={"building_id": "recruitment_tier_3_form_3"})[0] == 403
+    assert call("POST", "/castle", form={
+        "form:elves_moon_archer": "elves_moon_archer_2", "line:elves_moon_archer": 10,
+    })[0] == 422
+    assert call("POST", "/castle/build", form={"building_id": "recruitment_tier_3_form_2"})[0] == 303
+    status, body = call("GET", "/castle?section=army")
+    assert status == 200 and b'<select id="army-form-' not in body
+    assert b'type="radio" name="form:elves_moon_archer" value="elves_moon_archer_2"' in body
+    assert b'<span class="unit-portrait" title="' in body.split(b'data-army-form', 1)[1].split(b'</label>', 1)[0]
+    assert b'value="elves_moon_archer_3"' not in body
+    assert call("POST", "/castle/build", form={"building_id": "recruitment_tier_3_form_3"})[0] == 303
+    assert call("POST", "/castle", form={
+        "form:elves_moon_archer": "elves_moon_archer_3", "line:elves_moon_archer": 10,
+    })[0] == 303
+    assert call("POST", "/castle", form={
+        "form:elves_moon_archer": "underground_elves_toxin_sting_3", "line:elves_moon_archer": 10,
+    })[0] == 422
+
+    status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"}, token="other-session")
+    assert status == 200 and "summoning" not in json.loads(body)["state"]
+
+    status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"})
+    battle = json.loads(body)
+    assert status == 200
+    player_army = [stack["unit"] for stack in battle["state"]["stacks"].values() if stack["owner"] == 0]
+    assert player_army == ["elves_moon_archer_3"]
+    assert battle["state"]["summoning"]["0"]["elements"] == ["earth", "water"]
+    root = f"/api/battles/{battle['id']}"
+    status, body = call("POST", root + "/begin", payload={"version": battle["version"]})
+    assert status == 200
+    battle = json.loads(body)
+
+    def summon(element, version):
+        return call("POST", root + "/actions", payload={"version": version, "action": {
+            "type": "summon", "element": element,
+        }})
+
+    assert summon("fire", battle["version"])[0] == 400
+    first_version = battle["version"]
+    status, body = summon("earth", first_version)
+    assert status == 200
+    battle = json.loads(body)
+    first = next(stack for stack in battle["state"]["stacks"].values() if stack.get("summoned"))
+    assert (first["count"], first["top_hp"], first["x"], first["y"]) == (3, 20, 0, 0)
+    assert battle["state"]["summoning"]["0"]["energy"] == 10
+    assert summon("earth", first_version)[0] == 409
+
+    status, body = summon("water", battle["version"])
+    assert status == 200
+    battle = json.loads(body)
+    summons = [stack for stack in battle["state"]["stacks"].values() if stack.get("summoned")]
+    assert len(summons) == 1 and first["id"] not in battle["state"]["stacks"]
+    assert summons[0]["unit"] == "elemental_water"
+    summoned = next(event["payload"] for event in battle["event_stream"] if event["type"] == "ELEMENTAL_SUMMONED")
+    assert (summoned["count"], summoned["top_hp"]) == (4, 10)
+    assert battle["state"]["summoning"]["0"]["energy"] == 0
+    assert summon("earth", battle["version"])[0] == 400
+    status, body = call("GET", root + "/events")
+    replay = json.loads(body)
+    assert status == 200
+    assert sum(event["type"] == "ELEMENTAL_SUMMONED" for event in replay["events"]) == 2
+    assert reconstruct(replay["initial_state"], replay["events"]) == battle["state"]
+
+
+def test_registration_grants_only_own_faction_starter_buildings(sessions):
+    from backend.engine.roster import saved_army
+    from backend.models import CastleBuilding
+    from backend.routers import auth, castle
+
+    app = FastAPI()
+    app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+    app.include_router(auth.router)
+
+    def get_db():
+        with sessions() as db:
+            yield db
+
+    app.dependency_overrides[database.get_db] = get_db
+    for username, fraction, group in (
+        ("new_elf", "elfe", "elves"),
+        ("new_underground", "undergroundElves", "underground_elves"),
+    ):
+        assert asyncio.run(asgi_request(app, "POST", "/register", "", {
+            "username": username, "password": "test-password", "fraction": fraction,
+        }))[0] == 303
+        with sessions() as db:
+            user = db.scalar(select(User).where(User.username == username))
+            assert user.fraction == fraction
+            ids = db.scalars(select(CastleBuilding.building_id).where(CastleBuilding.player_id == user.id))
+            assert set(ids) == {f"{group}_recruitment_tier_{tier}" for tier in (1, 2)}
+            assert saved_army(db, user.id) == []
+            options = castle.army_options(db, user)
+            assert [(item["unit"].tier, item["unit"].form) for item in options] == [(1, 1), (2, 1)]

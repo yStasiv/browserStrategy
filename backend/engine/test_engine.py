@@ -3,7 +3,7 @@ import pytest
 from engine import (Attack, BattleState, Defend, IllegalAction, Move, Wait,
                     apply, create_battle, forecast, reachable, run_ai, turn_info)
 from engine.data import UNITS
-from engine.rules import _hurt, cheb
+from engine.rules import _hurt, cheb, expected_damage
 from engine.state import Stack
 
 
@@ -67,6 +67,24 @@ def test_ranged_no_retaliation_and_shots_decrease():
     st2, ev = apply(st, Attack("s1_0"))
     assert [e["type"] for e in ev] == ["attack"] and ev[0]["ranged"]
     assert st2.stacks["s0_0"].shots_left == a.shots_left - 1
+
+
+def test_archer_deals_double_damage_within_shooting_range_only_when_shooting():
+    st = two_stacks("archer", "swordsman")
+    archer, target = st.stacks["s0_0"], st.stacks["s1_0"]
+    assert UNITS["archer"].shooting_range == 6
+    archer.x, archer.y, target.y = 0, 0, 0
+    target.x = 7
+    _, far = apply(st, Attack(target.id))
+    far_estimate = expected_damage(archer, target, ranged=True)
+    target.x = 6
+    _, near = apply(st, Attack(target.id))
+    assert expected_damage(archer, target, ranged=True) == 2 * far_estimate
+    target.x = 1
+    _, melee = apply(st, Attack(target.id))
+    assert far[0]["ranged"] and near[0]["ranged"] and not melee[0]["ranged"]
+    assert near[0]["damage"] == 2 * far[0]["damage"]
+    assert melee[0]["damage"] == far[0]["damage"]
 
 
 def test_wait_only_once_and_delays_by_half_period():

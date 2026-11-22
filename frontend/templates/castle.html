@@ -57,6 +57,10 @@
                     <h3>{{ building.name }}</h3>
                     {% if building.description %}<p>{{ building.description }}</p>{% endif %}
                     <p>Бойовий рівень {{ building.min_level }}</p>
+                    {% set missing = building.requires | reject('in', built) | list %}
+                    {% if missing %}
+                    <p>Спочатку побудуй {% for key in missing %}{{ building_names[key] }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+                    {% endif %}
                     {% if building.resources %}
                     <ul class="castle-building-cost" aria-label="Необхідні ресурси">
                         {% for id, amount in building.resources.items() %}
@@ -72,7 +76,7 @@
                 </div>
                 <form action="/castle/build" method="post">
                     <button class="castle-section castle-build-action" type="submit" name="building_id" value="{{ building.id }}"
-                            title="Побудувати {{ building.name }}" aria-label="Побудувати {{ building.name }}"{% if player.level < building.min_level %} disabled{% endif %}>
+                            title="Побудувати {{ building.name }}" aria-label="Побудувати {{ building.name }}"{% if player.level < building.min_level or missing %} disabled{% endif %}>
                         <img src="{{ build_icon }}" alt="">
                     </button>
                 </form>
@@ -92,51 +96,99 @@
             <h2 id="{{ id }}-title">{{ title }}</h2>
             <form method="dialog"><button class="castle-section" type="submit">Закрити</button></form>
         </header>
+        {% if id == 'castle-magic' and elementals %}
+        <p>Рівень школи {{ school_level }} / 7</p>
+        <ul class="castle-elementals">
+            {% for element, spell in elementals.items() %}
+            <li>
+                <a href="/unit_info?key=elemental_{{ element }}">{{ spell.icon }} {{ spell.name }}</a>
+                {% if spell.school_level <= school_level %}<span>Доступний у бою</span>
+                {% else %}<span>Рівень школи {{ spell.school_level }}</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
         <p>{{ empty }}</p>
+        {% endif %}
     </dialog>
     {% endif %}
     {% endfor %}
     <dialog id="castle-army" class="castle-dialog castle-army-dialog" aria-labelledby="castle-army-title"
             {% if saved or error or request.query_params.get('section') == 'army' %}data-open-on-load{% endif %}>
         <header>
-            <h2 id="castle-army-title">Військо</h2>
+            <h2 id="castle-army-title">Військо{% if saved %} <span class="army-saved" role="img" aria-label="Армію збережено" title="Армію збережено">✓</span>{% endif %}</h2>
             <form method="dialog"><button class="castle-section" type="submit">Закрити</button></form>
         </header>
-        {% if saved %}<p role="status">Склад армії збережено.</p>{% endif %}
         {% if error %}<p role="alert">{{ error }}</p>{% endif %}
-        <form action="/castle" method="post" id="choose-units-form" data-slot-limit="{{ slot_limit }}"
-              data-retained-squads="{{ retained_squads }}">
-            <div class="army-options">
-                {% for unit in units %}
-                <div class="army-option" data-army-unit="{{ unit.key }}"{% if loop.first %} data-unit-active{% endif %}>
-                    {{ portrait(unit.unit) }}
-                    <div class="army-unit-summary">
-                        <label for="army-{{ unit.key }}">{{ unit.name }}</label>
-                        <span>Шкода {{ unit.unit.dmg_min }}–{{ unit.unit.dmg_max }}</span>
+        <div class="army-recruitment-layout{% if units %} has-unit-preview{% endif %}">
+            <form action="/castle" method="post" id="choose-units-form" data-slot-limit="{{ slot_limit }}"
+                  data-retained-squads="{{ retained_squads }}">
+                <div class="army-options">
+                    {% for unit in units %}
+                    <div class="army-option" data-army-unit="{{ unit.key }}"{% if unit.replaces_retained %} data-replaces-retained{% endif %}{% if loop.first %} data-unit-active{% endif %}>
+                        <div class="army-option-portraits">
+                            {% for choice in unit.choices %}
+                            <div data-army-portrait="{{ choice.key }}"{% if choice.key != unit.key %} hidden{% endif %}>
+                                {{ portrait(choice.unit) }}
+                            </div>
+                            {% endfor %}
+                            {% if unit.unit.line %}
+                                {% if unit.choices | length > 1 %}
+                                <div class="army-form-options" role="group" aria-label="Форми істоти">
+                                    {% for choice in unit.choices %}
+                                    <label class="army-form-option" title="Форма {{ choice.unit.form }} · {{ choice.name }}">
+                                        <input type="radio" name="form:{{ unit.group }}" value="{{ choice.key }}"
+                                               data-army-form data-name="{{ choice.name }}" data-damage="{{ choice.unit.dmg_min }}–{{ choice.unit.dmg_max }}"
+                                               aria-label="Форма {{ choice.unit.form }} · {{ choice.name }}"{% if choice.key == unit.key %} checked{% endif %}>
+                                        {{ portrait(choice.unit) }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <input type="hidden" name="form:{{ unit.group }}" value="{{ unit.key }}">
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="army-unit-summary">
+                            {% if unit.unit.line %}
+                            <span>Ранг {{ unit.unit.tier }}</span>
+                            <label for="army-{{ unit.key }}" data-army-name>{{ unit.name }}</label>
+                            {% else %}
+                            <label for="army-{{ unit.key }}">{{ unit.name }}</label>
+                            {% endif %}
+                            <span>Шкода <span data-army-damage>{{ unit.unit.dmg_min }}–{{ unit.unit.dmg_max }}</span></span>
+                        </div>
+                        <div class="army-option-controls">
+                            <output for="army-{{ unit.key }}">{{ unit.quantity }}</output>
+                            <span class="army-limit">{{ unit.limit }}</span>
+                            <input type="range" name="{% if unit.unit.line %}line:{{ unit.group }}{% else %}{{ unit.key }}{% endif %}" id="army-{{ unit.key }}"
+                                   min="0" max="{{ unit.limit }}" value="{{ unit.quantity }}" step="1" aria-orientation="vertical">
+                            <span class="army-limit">0</span>
+                        </div>
                     </div>
-                    <div class="army-option-controls">
-                        <output for="army-{{ unit.key }}">{{ unit.quantity }}</output>
-                        <span class="army-limit">{{ unit.limit }}</span>
-                        <input type="range" name="{{ unit.key }}" id="army-{{ unit.key }}"
-                               min="0" max="{{ unit.limit }}" value="{{ unit.quantity }}" step="1" aria-orientation="vertical">
-                        <span class="army-limit">0</span>
-                    </div>
+                    {% else %}
+                    <p class="army-empty">Поки немає загонів, доступних для найму.</p>
+                    {% endfor %}
                 </div>
-                {% else %}
-                <p class="army-empty">Поки немає загонів, доступних для найму.</p>
+                <div class="army-footer">
+                    <button type="submit"{% if not units %} disabled{% endif %}>Зберегти армію</button>
+                </div>
+            </form>
+            {% if units %}
+            <div class="army-recruitment-previews">
+                {% for unit in units %}
+                {% set first_card = loop.first %}
+                {% for choice in unit.choices %}
+                <section class="army-unit-preview" data-unit-preview="{{ choice.key }}"
+                         aria-labelledby="army-preview-title-{{ choice.key }}"{% if not first_card or choice.key != unit.key %} hidden{% endif %}>
+                    <h3 id="army-preview-title-{{ choice.key }}">{{ choice.name }}</h3>
+                    {{ stats(choice.unit) }}
+                </section>
+                {% endfor %}
                 {% endfor %}
             </div>
-            <div class="army-footer">
-                <button type="submit"{% if not units %} disabled{% endif %}>Зберегти армію</button>
-            </div>
-        </form>
-        {% for unit in units %}
-        <section class="army-unit-preview" data-unit-preview="{{ unit.key }}"
-                 aria-labelledby="army-preview-title-{{ unit.key }}"{% if not loop.first %} hidden{% endif %}>
-            <h3 id="army-preview-title-{{ unit.key }}">{{ unit.name }}</h3>
-            {{ stats(unit.unit) }}
-        </section>
-        {% endfor %}
+            {% endif %}
+        </div>
     </dialog>
 </main>
 {% endblock %}

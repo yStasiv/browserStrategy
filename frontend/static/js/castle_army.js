@@ -10,20 +10,29 @@ for (const trigger of document.querySelectorAll('[data-castle-dialog]')) {
         document.getElementById(trigger.dataset.castleDialog).showModal();
     });
 }
-document.querySelector('.castle-dialog[data-open-on-load]')?.showModal();
+function showUnit(card, form = card.querySelector('[data-army-form]:checked')) {
+    const key = form?.value ?? card.dataset.armyUnit;
+    if (form) {
+        for (const portrait of card.querySelectorAll('[data-army-portrait]')) {
+            portrait.hidden = portrait.dataset.armyPortrait !== key;
+        }
+        card.querySelector('[data-army-name]').textContent = form.dataset.name;
+        card.querySelector('[data-army-damage]').textContent = form.dataset.damage;
+    }
+    for (const item of unitCards) item.toggleAttribute('data-unit-active', item === card);
+    for (const preview of unitPreviews) preview.hidden = preview.dataset.unitPreview !== key;
+}
 
 function showFocusedUnit(event) {
     const card = event.target.closest('[data-army-unit]');
-    if (!card) return;
-    for (const item of unitCards) item.toggleAttribute('data-unit-active', item === card);
-    for (const preview of unitPreviews) preview.hidden = preview.dataset.unitPreview !== card.dataset.armyUnit;
+    if (card) showUnit(card);
 }
 
 function updateArmy() {
     let stacks = retainedSquads;
     for (const slider of sliders) {
         slider.parentElement.querySelector('output').value = slider.value;
-        if (slider.valueAsNumber > 0) stacks++;
+        if (slider.valueAsNumber > 0 && !slider.closest('[data-replaces-retained]')) stacks++;
     }
     armyForm.querySelector('button[type="submit"]').disabled = sliders.length === 0 || stacks === 0 || stacks > limit;
 }
@@ -31,5 +40,17 @@ function updateArmy() {
 armyForm.addEventListener('input', updateArmy);
 armyForm.addEventListener('focusin', showFocusedUnit);
 armyForm.addEventListener('click', showFocusedUnit);
-window.addEventListener('pageshow', updateArmy);
+for (const card of unitCards) {
+    for (const form of card.querySelectorAll('[data-army-form]')) {
+        form.addEventListener('change', () => {
+            if (form.checked) showUnit(card, form);
+        });
+    }
+}
+window.addEventListener('pageshow', () => {
+    const active = armyForm.querySelector('[data-unit-active]');
+    if (active) showUnit(active);
+    updateArmy();
+});
+document.querySelector('.castle-dialog[data-open-on-load]')?.showModal();
 updateArmy();

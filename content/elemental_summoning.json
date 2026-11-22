@@ -1,0 +1,123 @@
+{
+  "energy_cost": 10,
+  "base_energy": 10,
+  "energy_per_knowledge": 10,
+  "base_hp_pool": 20,
+  "hp_pool_per_spell_power": 10,
+  "elementals": [
+    {
+      "element": "earth",
+      "name": "Геоліт-елементаль",
+      "icon": "🪨",
+      "attack": 5,
+      "defense": 10,
+      "hp": 25,
+      "initiative": 8,
+      "dmg_min": 3,
+      "dmg_max": 6,
+      "speed": 3,
+      "shots": 0,
+      "abilities": [],
+      "skills": [
+        "Ближня атака"
+      ],
+      "school_level": 1
+    },
+    {
+      "element": "water",
+      "name": "Гідро-елементаль",
+      "icon": "💧",
+      "attack": 6,
+      "defense": 6,
+      "hp": 20,
+      "initiative": 10,
+      "dmg_min": 4,
+      "dmg_max": 6,
+      "speed": 4,
+      "shots": 5,
+      "abilities": [
+        "ranged_attack"
+      ],
+      "skills": [
+        "Дальня атака"
+      ],
+      "school_level": 2
+    },
+    {
+      "element": "air",
+      "name": "Аеро-елементаль",
+      "icon": "🌪",
+      "attack": 7,
+      "defense": 4,
+      "hp": 16,
+      "initiative": 15,
+      "dmg_min": 3,
+      "dmg_max": 7,
+      "speed": 6,
+      "shots": 0,
+      "abilities": [],
+      "skills": [
+        "Ближня атака"
+      ],
+      "school_level": 3
+    },
+    {
+      "element": "fire",
+      "name": "Піро-елементаль",
+      "icon": "🔥",
+      "attack": 9,
+      "defense": 4,
+      "hp": 18,
+      "initiative": 12,
+      "dmg_min": 5,
+      "dmg_max": 9,
+      "speed": 4,
+      "shots": 6,
+      "abilities": [
+        "ranged_attack"
+      ],
+      "skills": [
+        "Дальня атака"
+      ],
+      "school_level": 4
+    },
+    {
+      "element": "poison",
+      "name": "Міазмо-елементаль",
+      "icon": "☣",
+      "attack": 8,
+      "defense": 5,
+      "hp": 19,
+      "initiative": 11,
+      "dmg_min": 4,
+      "dmg_max": 9,
+      "speed": 5,
+      "shots": 0,
+      "abilities": [],
+      "skills": [
+        "Ближня атака"
+      ],
+      "school_level": 5
+    },
+    {
+      "element": "energy",
+      "name": "Вольт-елементаль",
+      "icon": "⚡",
+      "attack": 10,
+      "defense": 5,
+      "hp": 20,
+      "initiative": 14,
+      "dmg_min": 5,
+      "dmg_max": 10,
+      "speed": 5,
+      "shots": 7,
+      "abilities": [
+        "ranged_attack"
+      ],
+      "skills": [
+        "Дальня атака"
+      ],
+      "school_level": 7
+    }
+  ]
+}

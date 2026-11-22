@@ -8,7 +8,9 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from backend.auth import playable_users
+from backend.engine.data import faction_key
 from backend.routers.char_tasks import TaskHelper
+from backend.services.castle_buildings import grant_starter_buildings
 
 from .. import database, models
 from ..utils import hash_password, setup_logger, verify_password
@@ -57,28 +59,28 @@ class AuthHelper:
             {
                 "name": "green_Baby",
                 "level_required": 1,
-                "fraction": "darkElfe",
+                "fraction": "undergroundElves",
                 "max_quantity": 19,
                 "icon_url": "../static/images/frankenstein.png",
             },
             {
                 "name": "green_Junior",
                 "level_required": 2,
-                "fraction": "darkElfe",
+                "fraction": "undergroundElves",
                 "max_quantity": 10,
                 "icon_url": "../static/images/frankenstein.png",
             },
             {
                 "name": "green_Adult",
                 "level_required": 5,
-                "fraction": "darkElfe",
+                "fraction": "undergroundElves",
                 "max_quantity": 9,
                 "icon_url": "../static/images/frankenstein.png",
             },
             {
                 "name": "green_Old",
                 "level_required": 8,
-                "fraction": "darkElfe",
+                "fraction": "undergroundElves",
                 "max_quantity": 3,
                 "icon_url": "../static/images/frankenstein.png",
             },
@@ -139,6 +141,9 @@ class AuthRotes:
         fraction: str = Form(...),
         db: Session = Depends(database.get_db),
     ):
+        fraction = {"elves": "elfe", "underground_elves": "undergroundElves"}.get(faction_key(fraction))
+        if fraction is None:
+            raise HTTPException(422, "Обери доступну фракцію.")
         # Перевіряємо чи існує користувач
         existing_user = (
             db.query(models.User).filter(models.User.username == username).first()
@@ -157,8 +162,8 @@ class AuthRotes:
             username=username, password=hashed_password, fraction=fraction
         )
         db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+        db.flush()
+        grant_starter_buildings(db, new_user)
 
         # Додаємо початкові юніти
         unit_types = AuthHelper.get_default_unit_types(fraction, db)

@@ -14,9 +14,10 @@ import random
 from collections import deque
 from typing import Dict, List, Optional, Tuple
 
-from .actions import Attack, Defend, Move, Skip, Wait
+from .actions import Attack, Defend, Move, Skip, Summon, Wait
 from .data import UNITS
 from .state import ATB_SCALE, MAX_ACTIONS, BattleState, Stack
+from .summoning import spawn_position, squad_health
 
 Cell = Tuple[int, int]
 
@@ -114,9 +115,14 @@ def _multiplier(att_stack: Stack, def_stack: Stack) -> float:
     return 1 - min(0.025 * -diff, 0.7)
 
 
-def expected_damage(att: Stack, target: Stack) -> float:
+def shot_multiplier(att: Stack, target: Stack) -> int:
+    return 2 if dist_stacks(att, target) <= UNITS[att.unit].shooting_range else 1
+
+
+def expected_damage(att: Stack, target: Stack, *, ranged=False) -> float:
     u = UNITS[att.unit]
-    return (u.dmg_min + u.dmg_max) / 2 * att.count * _multiplier(att, target)
+    damage = (u.dmg_min + u.dmg_max) / 2 * att.count * _multiplier(att, target)
+    return damage * shot_multiplier(att, target) if ranged else damage
 
 
 def _roll_damage(att: Stack, target: Stack, rng: random.Random) -> int:
@@ -228,6 +234,8 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
 
     hp_before = total_hp(target)
     dmg = _roll_damage(actor, target, rng)
+    if ranged:
+        dmg *= shot_multiplier(actor, target)
     killed = _hurt(target, dmg)
     if ranged:
         actor.shots_left -= 1
@@ -251,6 +259,39 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
     _end_turn(st, actor, events)
 
 
+def _do_summon(state, actor, action, events):
+    magic = state.summoning.get(str(actor.owner))
+    if not magic or action.element not in magic["elements"]:
+        raise IllegalAction("Цей виклик недоступний.")
+    if magic["energy"] < magic["cost"]:
+        raise IllegalAction("Недостатньо енергії для виклику.")
+    previous = next((s for s in state.stacks.values() if s.owner == actor.owner and s.summoned), None)
+    unit = UNITS[f"elemental_{action.element}"]
+    position = spawn_position(state, unit, previous)
+    if position is None:
+        raise IllegalAction("На полі немає місця для елементаля.")
+    count, top_hp = squad_health(magic["hp_pool"], unit.hp)
+    if not count:
+        raise IllegalAction("Недостатньо сили магії для виклику.")
+
+    if previous:
+        del state.stacks[previous.id]
+    stack = Stack(
+        id=f"summon_{actor.owner}_{state.seq}", unit=unit.key, owner=actor.owner,
+        count=count, top_hp=top_hp, x=position[0], y=position[1],
+        w=unit.size[0], h=unit.size[1], shots_left=unit.shots, summoned=True,
+    )
+    stack.ready = actor.ready + period(stack)
+    state.stacks[stack.id] = stack
+    magic["energy"] -= magic["cost"]
+    events.append({
+        "type": "summon", "stack": actor.id, "target": stack.id, "unit": unit.key,
+        "count": count, "top_hp": top_hp, "unit_hp": unit.hp,
+        "replaced": previous.id if previous else None, "energy": magic["energy"],
+    })
+    _end_turn(state, actor, events)
+
+
 def apply(state: BattleState, action) -> Tuple[BattleState, List[dict]]:
     if state.status != "active" or state.active_id is None:
         raise IllegalAction("бій завершено")
@@ -264,6 +305,8 @@ def apply(state: BattleState, action) -> Tuple[BattleState, List[dict]]:
         _do_move(st, actor, action, events)
     elif isinstance(action, Attack):
         _do_attack(st, actor, action, rng, events)
+    elif isinstance(action, Summon):
+        _do_summon(st, actor, action, events)
     elif isinstance(action, Defend):
         actor.defending = True
         events.append({"type": "defend", "stack": actor.id})
