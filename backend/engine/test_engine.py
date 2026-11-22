@@ -3,8 +3,9 @@ import pytest
 from engine import (Attack, BattleState, Defend, IllegalAction, Move, Wait,
                     apply, create_battle, forecast, reachable, run_ai, turn_info)
 from engine.data import UNITS
-from engine.rules import _hurt, cheb, expected_damage
-from engine.state import Stack
+from engine.events import action_events, reconstruct
+from engine.rules import _hurt, cheb, expected_damage, init_timeline
+from engine.state import HeroTurn, Stack
 
 
 def two_stacks(unit_a="swordsman", unit_b="swordsman", ca=5, cb=5, seed=1):
@@ -85,6 +86,27 @@ def test_archer_deals_double_damage_within_shooting_range_only_when_shooting():
     assert far[0]["ranged"] and near[0]["ranged"] and not melee[0]["ranged"]
     assert near[0]["damage"] == 2 * far[0]["damage"]
     assert melee[0]["damage"] == far[0]["damage"]
+
+
+def test_hero_shot_ignores_defense_and_is_recorded_without_retaliation():
+    st = two_stacks()
+    hero = HeroTurn("hero_0", 0, "Герой", 1, 20, 0, 0, 0, 0, 5, 8)
+    st.heroes[hero.id] = hero
+    init_timeline(st)
+    assert st.active_id == hero.id and forecast(st, 1) == [{"id": hero.id}]
+    assert turn_info(st)["targets"] == [{"id": "s1_0", "from": []}]
+    with pytest.raises(IllegalAction):
+        apply(st, Move(1, 0))
+    with pytest.raises(IllegalAction):
+        apply(st, Attack("s0_0"))
+
+    _, normal = apply(st, Attack("s1_0"))
+    st.stacks["s1_0"].defending = True
+    new, events = apply(st, Attack("s1_0"))
+    assert [event["type"] for event in events] == ["hero_attack"]
+    assert 5 <= events[0]["damage"] == normal[0]["damage"] <= 8
+    assert new.heroes[hero.id].ready > hero.ready
+    assert reconstruct(st.to_dict(), action_events(st, new, events)) == new.to_dict()
 
 
 def test_wait_only_once_and_delays_by_half_period():

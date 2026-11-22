@@ -1,4 +1,4 @@
-"""Дії гравця. Дія завжди стосується активного загону (active_id)."""
+"""Дії гравця стосуються активного загону або героя (active_id)."""
 from dataclasses import dataclass
 from typing import Optional, Tuple
 

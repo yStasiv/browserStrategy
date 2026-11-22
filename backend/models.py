@@ -393,6 +393,7 @@ class RewardTransaction(Base):
     wood = Column(Integer, nullable=False)
     stone = Column(Integer, nullable=False)
     item_id = Column(Integer, ForeignKey("items.id", ondelete="SET NULL"))
+    reward_entries = Column(JSON(none_as_null=True), nullable=True)
     created_at = Column(DateTime, nullable=False)
 
 

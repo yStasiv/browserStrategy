@@ -9,6 +9,7 @@ TYPES = {
     "defend": "UNIT_DEFENDED", "wait": "UNIT_WAITED", "skip": "UNIT_SKIPPED",
     "surrender": "SIDE_SURRENDERED", "battle_end": "BATTLE_FINISHED",
     "summon": "ELEMENTAL_SUMMONED",
+    "hero_attack": "HERO_ATTACKED",
 }
 
 
@@ -47,7 +48,7 @@ def action_events(before, after, legacy):
             stack = before.stacks[actor]
             payload.update({"from": [stack.x, stack.y], "to": payload["path"][-1], "path": payload["path"][1:]})
         emit(TYPES[kind], payload, actor, target)
-        if kind in {"attack", "retaliation"}:
+        if kind in {"attack", "retaliation", "hero_attack"}:
             emit("DAMAGE_APPLIED", {
                 **payload, "creatures_before": payload["target_left"] + payload["killed"],
                 "creatures_after": payload["target_left"],
@@ -63,7 +64,8 @@ def action_events(before, after, legacy):
         emit("BATTLE_FINISHED", finished)
     else:
         previous = before.stacks.get(after.active_id)
-        if previous and previous.defending and not after.active().defending:
+        current = after.stacks.get(after.active_id)
+        if previous and current and previous.defending and not current.defending:
             emit("STATUS_EXPIRED", {"effect": "defend"}, after.active_id, after.active_id)
         emit("TURN_STARTED", {}, after.active_id)
 

@@ -14,6 +14,7 @@ from backend.engine.roster import saved_army
 from backend.engine.battle_service import user_level
 from backend.engine.setup import field_rules
 from backend.services.hero_army import army_options
+from backend.services.hero_attributes import PROFILE_STATS, hero_attributes
 from backend.services.hero_equipment import ITEM_SLOTS, SLOT_LABELS, equipment_ids
 from backend.guild_models import GuildProgress
 from backend.models import Item, PlayerResourceBalance, User
@@ -31,18 +32,6 @@ COMBAT_STATS = {
     "bonus_ranged_defense": "Бонус захисту від стрільби", "bonus_magic_defense": "Бонус захисту від магії",
 }
 STAT_LABELS = ATTRIBUTES | COMBAT_STATS
-PROFILE_STATS = {
-    "attack": ("Атака", "melee_attack", "⚔"),
-    "defense": ("Захист", "physical_defense", "🛡"),
-    "spell_power": ("Сила магії", "magic_power", "✦"),
-    "knowledge": ("Знання", "mind", "📖"),
-    "luck": ("Удача", "luck", "☘"),
-    "morale": ("Бойовий дух", "morale", "⚑"),
-    "initiative": ("Ініціатива", "initiative", "⌛"),
-}
-SPENDABLE_ATTRIBUTES = {
-    key: PROFILE_STATS[key][1] for key in ("attack", "defense", "spell_power", "knowledge")
-}
 STAT_LABELS.update({column: name for name, column, _ in PROFILE_STATS.values()})
 FACTIONS = {"elves": "Ельфи", "underground_elves": "Темні ельфи", "admin": "Адміністрація", "system": "Системна"}
 
@@ -157,14 +146,9 @@ def hero_state(db, player):
     items = {item.id: item for item in owned}
     equipped = {item_id: items[item_id] for item_id in set(ids.values()) if item_id in items}
 
-    attributes = {}
-    for key, (name, column, icon) in PROFILE_STATS.items():
-        bonus = sum((item.stats or {}).get(column, 0) for item in equipped.values()
-                    if isinstance((item.stats or {}).get(column, 0), (int, float)))
-        stored = getattr(player, column, None)
-        base = (stored or 0) - bonus if hasattr(player, column) else 0
-        attributes[key] = {"name": name, "icon": icon, "image_url": stat_icon_url(key), "base": base, "equipment": bonus,
-                           "buildings": 0, "total": base + bonus, "spendable": key in SPENDABLE_ATTRIBUTES}
+    attributes = hero_attributes(player, equipped.values())
+    for key, stat in attributes.items():
+        stat["image_url"] = stat_icon_url(key)
 
     equipment = {}
     for slot, name in SLOT_LABELS.items():

@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Бій</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/battle_result.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/navigation.css') }}">
+    <script defer src="{{ url_for('static', path='js/dialog.js') }}"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --cell: 56px; }
@@ -35,6 +37,39 @@
                 repeating-linear-gradient(113deg, #d6c29813 0 1px, transparent 1px 6px),
                 #56613a;
         }
+        #field-heroes { display: flex; justify-content: space-between; gap: .45rem; margin: 0 auto .55rem; }
+        #field-heroes[hidden] { display: none; }
+        .field-hero {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: center;
+            gap: .2rem .5rem;
+            padding: .35rem;
+            border: 1px solid #a88c56;
+            border-radius: .4rem;
+            background: #263a34;
+            color: #fff0c3;
+        }
+        .field-hero[data-side="1"] { margin-inline-start: auto; }
+        .field-hero.active { box-shadow: 0 0 0 2px #facc15; }
+        .field-hero.hl { border-color: #fff; }
+        .field-hero img { width: 2.5rem; height: 2.5rem; object-fit: cover; border-radius: .25rem; }
+        .field-hero strong { overflow-wrap: anywhere; }
+        .field-hero small { display: block; }
+        .field-hero button { grid-column: 1 / -1; font-size: .8rem; padding: .35rem .5rem; }
+        #spellbook {
+            width: min(26rem, calc(100% - 2rem));
+            max-height: calc(100% - 2rem);
+            margin: auto;
+            padding: 1rem;
+            border: 1px solid #a88c56;
+            border-radius: .5rem;
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        #spellbook::backdrop { background: #080d16a0; }
+        #spell-list { display: grid; gap: .45rem; }
+        #spell-list button { text-align: start; }
         #cells { display: grid; position: relative; }
         .cell {
             width: var(--cell); height: var(--cell); box-sizing: border-box;
@@ -80,7 +115,8 @@
         .popup.ret { color: #fbbf24; }
         @keyframes pop { 0% { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px); } }
 
-        .chip { position: relative; width: 2.4rem; height: 2.4rem; flex: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+        #initiative { display: flex; flex: 1 1 0; min-width: 0; gap: .3rem; overflow-x: auto; padding: .25rem .15rem; }
+        #initiative .chip { position: relative; width: 2.4rem; height: 2.4rem; flex: 0 0 2.4rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
                 background: #1e293b; border: 2px solid #3b82f6; border-radius: 0.4rem; }
         .chip.enemy { border-color: #ef4444; }
         .chip.first { box-shadow: 0 0 0 2px #facc15; }
@@ -106,7 +142,7 @@
 <div class="max-w-6xl mx-auto p-3">
     <header class="flex items-center justify-between mb-3">
         <h1 class="text-xl font-bold">Бій</h1>
-        <a href="/player" class="text-sm text-sky-300 hover:underline">До персонажа</a>
+        <a id="battle-return" href="/player" class="text-sm text-sky-300 hover:underline">До персонажа</a>
     </header>
 
     <!-- Вибір бою -->
@@ -129,11 +165,12 @@
         </div>
         <div class="flex items-center gap-2 mb-2">
             <span class="text-xs text-slate-400 shrink-0" title="Прогноз на 50 ходів: не враховує майбутні втрати та «чекати»">Черга (50):</span>
-            <div id="initiative" class="flex flex-1 min-w-0 gap-1 overflow-x-auto py-1"></div>
+            <div id="initiative"></div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-3">
             <div id="board-wrap" class="flex-1 min-w-0">
+                <div id="field-heroes" aria-label="Герої" hidden></div>
                 <div id="board">
                     <div id="cells"></div>
                     <div id="stacks"></div>
@@ -163,15 +200,26 @@
                 <section id="summon-actions" class="hidden bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Виклик елементалів">
                     <p id="summon-energy"></p>
                     <p id="summon-status" aria-live="polite"></p>
-                    <div id="summon-controls" class="space-y-2">
-                        <label class="block">Елементаль <select id="summon-element" class="bg-slate-800"></select></label>
-                        <button id="btn-summon" type="button" class="btn">Викликати</button>
-                    </div>
+                    <button id="legacy-spellbook" type="button" class="btn">Книга заклять</button>
                 </section>
                 <div id="log" class="bg-slate-800 rounded-lg p-2"></div>
+                <section class="bg-slate-800 rounded-lg p-3" aria-labelledby="creature-damage-title">
+                    <h2 id="creature-damage-title" class="font-bold">Шкода створінь</h2>
+                    <div id="creature-damage" class="text-sm space-y-2"></div>
+                    <p id="creature-damage-partial" class="text-xs text-slate-400 mt-2" hidden>Показано шкоду за доступну частину запису.</p>
+                </section>
             </aside>
         </div>
     </section>
+
+    <dialog id="spellbook" aria-labelledby="spellbook-title">
+        <div class="flex items-center justify-between gap-2 mb-3">
+            <h2 id="spellbook-title" class="font-bold">Книга заклять</h2>
+            <form method="dialog"><button class="btn alt" type="submit">Закрити</button></form>
+        </div>
+        <p id="spellbook-energy" class="mb-3"></p>
+        <div id="spell-list"></div>
+    </dialog>
 
     <!-- Підтвердження здачі -->
     <div id="confirm" class="hidden fixed inset-0 z-40 bg-black/70 flex items-center justify-center">
@@ -185,23 +233,13 @@
         </div>
     </div>
 
-    <!-- Результат -->
-    <div id="result" class="hidden fixed inset-0 z-40 bg-black/70 flex items-center justify-center">
-        <div class="bg-slate-800 rounded-xl p-6 text-center">
-            <div id="result-title" class="text-2xl font-bold mb-4"></div>
-            <p id="result-reward" class="mb-4 text-amber-200" aria-live="polite"></p>
-            <div class="flex gap-2 justify-center">
-                <button id="btn-new" class="btn">Новий бій</button>
-                <button id="btn-replay" class="btn alt">Повтор</button>
-                <a href="/player" class="btn alt">До персонажа</a>
-            </div>
-        </div>
-    </div>
+    {% include 'components/battle_result.html' %}
 
     <div id="toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black/85 text-white text-sm px-4 py-2 rounded"></div>
 </div>
 
 <script src="{{ url_for('static', path='js/battle_events.js') }}"></script>
+<script src="{{ url_for('static', path='js/battle_result.js') }}"></script>
 <script>
     // ---------- Конфіг ----------
     const API = '/api/battles';
@@ -223,6 +261,7 @@
     let replay = null;
     let playing = false;
     let playbackGeneration = 0;
+    let replayRequest = 0;
     let animation;
     let pollTimer = null;
     const known = {};         // id загону -> {unit, owner} (щоб називати загони, що вже загинули)
@@ -235,9 +274,40 @@
         menu: $('menu'), battle: $('battle'), scenarios: $('scenarios'),
         cells: $('cells'), stacks: $('stacks'), popups: $('popups'), board: $('board'), wrap: $('board-wrap'),
         initiative: $('initiative'), turnText: $('turn-text'), activeInfo: $('active-info'),
-        log: $('log'), result: $('result'), resultTitle: $('result-title'), toast: $('toast'), confirm: $('confirm'),
+        log: $('log'), toast: $('toast'), confirm: $('confirm'),
         btnWait: $('btn-wait'), btnDefend: $('btn-defend'), btnSurrender: $('btn-surrender'),
     };
+
+    let battleStorage;
+    try { battleStorage = sessionStorage; } catch { /* storage is optional */ }
+    const trackedBattleKey = 'battle-in-view';
+
+    function trackBattle(id) {
+        try {
+            if (id == null) battleStorage?.removeItem(trackedBattleKey);
+            else battleStorage?.setItem(trackedBattleKey, String(id));
+        } catch { /* storage is optional */ }
+    }
+
+    function trackedBattle() {
+        try { return battleStorage?.getItem(trackedBattleKey); } catch { return null; }
+    }
+
+    const resultModal = BattleResult.create($('result'), {
+        storage: battleStorage,
+        onReplay: id => view?.id === id ? openReplay(id, {autoplay: true}) : false,
+        onContinue: id => {
+            if (view?.id !== id) return;
+            trackBattle(null);
+            location.assign('/player');
+        },
+        fallbackFocus: () => replay ? $('replay-play') : $('battle-return'),
+        unitName: key => uv(key).name,
+    });
+    const damageNumber = new Intl.NumberFormat('en-US');
+    $('battle-return').addEventListener('click', () => {
+        if (view?.status === 'finished' || replay) trackBattle(null);
+    });
 
     // ---------- API ----------
     async function api(path, method = 'GET', body = null) {
@@ -274,6 +344,8 @@
     }
 
     function stackName(id) {
+        const hero = view?.state.heroes?.[id];
+        if (hero) return 'Герой ' + hero.name;
         const k = known[id];
         if (!k) return '?';
         const u = uv(k.unit);
@@ -281,7 +353,8 @@
     }
 
     function isAlly(id) {
-        return known[id] && view && known[id].owner === view.my_side;
+        const actor = view?.state.heroes?.[id] ?? known[id];
+        return actor && view && actor.owner === view.my_side;
     }
 
     function activeStack() {
@@ -298,6 +371,7 @@
         const maxW = Math.min(el.wrap.clientWidth - padding - 4, 960);
         const maxH = window.innerHeight * 0.62;
         const cell = Math.max(1, Math.min(72, Math.floor(Math.min(maxW / w, maxH / h)))) + 'px';
+        $('field-heroes').style.maxWidth = (parseFloat(cell) * w + 4) + 'px';
         if (el.board.style.getPropertyValue('--cell') !== cell) {
             el.board.style.setProperty('--cell', cell);
         }
@@ -350,6 +424,7 @@
     // ---------- Відмальовування ----------
     function applyView(v, events) {
         view = v;
+        if (!replay) trackBattle(v.id);
         Object.assign(UNIT_VIEW, v.units);
         for (const s of Object.values(v.state.stacks)) known[s.id] = { unit: s.unit, owner: s.owner };
 
@@ -359,13 +434,17 @@
         buildCells();
         if (events && events.length) showEvents(events);
         renderPanel();
+        renderCreatureDamage(v.creature_damage);
         renderStacks();
         renderInitiative();
         renderHighlights();
 
         for (const s of Object.values(v.state.stacks)) lastPos[s.id] = { x: s.x, y: s.y, w: s.w, h: s.h };
 
-        if (v.status === 'finished' && !replay) showResult(); else el.result.classList.add('hidden');
+        if (v.status === 'finished' && !replay) {
+            el.confirm.classList.add('hidden');
+            resultModal.present(v.id, v.result, v.creature_damage, v.my_side);
+        }
         schedulePoll();
     }
 
@@ -415,6 +494,35 @@
         }
     }
 
+    function renderCreatureDamage(summary) {
+        const sides = summary?.sides ?? [];
+        const ordered = [...sides].sort((a, b) => Number(b.side === view.my_side) - Number(a.side === view.my_side));
+        $('creature-damage-partial').hidden = !summary?.partial;
+        $('creature-damage').replaceChildren(...ordered.map(side => {
+            const group = document.createElement('div');
+            const heading = document.createElement('h3');
+            const allied = side.side === view.my_side;
+            heading.className = allied ? 'font-bold text-sky-300' : 'font-bold text-red-300';
+            heading.textContent = `${allied ? 'Союзники' : 'Вороги'} · ${damageNumber.format(side.total)}`;
+            group.append(heading);
+            if (side.creatures.length) {
+                const list = document.createElement('ul');
+                for (const creature of side.creatures) {
+                    const row = document.createElement('li');
+                    row.className = 'flex justify-between gap-2';
+                    const name = document.createElement('span');
+                    name.textContent = uv(creature.unit).name;
+                    const damage = document.createElement('strong');
+                    damage.textContent = damageNumber.format(creature.amount);
+                    row.append(name, damage);
+                    list.append(row);
+                }
+                group.append(list);
+            }
+            return group;
+        }));
+    }
+
     function highlightInitiative(id) {
         if (hoveredStackId === id) return;
         hoveredStackId = id;
@@ -432,21 +540,27 @@
             : (st.active_id ? [{ id: st.active_id }] : []);
         let first = true;
         for (const f of list) {
-            const s = st.stacks[f.id];
+            const hero = st.heroes?.[f.id];
+            const currentStack = st.stacks[f.id];
+            const s = currentStack ?? hero ?? replay?.stackIndex?.[f.id];
             if (!s) continue;
             const c = document.createElement('div');
-            c.className = 'chip' + (isAlly(f.id) ? '' : ' enemy') + (first ? ' first' : '');
+            c.className = 'chip' + (s.owner === view.my_side ? '' : ' enemy') + (first ? ' first' : '');
             c.dataset.stackId = f.id;
             c.classList.toggle('hl', f.id === hoveredStackId);
             first = false;
-            c.textContent = uv(s.unit).emoji;
-            const b = document.createElement('span');
-            b.className = 'badge';
-            b.textContent = s.count;
-            c.appendChild(b);
-            c.title = uv(s.unit).name + ' ×' + s.count;
-            c.addEventListener('mouseenter', () => { if (stackEls[f.id]) stackEls[f.id].classList.add('hl'); });
-            c.addEventListener('mouseleave', () => { if (stackEls[f.id]) stackEls[f.id].classList.remove('hl'); });
+            c.textContent = hero ? '👤' : uv(s.unit).emoji;
+            c.title = hero ? `Герой ${hero.name} · ініціатива ${hero.initiative}`
+                : uv(s.unit).name + (currentStack ? ' ×' + s.count : '');
+            if (currentStack) {
+                const b = document.createElement('span');
+                b.className = 'badge';
+                b.textContent = s.count;
+                c.appendChild(b);
+            }
+            const actorElement = () => hero ? $('field-' + hero.id) : stackEls[f.id];
+            c.addEventListener('mouseenter', () => actorElement()?.classList.add('hl'));
+            c.addEventListener('mouseleave', () => actorElement()?.classList.remove('hl'));
             el.initiative.appendChild(c);
         }
         el.initiative.scrollLeft = 0;
@@ -468,26 +582,86 @@
         });
     }
 
+    function openSpellbook() {
+        const magic = view.state.summoning?.[view.my_side];
+        const canCast = view.turn && (view.turn.hero || !view.state.heroes);
+        if (!magic || !canCast || busy || auto || replay) return;
+        $('spellbook-energy').textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
+        const spells = magic.elements.map(element => {
+            const unit = uv('elemental_' + element);
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn alt';
+            button.textContent = `${unit.emoji} ${unit.name} · ${magic.cost} енергії`;
+            button.disabled = magic.energy < magic.cost;
+            button.addEventListener('click', () => {
+                $('spellbook').close();
+                send({type: 'summon', element});
+            });
+            return button;
+        });
+        if (!spells.length) {
+            const empty = document.createElement('p');
+            empty.textContent = 'Немає вивчених заклять.';
+            spells.push(empty);
+        }
+        $('spell-list').replaceChildren(...spells);
+        $('spellbook').showModal();
+    }
+
+    function renderHeroes(canCast) {
+        const st = view.state;
+        const field = $('field-heroes');
+        const heroes = Object.values(st.heroes ?? {});
+        field.hidden = heroes.length === 0;
+        field.replaceChildren(...heroes.map(hero => {
+            const card = document.createElement('div');
+            card.id = 'field-' + hero.id;
+            card.dataset.side = hero.owner;
+            card.className = 'field-hero' + (st.active_id === hero.id ? ' active' : '');
+            const portrait = document.createElement('img');
+            portrait.src = '/static/images/simple-elfe.png';
+            portrait.alt = '';
+            const details = document.createElement('div');
+            const name = document.createElement('strong');
+            name.textContent = hero.name;
+            const energy = document.createElement('small');
+            const magic = st.summoning?.[hero.owner];
+            if (magic) energy.textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
+            details.append(name, energy);
+            card.title = `Рівень ${hero.level} · Ініціатива ${hero.initiative} · Атака ${hero.attack} · Захист ${hero.defense} · Знання ${hero.knowledge} · Сила магії ${hero.spell_power} · Удача ${hero.luck ?? 0} · Бойовий дух ${hero.morale ?? 0} · Шкода ${hero.damage_min}–${hero.damage_max}`;
+            card.append(portrait, details);
+            card.addEventListener('mouseenter', () => highlightInitiative(hero.id));
+            card.addEventListener('mouseleave', () => highlightInitiative(null));
+            if (!replay && st.active_id === hero.id && hero.owner === view.my_side) {
+                const book = document.createElement('button');
+                book.type = 'button';
+                book.className = 'btn alt';
+                book.textContent = '📖 Книга заклять';
+                book.disabled = !canCast;
+                book.addEventListener('click', openSpellbook);
+                card.append(book);
+            }
+            return card;
+        }));
+    }
+
     function renderSummoning(canCast) {
         const st = view.state;
         const magic = st.summoning?.[view.my_side];
-        const visible = Boolean(magic && !view.deployment);
+        const legacy = Boolean(magic && !st.heroes && !view.deployment);
+        const visible = Boolean(magic?.elements.length && !view.deployment);
         $('summon-actions').classList.toggle('hidden', !visible);
+        $('summon-energy').hidden = !legacy;
+        $('legacy-spellbook').hidden = !legacy || Boolean(replay) || view.status !== 'active';
+        $('legacy-spellbook').disabled = !canCast;
+        if ($('spellbook').open && !canCast) $('spellbook').close();
         if (!visible) return;
         $('summon-energy').textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
         const summon = Object.values(st.stacks).find(stack => stack.owner === view.my_side && stack.summoned);
         $('summon-status').textContent = summon
             ? `${uv(summon.unit).name} ×${summon.count} · HP верхнього ${summon.top_hp}/${uv(summon.unit).hp}`
             : 'Активного елементаля немає';
-        $('summon-controls').classList.toggle('hidden', Boolean(replay) || view.status !== 'active');
-        const select = $('summon-element');
-        const selected = select.value;
-        select.replaceChildren(...magic.elements.map(key => new Option(uv('elemental_' + key).name, key)));
-        if (magic.elements.includes(selected)) select.value = selected;
-        select.disabled = !canCast;
-        const button = $('btn-summon');
-        button.textContent = `Викликати · ${magic.cost} енергії`;
-        button.disabled = !canCast || magic.energy < magic.cost || !magic.elements.length;
     }
 
     function renderPanel() {
@@ -498,7 +672,9 @@
         $('battle-actions').classList.toggle('hidden', Boolean(replay) || deploying);
         $('deployment-actions').classList.toggle('hidden', !deploying);
         const can = myTurn && !busy && !auto;
-        renderSummoning(can);
+        const canCast = can && !replay && (view.turn?.hero || !st.heroes);
+        renderHeroes(canCast);
+        renderSummoning(canCast);
 
         if (deploying) {
             const owned = Object.values(st.stacks).filter(stack => stack.owner === view.my_side);
@@ -522,6 +698,10 @@
         if (st.status === 'finished') {
             el.turnText.textContent = 'Бій завершено';
             el.activeInfo.textContent = '';
+        } else if (st.heroes?.[st.active_id]) {
+            const hero = st.heroes[st.active_id];
+            el.turnText.textContent = `Хід героя · ${hero.name}`;
+            el.activeInfo.textContent = `Ініціатива ${hero.initiative} · Шкода ${hero.damage_min}–${hero.damage_max}`;
         } else if (a) {
             const u = uv(a.unit);
             el.turnText.textContent = replay ? 'Хід · ' + u.name : (myTurn ? 'Ваш хід' : 'Хід суперника…');
@@ -536,7 +716,7 @@
         $('btn-auto').setAttribute('aria-pressed', String(auto));
         $('btn-auto').textContent = auto ? 'Авто увімкнено' : 'Авто';
         el.btnWait.disabled = !(can && view.turn.can_wait);
-        el.btnDefend.disabled = !can;
+        el.btnDefend.disabled = !can || Boolean(view.turn?.hero);
         el.btnSurrender.disabled = !!replay || busy || view.status !== 'active';   // здатися можна й не у свій хід
     }
 
@@ -549,6 +729,7 @@
         clearHover();
         if (!view || !view.turn) return;
         const a = activeStack();
+        if (!a) return;
         const [ox, oy] = centerOffset(a);
         const ax = x - ox, ay = y - oy;
         if (view.turn.move.some((p) => p[0] === ax && p[1] === ay)) {
@@ -649,6 +830,7 @@
                     logLine(stackName(e.stack) + ' рухається', cls);
                     break;
                 case 'attack':
+                case 'hero_attack':
                     logLine(stackName(e.attacker) + (e.ranged ? ' стріляє в ' : ' атакує ') + stackName(e.target) +
                             ': ' + e.damage + ' шкоди, загинуло ' + e.killed, cls);
                     popup(e.target, '-' + e.damage + (e.killed ? ' 💀' + e.killed : ''), '', delay);
@@ -680,31 +862,6 @@
                     break;
             }
         }
-    }
-
-    function showResult() {
-        const w = view.winner_side;
-        const iSurrendered = view.state.surrendered === view.my_side;
-        el.resultTitle.textContent = w === null ? 'Нічия'
-            : (w === view.my_side ? 'Перемога!' : (iSurrendered ? 'Ви здалися' : 'Поразка'));
-        const {reward} = view;
-        const parts = reward && [
-            reward.gold > 0 ? `+${reward.gold} золота` : '',
-            reward.experience > 0 ? `+${reward.experience} досвіду` : '',
-        ].filter(Boolean);
-        $('result-reward').textContent = parts
-            ? (parts.length ? parts.join(' · ') : 'Нагороду не нараховано.')
-            : 'Дані про нагороду недоступні.';
-        $('btn-new').classList.toggle('hidden', Boolean(replay));
-        $('btn-replay').textContent = replay ? 'Переглянути повторно' : 'Повтор';
-        if (replay) {
-            el.result.classList.remove('hidden');
-            return;
-        }
-        const battleId = view.id;
-        setTimeout(() => {
-            if (!replay && view?.id === battleId && view.status === 'finished') el.result.classList.remove('hidden');
-        }, 900);   // дати програтися числам шкоди
     }
 
     // ---------- Дії гравця ----------
@@ -785,6 +942,7 @@
         }
         if (!view || !view.turn) return;
         const a = activeStack();
+        if (!a) return;
         const [ox, oy] = centerOffset(a);
         const ax = x - ox, ay = y - oy;
         if (view.turn.move.some((p) => p[0] === ax && p[1] === ay)) send({ type: 'move', x: ax, y: ay });
@@ -799,7 +957,7 @@
     }
 
     el.btnWait.addEventListener('click', () => send({ type: 'wait' }));
-    $('btn-summon').addEventListener('click', () => send({type: 'summon', element: $('summon-element').value}));
+    $('legacy-spellbook').addEventListener('click', openSpellbook);
     el.btnDefend.addEventListener('click', () => send({ type: 'defend' }));
     el.btnSurrender.addEventListener('click', () => el.confirm.classList.remove('hidden'));
     $('confirm-yes').addEventListener('click', doSurrender);
@@ -817,12 +975,13 @@
 
     // ---------- Синхронізація ----------
     async function refresh() {
-        if (!view) return;
+        const current = view;
+        if (!current || replay) return;
         try {
-            const r = await api('/' + view.id);
-            if (r.version !== view.version || r.status !== view.status) applyView(r, []);
+            const r = await api('/' + current.id);
+            if (view === current && !replay && r.id === current.id && r.version > current.version) applyView(r, []);
         } catch (e) {
-            toast(e.message);
+            if (view === current) toast(e.message);
         }
     }
 
@@ -860,6 +1019,8 @@
 
     // ---------- Старт ----------
     function resetClientState() {
+        if ($('spellbook').open) $('spellbook').close();
+        resultModal.close();
         Object.keys(known).forEach(id => delete known[id]);
         Object.keys(lastPos).forEach(id => delete lastPos[id]);
         Object.keys(stackEls).forEach((id) => { stackEls[id].remove(); delete stackEls[id]; });
@@ -873,8 +1034,9 @@
     }
 
     function showMenu() {
+        replayRequest++;
+        trackBattle(null);
         resetClientState();
-        el.result.classList.add('hidden');
         el.confirm.classList.add('hidden');
         el.battle.classList.add('hidden');
         el.menu.classList.remove('hidden');
@@ -883,6 +1045,7 @@
 
     async function startScenario(key) {
         try {
+            replayRequest++;
             resetClientState();
             const r = await api('/pve', 'POST', { scenario: key });
             applyView(r, r.events);
@@ -946,14 +1109,16 @@
     }
 
     async function animateLive(result) {
-        if (!view || !result.event_stream?.length) {
+        if (replay || view?.id !== result.id || result.version <= view.version) return;
+        if (!result.event_stream?.length) {
             applyView(result, result.events);
             return;
         }
         const state = structuredClone(view.state);
-        view = {...view, state, turn: null};
+        const animating = view = {...view, state, turn: null};
         for (const event of result.event_stream) {
             await animateEvent(event, state, 1);
+            if (view !== animating) return;
             BattleEvents.apply(state, event);
             renderStacks();
         }
@@ -967,11 +1132,12 @@
         $('replay-play').textContent = 'Відтворити';
     }
 
-    function replayView(state) {
+    function replayView(state, cursor = 0) {
         return {
             id: replay.battle_id, my_side: replay.my_side, state, status: state.status,
-            winner_side: state.winner, reward: replay.reward, turn: null,
-            forecast: state.active_id ? [{id: state.active_id}] : [],
+            winner_side: state.winner, result: replay.result, turn: null,
+            creature_damage: replay.damage?.summary(),
+            forecast: BattleEvents.replayQueue(state, replay.turns, cursor),
         };
     }
 
@@ -981,6 +1147,7 @@
         const actor = entry.stack || entry.attacker;
         const description = {
             move: 'рухається', attack: `завдає ${entry.damage} шкоди`,
+            hero_attack: `стріляє, ${entry.damage} шкоди`,
             retaliation: `контратакує, ${entry.damage} шкоди`, defend: 'у захисті',
             wait: 'чекає', skip: 'пропускає хід', surrender: 'Сторона здалася',
             summon: `викликає ${uv(entry.unit).name} ×${entry.count}`,
@@ -990,10 +1157,13 @@
     }
 
     function updateReplay(state, cursor) {
+        const reachedEnd = replay.cursor !== replay.events.length && cursor === replay.events.length;
         replay.cursor = cursor;
         $('replay-seek').value = cursor;
-        applyView(replayView(state), []);
-        if (cursor === replay.events.length && state.status === 'finished') showResult();
+        applyView(replayView(state, cursor), []);
+        if (reachedEnd && state.status === 'finished') {
+            resultModal.present(replay.battle_id, replay.result, replay.damage?.summary(), replay.my_side, {fromReplay: true});
+        }
         const result = state.status === 'finished' ?
             (state.winner === null ? 'Нічия' : state.winner === replay.my_side ? 'Перемога' : 'Поразка') : '';
         $('replay-position').textContent =
@@ -1003,12 +1173,14 @@
     function seekReplay(cursor) {
         pauseReplay();
         const state = structuredClone(replay.initial_state);
+        replay.damage = BattleEvents.damageTracker(replay.partial);
         resetClientState();
         view = replayView(state);
         for (const stack of Object.values(state.stacks)) known[stack.id] = stack;
         for (const event of replay.events.slice(0, cursor)) {
             replayLog(event);
             BattleEvents.apply(state, event);
+            replay.damage.apply(event);
         }
         updateReplay(state, cursor);
     }
@@ -1025,35 +1197,40 @@
             await animateEvent(event, view.state, speed);
             if (generation !== playbackGeneration) return;
             BattleEvents.apply(view.state, event);
+            replay.damage.apply(event);
             updateReplay(view.state, replay.cursor + 1);
             await new Promise(resolve => setTimeout(resolve, 100 / speed));
         }
         if (generation === playbackGeneration) pauseReplay();
     }
 
-    async function openReplay(id) {
+    async function openReplay(id, {autoplay = false} = {}) {
+        const requestId = ++replayRequest;
         try {
-            replay = await api('/' + id + '/replay');
+            const data = await api('/' + id + '/replay');
+            if (requestId !== replayRequest || String(data.battle_id) !== String(id)) return false;
+            if (data.schema_version !== 1) throw new Error('Ця версія повтору не підтримується.');
+            replay = data;
+            replay.turns = [];
+            replay.stackIndex = {...replay.initial_state.stacks};
+            replay.events.forEach((event, index) => {
+                if (event.type === 'TURN_STARTED' && event.actor_id && event.sequence !== 1) {
+                    replay.turns.push({index, id: event.actor_id});
+                }
+                Object.assign(replay.stackIndex, event.changes?.stacks);
+            });
             Object.assign(UNIT_VIEW, replay.units);
-            if (replay.schema_version !== 1) throw new Error('Ця версія повтору не підтримується.');
             $('replay-controls').classList.remove('hidden');
             $('replay-seek').max = replay.events.length;
             seekReplay(0);
+            if (autoplay) playReplay();
+            return true;
         } catch (error) {
-            replay = null;
-            toast(error.message);
+            if (requestId === replayRequest && !autoplay) toast(error.message);
+            return false;
         }
     }
 
-    $('btn-new').addEventListener('click', showMenu);
-    $('btn-replay').addEventListener('click', () => {
-        if (replay) {
-            seekReplay(0);
-            playReplay();
-        } else {
-            openReplay(view.id);
-        }
-    });
     $('replay-play').addEventListener('click', playReplay);
     $('replay-restart').addEventListener('click', () => seekReplay(0));
     $('replay-seek').addEventListener('input', event => seekReplay(Number(event.target.value)));
@@ -1084,7 +1261,17 @@
             const r = await api('/active');   // є незавершений бій — продовжуємо його
             applyView(r, []);
         } catch (e) {
-            if (e.status === 401) { toast('Потрібна авторизація'); }
+            if (e.status === 401) toast('Потрібна авторизація');
+            const previous = trackedBattle();
+            if (e.status === 404 && /^\d+$/.test(previous || '')) {
+                try {
+                    const final = await api('/' + previous);
+                    if (String(final.id) === previous && final.status === 'finished') {
+                        applyView(final, []);
+                        return;
+                    }
+                } catch { /* the battle may no longer be available to this session */ }
+            }
             showMenu();
         }
     })();

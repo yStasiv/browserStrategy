@@ -5,6 +5,7 @@ const BattleEvents = (() => {
         UNIT_DEFENDED: 'defend', UNIT_WAITED: 'wait', UNIT_SKIPPED: 'skip',
         SIDE_SURRENDERED: 'surrender', BATTLE_FINISHED: 'battle_end',
         ELEMENTAL_SUMMONED: 'summon',
+        HERO_ATTACKED: 'hero_attack',
     };
 
     function logEvent(event) {
@@ -52,5 +53,34 @@ const BattleEvents = (() => {
             ], {duration: 160 / speed});
         }
     }
-    return {apply, animate, logEvent};
+    function damageTracker(partial) {
+        const sides = [new Map(), new Map()];
+        return {
+            apply(event) {
+                const hit = event.creature_damage;
+                if (!hit) return;
+                const creatures = sides[hit.side];
+                creatures.set(hit.unit, (creatures.get(hit.unit) || 0) + hit.amount);
+            },
+            summary() {
+                return {partial, sides: sides.map((units, side) => {
+                    const creatures = [...units].map(([unit, amount]) => ({unit, amount}));
+                    creatures.sort((a, b) => b.amount - a.amount);
+                    return {side, creatures, total: creatures.reduce((sum, unit) => sum + unit.amount, 0)};
+                })};
+            },
+        };
+    }
+
+    function replayQueue(state, turns, cursor, limit = 50) {
+        if (state.status !== 'active' || !state.active_id) return [];
+        const queue = [{id: state.active_id}];
+        for (const turn of turns) {
+            if (queue.length >= limit) break;
+            if (turn.index >= cursor) queue.push({id: turn.id});
+        }
+        return queue;
+    }
+
+    return {apply, animate, logEvent, damageTracker, replayQueue};
 })();

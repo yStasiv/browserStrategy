@@ -430,6 +430,8 @@ def test_hunts_and_faction_recruitment(sessions):
                 break
             battle = battle_service.submit_auto_action(db, player, battle["id"], battle["version"])
         assert battle["winner_side"] == 0
+        assert any(entry["type"] == "hunters" and entry["amount"] == 1
+                   for entry in battle["result"]["sides"][0]["participants"][0]["rewards"])
         db.refresh(player)
         assert 132 <= player.gold <= 398
         before = player.gold
@@ -735,8 +737,10 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     from backend.engine.battle_models import ArmySlot
     from backend.engine.events import reconstruct
     from backend.engine.summoning import squad_health
-    from backend.models import CastleBuilding
+    from backend.models import CastleBuilding, Item
     from backend.routers import castle, help as game_help
+    from backend.services.character_profile import hero_state
+    from backend.services.hero_equipment import change_equipment
 
     assert squad_health(67, 20) == (4, 7)
     assert squad_health(60, 20) == (3, 20)
@@ -768,16 +772,25 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
 
     with sessions.begin() as db:
         elf = db.get(User, 10)
-        elf.fraction, elf.mind, elf.magic_power = "elfe", 1, 5
+        elf.fraction, elf.mind, elf.magic_power = "elfe", 0, 3
+        elf.melee_attack = 2
         elf.gold, elf.basalt_bone = 10000, 100
         other = db.get(User, 2)
         other.fraction = "undergroundElves"
         db.add_all([
+            Item(id=103, owner_id=10, item_type="belt", stats={
+                "mind": 1, "magic_power": 2, "melee_attack": 3, "physical_defense": 4,
+                "initiative": 1, "luck": 2, "morale": 1,
+            }),
             CastleBuilding(player_id=10, building_id="magic_school_1"),
             CastleBuilding(player_id=10, building_id="magic_school_2"),
             CastleBuilding(player_id=2, building_id="magic_school_1"),
             ArmySlot(user_id=2, slot=0, unit_key="underground_elves_shade_1", count=20),
         ])
+        db.flush()
+        change_equipment(db, elf, slot="belt", item_id=103)
+        db.flush()
+        profile_stats = {key: stat["total"] for key, stat in hero_state(db, elf)["attributes"].items()}
 
     status, body = call("GET", "/castle?section=army")
     assert status == 200 and b'name="form:elves_sylven"' not in body
@@ -804,13 +817,20 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     })[0] == 422
 
     status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"}, token="other-session")
-    assert status == 200 and "summoning" not in json.loads(body)["state"]
+    assert status == 200
+    underground = json.loads(body)["state"]
+    assert set(underground["heroes"]) == {"hero_0"}
+    assert not underground["summoning"]["0"]["elements"]
 
     status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"})
     battle = json.loads(body)
     assert status == 200
     player_army = [stack["unit"] for stack in battle["state"]["stacks"].values() if stack["owner"] == 0]
     assert player_army == ["elves_moon_archer_3"]
+    hero = battle["state"]["heroes"]["hero_0"]
+    assert {key: hero[key] for key in profile_stats} == profile_stats
+    assert (hero["attack"], hero["defense"], hero["knowledge"], hero["spell_power"], hero["initiative"]) == (5, 4, 1, 5, 11)
+    assert (hero["damage_min"], hero["damage_max"]) == (10, 13)
     assert battle["state"]["summoning"]["0"]["elements"] == ["earth", "water"]
     root = f"/api/battles/{battle['id']}"
     status, body = call("POST", root + "/begin", payload={"version": battle["version"]})
@@ -822,6 +842,21 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
             "type": "summon", "element": element,
         }})
 
+    def advance_to_hero(current, battle_root):
+        for _ in range(12):
+            if (current["turn"] or {}).get("hero"):
+                return current
+            status, body = call("POST", battle_root + "/actions", payload={
+                "version": current["version"], "action": {"type": "defend"},
+            })
+            assert status == 200
+            current = json.loads(body)
+        pytest.fail("Герой не отримав хід.")
+
+    assert not battle["turn"].get("hero")
+    assert any(entry["id"] == "hero_0" for entry in battle["forecast"])
+    assert summon("earth", battle["version"])[0] == 400
+    battle = advance_to_hero(battle, root)
     assert summon("fire", battle["version"])[0] == 400
     first_version = battle["version"]
     status, body = summon("earth", first_version)
@@ -832,6 +867,7 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert battle["state"]["summoning"]["0"]["energy"] == 10
     assert summon("earth", first_version)[0] == 409
 
+    battle = advance_to_hero(battle, root)
     status, body = summon("water", battle["version"])
     assert status == 200
     battle = json.loads(body)
@@ -841,12 +877,31 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     summoned = next(event["payload"] for event in battle["event_stream"] if event["type"] == "ELEMENTAL_SUMMONED")
     assert (summoned["count"], summoned["top_hp"]) == (4, 10)
     assert battle["state"]["summoning"]["0"]["energy"] == 0
-    assert summon("earth", battle["version"])[0] == 400
+    battle = advance_to_hero(battle, root)
+    status, body = summon("earth", battle["version"])
+    assert status == 400 and "Недостатньо енергії" in body.decode()
     status, body = call("GET", root + "/events")
     replay = json.loads(body)
     assert status == 200
     assert sum(event["type"] == "ELEMENTAL_SUMMONED" for event in replay["events"]) == 2
     assert reconstruct(replay["initial_state"], replay["events"]) == battle["state"]
+    assert call("POST", root + "/surrender", payload={"version": battle["version"]})[0] == 200
+
+    status, body = call("POST", "/api/battles/hunt/goblin")
+    assert status == 200
+    hunt = json.loads(body)
+    assert hunt["state"]["hunt_key"] == "goblin"
+    assert set(hunt["state"]["heroes"]) == {"hero_0"}
+    assert hunt["state"]["summoning"]["0"]["elements"] == ["earth", "water"]
+    hunt_root = f"/api/battles/{hunt['id']}"
+    status, body = call("POST", hunt_root + "/begin", payload={"version": hunt["version"]})
+    assert status == 200
+    hunt = advance_to_hero(json.loads(body), hunt_root)
+    status, body = call("POST", hunt_root + "/actions", payload={
+        "version": hunt["version"], "action": {"type": "summon", "element": "water"},
+    })
+    assert status == 200
+    assert json.loads(body)["state"]["summoning"]["0"]["energy"] == 10
 
 
 def test_registration_grants_only_own_faction_starter_buildings(sessions):

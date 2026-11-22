@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Tuple
 
 from .actions import Attack, Defend, Move, Skip, Summon, Wait
 from .data import UNITS
-from .state import ATB_SCALE, MAX_ACTIONS, BattleState, Stack
+from .state import ATB_SCALE, MAX_ACTIONS, BattleState, HeroTurn, Stack
 from .summoning import spawn_position, squad_health
 
 Cell = Tuple[int, int]
@@ -153,20 +153,21 @@ def _hurt(stack: Stack, dmg: int) -> int:
 
 # ---------- черга ходів (шкала готовності) ----------
 
-def period(stack: Stack) -> int:
-    return ATB_SCALE // UNITS[stack.unit].initiative
+def period(actor: Stack | HeroTurn) -> int:
+    initiative = actor.initiative if isinstance(actor, HeroTurn) else UNITS[actor.unit].initiative
+    return ATB_SCALE // initiative
 
 
-def _tiebreak(stack: Stack, seq: int) -> int:
+def _tiebreak(stack: Stack | HeroTurn, seq: int) -> int:
     return (stack.owner + seq) % 2  # при рівному ready сторони чергуються
 
 
 def _pick_active(state: BattleState) -> str:
-    return min(state.stacks.values(), key=lambda s: (s.ready, _tiebreak(s, state.seq), s.id)).id
+    return min(state.actors(), key=lambda s: (s.ready, _tiebreak(s, state.seq), s.id)).id
 
 
 def init_timeline(state: BattleState) -> None:
-    for s in state.stacks.values():
+    for s in state.actors():
         s.ready = period(s)
     state.active_id = _pick_active(state)
 
@@ -191,13 +192,14 @@ def _advance(state: BattleState, events: list) -> None:
         _finish(state, events, None, "max_actions")
         return
     state.active_id = _pick_active(state)
-    a = state.stacks[state.active_id]
-    a.defending = False      # захист діє до власного наступного ходу
-    a.retaliated = False     # контратака відновлюється на початку власного ходу
+    a = state.stacks.get(state.active_id)
+    if a is not None:
+        a.defending = False      # захист діє до власного наступного ходу
+        a.retaliated = False     # контратака відновлюється на початку власного ходу
 
 
-def _end_turn(state: BattleState, actor: Stack, events: list) -> None:
-    if actor.id in state.stacks:  # загін міг загинути від контратаки
+def _end_turn(state: BattleState, actor: Stack | HeroTurn, events: list) -> None:
+    if actor.id in state.stacks or actor.id in state.heroes:  # загін міг загинути від контратаки
         actor.ready += period(actor)
     _advance(state, events)
 
@@ -260,6 +262,8 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
 
 
 def _do_summon(state, actor, action, events):
+    if state.heroes and not isinstance(actor, HeroTurn):
+        raise IllegalAction("Викликати елементаля можна лише під час ходу героя.")
     magic = state.summoning.get(str(actor.owner))
     if not magic or action.element not in magic["elements"]:
         raise IllegalAction("Цей виклик недоступний.")
@@ -292,16 +296,44 @@ def _do_summon(state, actor, action, events):
     _end_turn(state, actor, events)
 
 
+def _hero_action(state, hero, action, rng, events):
+    if isinstance(action, Summon):
+        _do_summon(state, hero, action, events)
+        return
+    if isinstance(action, Attack):
+        target = state.stacks.get(action.target_id)
+        if target is None or target.owner == hero.owner or action.from_pos is not None:
+            raise IllegalAction("Некоректна ціль героя.")
+        hp_before = total_hp(target)
+        damage = rng.randint(hero.damage_min, hero.damage_max)
+        killed = _hurt(target, damage)
+        events.append({
+            "type": "hero_attack", "attacker": hero.id, "target": target.id,
+            "damage": damage, "killed": killed, "ranged": True,
+            "target_left": target.count, "top_hp": target.top_hp,
+            "hp_before": hp_before, "hp_after": total_hp(target),
+        })
+        if not target.count:
+            del state.stacks[target.id]
+    elif isinstance(action, Skip):
+        events.append({"type": "skip", "stack": hero.id})
+    else:
+        raise IllegalAction("Герой може атакувати або застосувати закляття.")
+    _end_turn(state, hero, events)
+
+
 def apply(state: BattleState, action) -> Tuple[BattleState, List[dict]]:
     if state.status != "active" or state.active_id is None:
         raise IllegalAction("бій завершено")
     st = copy.deepcopy(state)
     rng = random.Random(f"{st.seed}:{st.seq}")
     st.seq += 1
-    actor = st.stacks[st.active_id]
+    actor = st.active()
     events: List[dict] = []
 
-    if isinstance(action, Move):
+    if isinstance(actor, HeroTurn):
+        _hero_action(st, actor, action, rng, events)
+    elif isinstance(action, Move):
         _do_move(st, actor, action, events)
     elif isinstance(action, Attack):
         _do_attack(st, actor, action, rng, events)
@@ -343,10 +375,16 @@ def surrender(state: BattleState, side: int) -> Tuple[BattleState, List[dict]]:
 # ---------- підказки для інтерфейсу ----------
 
 def turn_info(state: BattleState) -> Optional[dict]:
-    """Що може зробити активний загін: позиції руху та цілі з позиціями для удару."""
+    """Що може зробити активний учасник бою."""
     actor = state.active()
     if actor is None:
         return None
+    if isinstance(actor, HeroTurn):
+        return {
+            "active": actor.id, "owner": actor.owner, "hero": True, "move": [],
+            "targets": [{"id": stack.id, "from": []} for stack in state.stacks.values() if stack.owner != actor.owner],
+            "can_wait": False, "ranged": True,
+        }
     dist = reachable(state, actor)
     ranged = is_ranged(state, actor)
     targets = []
@@ -375,9 +413,10 @@ def forecast(state: BattleState, n: int = 50) -> List[dict]:
     Припускає, що кожен загін просто робить звичайну дію (без втрат і «чекати»), тож це орієнтир."""
     if state.status != "active" or state.active_id is None:
         return []
-    ready = {s.id: s.ready for s in state.stacks.values()}
-    periods = {s.id: period(s) for s in state.stacks.values()}
-    owner = {s.id: s.owner for s in state.stacks.values()}
+    actors = list(state.actors())
+    ready = {s.id: s.ready for s in actors}
+    periods = {s.id: period(s) for s in actors}
+    owner = {s.id: s.owner for s in actors}
     out: List[dict] = []
     cur = state.active_id
     seq = state.seq

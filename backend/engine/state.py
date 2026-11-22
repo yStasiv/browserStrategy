@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, fields
+from itertools import chain
 from typing import Dict, List, Optional, Tuple
 
 WIDTH = 12          # ширина поля (великі бої)
@@ -39,12 +40,30 @@ class Stack:
 
 
 @dataclass
+class HeroTurn:
+    id: str
+    owner: int
+    name: str
+    level: int
+    initiative: int
+    attack: int | float
+    defense: int | float
+    knowledge: int | float
+    spell_power: int | float
+    damage_min: int
+    damage_max: int
+    luck: int | float = 0
+    morale: int | float = 0
+    ready: int = 0
+
+
+@dataclass
 class BattleState:
     width: int
     height: int
     seed: int
     stacks: Dict[str, Stack]
-    active_id: Optional[str] = None     # загін, що діє зараз
+    active_id: Optional[str] = None     # загін або герой, що діє зараз
     seq: int = 0                        # скільки дій виконано
     status: str = "active"              # active | finished
     winner: Optional[int] = None        # None при нічиїй
@@ -52,11 +71,15 @@ class BattleState:
 
     hunt_key: Optional[str] = None
     summoning: Dict[str, dict] = field(default_factory=dict)
+    heroes: Dict[str, HeroTurn] = field(default_factory=dict)
 
-    def active(self) -> Optional[Stack]:
+    def actors(self):
+        return chain(self.stacks.values(), self.heroes.values())
+
+    def active(self) -> Stack | HeroTurn | None:
         if self.status != "active" or self.active_id is None:
             return None
-        return self.stacks[self.active_id]
+        return self.stacks.get(self.active_id) or self.heroes[self.active_id]
 
     def stack_at(self, x: int, y: int) -> Optional[Stack]:
         for s in self.stacks.values():
@@ -70,6 +93,8 @@ class BattleState:
             del snapshot["hunt_key"]
         if not self.summoning:
             del snapshot["summoning"]
+        if not self.heroes:
+            del snapshot["heroes"]
         for stack in snapshot["stacks"].values():
             if not stack["summoned"]:
                 del stack["summoned"]
@@ -82,4 +107,5 @@ class BattleState:
         d = {k: v for k, v in d.items() if k in known}   # старі/зайві ключі ігноруємо
         d["stacks"] = {k: Stack(**{a: b for a, b in v.items() if a in sfields})
                        for k, v in d["stacks"].items()}
+        d["heroes"] = {key: HeroTurn(**value) for key, value in d.get("heroes", {}).items()}
         return cls(**d)
