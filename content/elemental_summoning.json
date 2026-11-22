@@ -4,6 +4,7 @@
   "energy_per_knowledge": 10,
   "base_hp_pool": 20,
   "hp_pool_per_spell_power": 10,
+  "description": "Призиває елементаля у першу вільну клітинку згори. Попередній призваний загін замінюється.",
   "elementals": [
     {
       "element": "earth",

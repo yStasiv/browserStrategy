@@ -53,10 +53,15 @@ const BattleEvents = (() => {
             ], {duration: 160 / speed});
         }
     }
-    function damageTracker(partial) {
+    function damageTracker(partial, heroes = {}) {
         const sides = [new Map(), new Map()];
+        const heroTotals = new Map(Object.values(heroes).map(hero => [hero.owner, 0]));
         return {
             apply(event) {
+                const heroHit = event.hero_damage;
+                if (heroHit) {
+                    heroTotals.set(heroHit.side, (heroTotals.get(heroHit.side) ?? 0) + heroHit.amount);
+                }
                 const hit = event.creature_damage;
                 if (!hit) return;
                 const creatures = sides[hit.side];
@@ -66,7 +71,10 @@ const BattleEvents = (() => {
                 return {partial, sides: sides.map((units, side) => {
                     const creatures = [...units].map(([unit, amount]) => ({unit, amount}));
                     creatures.sort((a, b) => b.amount - a.amount);
-                    return {side, creatures, total: creatures.reduce((sum, unit) => sum + unit.amount, 0)};
+                    return {
+                        side, creatures, hero_total: heroTotals.get(side) ?? null,
+                        total: creatures.reduce((sum, unit) => sum + unit.amount, 0),
+                    };
                 })};
             },
         };

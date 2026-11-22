@@ -55,6 +55,7 @@ class HeroTurn:
     luck: int | float = 0
     morale: int | float = 0
     ready: int = 0
+    portrait: str | None = None
 
 
 @dataclass
@@ -95,6 +96,10 @@ class BattleState:
             del snapshot["summoning"]
         if not self.heroes:
             del snapshot["heroes"]
+        else:
+            for hero in snapshot["heroes"].values():
+                if hero["portrait"] is None:
+                    del hero["portrait"]
         for stack in snapshot["stacks"].values():
             if not stack["summoned"]:
                 del stack["summoned"]

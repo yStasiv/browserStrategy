@@ -74,6 +74,32 @@ def school_level(built):
     return max((level for level in range(1, 8) if f"magic_school_{level}" in built), default=0)
 
 
+def resource_owners(db, player, resource_ids):
+    resource_ids = set(resource_ids)
+    owners = {resource: (player, resource) for resource in resource_ids & LEGACY_BALANCES}
+    other_ids = resource_ids - LEGACY_BALANCES
+    if other_ids:
+        rows = db.scalars(select(PlayerResourceBalance).where(
+            PlayerResourceBalance.player_id == player.id,
+            PlayerResourceBalance.resource_id.in_(other_ids),
+        ))
+        owners.update((row.resource_id, (row, "quantity")) for row in rows)
+    return owners
+
+
+def resource_quantity(owners, resource):
+    owner, field = owners.get(resource, (None, None))
+    return (getattr(owner, field) or 0) if owner is not None else 0
+
+
+def unaffordable_buildings(db, player, buildings):
+    owners = resource_owners(db, player, {resource for building in buildings for resource in building.resources})
+    return {
+        building.id for building in buildings
+        if any(resource_quantity(owners, resource) < cost for resource, cost in building.resources.items())
+    }
+
+
 def build(db, player, building_id):
     # The route holds the player lock obtained from require_presence.
     entries, resources = catalog()
@@ -89,16 +115,11 @@ def build(db, player, building_id):
     if missing:
         raise HTTPException(403, f"Спочатку побудуй: {', '.join(missing)}.")
 
-    balances = {}
+    owners = resource_owners(db, player, building.resources)
     for resource, cost in building.resources.items():
-        if resource in LEGACY_BALANCES:
-            owner, field = player, resource
-        else:
-            owner, field = db.get(PlayerResourceBalance, (player.id, resource)), "quantity"
-        balance = (getattr(owner, field) or 0) if owner is not None else 0
-        if balance < cost:
+        if resource_quantity(owners, resource) < cost:
             raise HTTPException(409, f"Недостатньо ресурсу «{resources[resource]['name']}».")
-        balances[resource] = (owner, field, balance - cost)
-    for owner, field, remaining in balances.values():
-        setattr(owner, field, remaining)
+    for resource, cost in building.resources.items():
+        owner, field = owners[resource]
+        setattr(owner, field, resource_quantity(owners, resource) - cost)
     db.add(CastleBuilding(player_id=player.id, building_id=building_id))

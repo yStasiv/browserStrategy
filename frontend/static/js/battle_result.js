@@ -78,16 +78,23 @@ const BattleResult = (() => {
         });
         if (damage?.sides?.length) {
             const section = element('section', 'battle-result-damage');
-            section.append(element('h3', '', 'Шкода створінь'));
+            section.append(element('h3', '', 'Завдана шкода'));
             const columns = element('div', 'battle-result-damage-columns');
             const sides = [...damage.sides].sort((a, b) => Number(b.side === mySide) - Number(a.side === mySide));
             for (const side of sides) {
                 const column = element('div', 'battle-result-damage-team');
                 const heading = side.side === mySide ? 'Союзники' : 'Вороги';
-                column.append(element('h4', '', heading + ' · ' + numberFormat.format(side.total)));
-                if (side.creatures?.length) {
+                const total = side.total + (side.hero_total ?? 0);
+                column.append(element('h4', '', heading + ' · ' + numberFormat.format(total)));
+                if (side.creatures?.length || Number.isFinite(side.hero_total)) {
                     const list = element('ul');
-                    for (const creature of side.creatures) {
+                    if (Number.isFinite(side.hero_total)) {
+                        const row = element('li');
+                        row.append(element('span', '', 'Герой'),
+                            element('strong', '', numberFormat.format(side.hero_total)));
+                        list.append(row);
+                    }
+                    for (const creature of side.creatures ?? []) {
                         const row = element('li');
                         row.append(element('span', '', unitName(creature.unit)),
                             element('strong', '', numberFormat.format(creature.amount)));

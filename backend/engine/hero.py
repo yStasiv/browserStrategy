@@ -16,4 +16,5 @@ def make_hero(db, user, side, level):
         id=f"hero_{side}", owner=side, name=user.username, level=level, **totals,
         damage_min=max(1, HERO_RULES["damage_min"] + attack),
         damage_max=max(1, HERO_RULES["damage_max"] + attack),
+        portrait=user.avatar_url if (user.avatar_url or "").startswith("/avatars/") else None,
     )

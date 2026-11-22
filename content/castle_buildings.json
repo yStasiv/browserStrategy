@@ -3,7 +3,7 @@
     "id": "elves_recruitment_tier_1",
     "name": "Гай вісників",
     "description": "Відкриває найм істоти «Сільвен-вісник».",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_1_building.png",
     "factions": [
       "elves"
     ],
@@ -15,7 +15,7 @@
     "id": "elves_recruitment_tier_1_form_2",
     "name": "Гай вісників · форма 2",
     "description": "Відкриває найм істоти «Сільвен-стежовик».",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_1_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -32,7 +32,7 @@
     "id": "elves_recruitment_tier_1_form_3",
     "name": "Гай вісників · форма 3",
     "description": "Відкриває найм істоти «Сільвен-вітрохід».",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_1_form_3_building.png",
     "factions": [
       "elves"
     ],
@@ -49,7 +49,7 @@
     "id": "elves_recruitment_tier_2",
     "name": "Діброва стражів",
     "description": "Відкриває найм істоти «Кора-страж».",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_2_building.png",
     "factions": [
       "elves"
     ],
@@ -61,7 +61,7 @@
     "id": "elves_recruitment_tier_2_form_2",
     "name": "Діброва стражів · форма 2",
     "description": "Відкриває найм істоти «Ясеневий бастіон».",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_2_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -78,7 +78,7 @@
     "id": "elves_recruitment_tier_2_form_3",
     "name": "Діброва стражів · форма 3",
     "description": "Відкриває найм істоти «Дубовий колос».",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_2_form_3_building.png",
     "factions": [
       "elves"
     ],

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Бій</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/battle_hero.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/battle_result.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/navigation.css') }}">
     <script defer src="{{ url_for('static', path='js/dialog.js') }}"></script>
@@ -13,7 +14,6 @@
         body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
 
         #board-wrap {
-            perspective: 1000px;
             min-height: 12rem;
             padding: clamp(0.5rem, 2vw, 1.4rem);
             border: 1px solid #51432e;
@@ -37,39 +37,6 @@
                 repeating-linear-gradient(113deg, #d6c29813 0 1px, transparent 1px 6px),
                 #56613a;
         }
-        #field-heroes { display: flex; justify-content: space-between; gap: .45rem; margin: 0 auto .55rem; }
-        #field-heroes[hidden] { display: none; }
-        .field-hero {
-            display: grid;
-            grid-template-columns: auto minmax(0, 1fr);
-            align-items: center;
-            gap: .2rem .5rem;
-            padding: .35rem;
-            border: 1px solid #a88c56;
-            border-radius: .4rem;
-            background: #263a34;
-            color: #fff0c3;
-        }
-        .field-hero[data-side="1"] { margin-inline-start: auto; }
-        .field-hero.active { box-shadow: 0 0 0 2px #facc15; }
-        .field-hero.hl { border-color: #fff; }
-        .field-hero img { width: 2.5rem; height: 2.5rem; object-fit: cover; border-radius: .25rem; }
-        .field-hero strong { overflow-wrap: anywhere; }
-        .field-hero small { display: block; }
-        .field-hero button { grid-column: 1 / -1; font-size: .8rem; padding: .35rem .5rem; }
-        #spellbook {
-            width: min(26rem, calc(100% - 2rem));
-            max-height: calc(100% - 2rem);
-            margin: auto;
-            padding: 1rem;
-            border: 1px solid #a88c56;
-            border-radius: .5rem;
-            background: #1e293b;
-            color: #e2e8f0;
-        }
-        #spellbook::backdrop { background: #080d16a0; }
-        #spell-list { display: grid; gap: .45rem; }
-        #spell-list button { text-align: start; }
         #cells { display: grid; position: relative; }
         .cell {
             width: var(--cell); height: var(--cell); box-sizing: border-box;
@@ -99,6 +66,10 @@
             text-shadow: 0 2px 4px #050a08;
         }
         .stack.big .icon { width: 90%; height: 87%; border-radius: 30%; }
+        .stack .unit-portrait, .chip .unit-portrait {
+            display: block; width: 100%; height: 100%; object-fit: contain;
+            border-radius: inherit; pointer-events: none;
+        }
         .stack.enemy .icon { border-color: #d98f75; background: radial-gradient(ellipse at 45% 28%, #684b38, #302225 70%); }
         .stack.active .icon { box-shadow: 0 0 0 3px #facc15, 0 0 14px 4px rgba(250, 204, 21, 0.7); }
         .stack.target { cursor: crosshair; }
@@ -170,11 +141,13 @@
 
         <div class="flex flex-col lg:flex-row gap-3">
             <div id="board-wrap" class="flex-1 min-w-0">
-                <div id="field-heroes" aria-label="Герої" hidden></div>
-                <div id="board">
-                    <div id="cells"></div>
-                    <div id="stacks"></div>
-                    <div id="popups"></div>
+                <div class="battle-stage" id="battle-stage">
+                    <div id="field-heroes" aria-label="Герої" hidden></div>
+                    <div id="board">
+                        <div id="cells"></div>
+                        <div id="stacks"></div>
+                        <div id="popups"></div>
+                    </div>
                 </div>
             </div>
 
@@ -197,6 +170,11 @@
                     <button id="btn-defend" class="btn alt flex-1" title="Захист (D)">Захист</button>
                     <button id="btn-surrender" class="btn danger flex-1" title="Здатися">Здатись</button>
                 </div>
+                <section id="spell-target-controls" class="bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Ціль закляття" hidden>
+                    <p id="spell-target-status" role="status"></p>
+                    <button id="confirm-spell" type="button" class="btn">Застосувати</button>
+                    <button id="cancel-spell" type="button" class="btn alt">Скасувати</button>
+                </section>
                 <section id="summon-actions" class="hidden bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Виклик елементалів">
                     <p id="summon-energy"></p>
                     <p id="summon-status" aria-live="polite"></p>
@@ -258,6 +236,8 @@
     let auto = false;
     let deploymentStack = null;
     let hoveredStackId = null;
+    let completedActor = null;
+    let spellSelection = null;
     let replay = null;
     let playing = false;
     let playbackGeneration = 0;
@@ -343,6 +323,21 @@
         toast._t = setTimeout(() => el.toast.classList.add('hidden'), ms);
     }
 
+    function renderUnitPortrait(container, unit) {
+        const existing = container.firstElementChild;
+        if (existing?.getAttribute('src') === unit.image_url && unit.image_url) return;
+        if (!unit.image_url) {
+            container.textContent = unit.emoji;
+            return;
+        }
+        const portrait = document.createElement('img');
+        portrait.className = 'unit-portrait';
+        portrait.alt = '';
+        portrait.addEventListener('error', () => portrait.replaceWith(unit.emoji), {once: true});
+        portrait.src = unit.image_url;
+        container.replaceChildren(portrait);
+    }
+
     function stackName(id) {
         const hero = view?.state.heroes?.[id];
         if (hero) return 'Герой ' + hero.name;
@@ -368,10 +363,16 @@
         const w = view.state.width, h = view.state.height;
         const frame = getComputedStyle(el.wrap);
         const padding = parseFloat(frame.paddingLeft) + parseFloat(frame.paddingRight) || 0;
-        const maxW = Math.min(el.wrap.clientWidth - padding - 4, 960);
+        const gutter = Object.keys(view.state.heroes ?? {}).length
+            ? Math.round(Math.max(30, Math.min(78, el.wrap.clientWidth * 0.12))) : 0;
+        const maxW = Math.min(el.wrap.clientWidth - padding - 4 - 2 * gutter, 960);
         const maxH = window.innerHeight * 0.62;
         const cell = Math.max(1, Math.min(72, Math.floor(Math.min(maxW / w, maxH / h)))) + 'px';
-        $('field-heroes').style.maxWidth = (parseFloat(cell) * w + 4) + 'px';
+        const stage = $('battle-stage');
+        stage.style.maxWidth = (parseFloat(cell) * w + 4 + 2 * gutter) + 'px';
+        stage.style.marginInline = 'auto';
+        stage.style.setProperty('--hero-gutter', gutter + 'px');
+        stage.style.setProperty('--hero-height', Math.max(48, Math.min(104, parseFloat(cell) * 1.42)) + 'px');
         if (el.board.style.getPropertyValue('--cell') !== cell) {
             el.board.style.setProperty('--cell', cell);
         }
@@ -438,6 +439,7 @@
         renderStacks();
         renderInitiative();
         renderHighlights();
+        renderSpellSelection();
 
         for (const s of Object.values(v.state.stacks)) lastPos[s.id] = { x: s.x, y: s.y, w: s.w, h: s.h };
 
@@ -477,7 +479,7 @@
             d.style.width = 'calc(var(--cell) * ' + s.w + ')';
             d.style.height = 'calc(var(--cell) * ' + s.h + ')';
             d.children[0].style.fontSize = 'calc(var(--cell) * ' + (0.5 * Math.min(s.w, s.h)) + ')';
-            d.children[0].textContent = u.emoji;
+            renderUnitPortrait(d.children[0], u);
             d.children[1].textContent = s.defending ? '🛡' : s.summoned ? '✦' : '';
             d.children[2].textContent = s.count;
             d.title = unitTitle(s.unit) + ': ' + s.count + ' шт., HP верхнього: ' + s.top_hp +
@@ -535,9 +537,10 @@
         el.initiative.innerHTML = '';
         const st = view.state;
         if (st.status !== 'active') return;
-        const list = view.forecast && view.forecast.length
+        const upcoming = view.forecast && view.forecast.length
             ? view.forecast
             : (st.active_id ? [{ id: st.active_id }] : []);
+        const list = completedActor ? [{id: completedActor, completed: true}, ...upcoming] : upcoming;
         let first = true;
         for (const f of list) {
             const hero = st.heroes?.[f.id];
@@ -545,13 +548,26 @@
             const s = currentStack ?? hero ?? replay?.stackIndex?.[f.id];
             if (!s) continue;
             const c = document.createElement('div');
-            c.className = 'chip' + (s.owner === view.my_side ? '' : ' enemy') + (first ? ' first' : '');
+            c.className = 'chip' + (s.owner === view.my_side ? '' : ' enemy') +
+                (f.completed ? ' completed' : first ? ' first' : '');
             c.dataset.stackId = f.id;
             c.classList.toggle('hl', f.id === hoveredStackId);
-            first = false;
-            c.textContent = hero ? '👤' : uv(s.unit).emoji;
+            if (!f.completed && first) {
+                c.setAttribute('aria-current', 'step');
+                first = false;
+            }
+            if (hero) {
+                const portrait = document.createElement('img');
+                portrait.src = hero.portrait || '/static/images/battle/elf-hero.png';
+                if (!hero.portrait) portrait.className = 'hero-default-portrait';
+                portrait.alt = '';
+                c.appendChild(portrait);
+            } else {
+                renderUnitPortrait(c, uv(s.unit));
+            }
             c.title = hero ? `Герой ${hero.name} · ініціатива ${hero.initiative}`
                 : uv(s.unit).name + (currentStack ? ' ×' + s.count : '');
+            if (f.completed) c.title = 'Хід завершено · ' + c.title;
             if (currentStack) {
                 const b = document.createElement('span');
                 b.className = 'badge';
@@ -582,21 +598,38 @@
         });
     }
 
+    function canUseSpellbook() {
+        return !busy && !auto && !replay && view?.status === 'active' && view.turn
+            && (view.turn.hero || !view.state.heroes) && view.state.summoning?.[view.my_side];
+    }
+
     function openSpellbook() {
-        const magic = view.state.summoning?.[view.my_side];
-        const canCast = view.turn && (view.turn.hero || !view.state.heroes);
-        if (!magic || !canCast || busy || auto || replay) return;
+        if (!canUseSpellbook()) return;
+        const magic = view.state.summoning[view.my_side];
         $('spellbook-energy').textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
-        const spells = magic.elements.map(element => {
-            const unit = uv('elemental_' + element);
+        const spells = (view.turn.spells ?? []).map(spell => {
             const button = document.createElement('button');
             button.type = 'button';
-            button.className = 'btn alt';
-            button.textContent = `${unit.emoji} ${unit.name} · ${magic.cost} енергії`;
-            button.disabled = magic.energy < magic.cost;
+            button.className = 'spell-option';
+            button.disabled = !spell.target;
+            for (const [tag, value, className] of [
+                ['strong', `${spell.icon} ${spell.name}`, ''],
+                ['span', spell.description, ''],
+                ['small', `${spell.energy_cost} енергії · ${spell.target_label}`, ''],
+                ['small', spell.unavailable, 'spell-unavailable'],
+            ]) {
+                if (!value) continue;
+                const line = document.createElement(tag);
+                line.className = className;
+                line.textContent = value;
+                button.append(line);
+            }
             button.addEventListener('click', () => {
+                if (!canUseSpellbook() || !spell.target) return;
+                spellSelection = {battle: view.id, version: view.version, actor: view.turn.active, spell};
                 $('spellbook').close();
-                send({type: 'summon', element});
+                renderSpellSelection();
+                $('confirm-spell').focus();
             });
             return button;
         });
@@ -607,6 +640,46 @@
         }
         $('spell-list').replaceChildren(...spells);
         $('spellbook').showModal();
+    }
+
+    function renderSpellSelection() {
+        if (!canUseSpellbook() || spellSelection?.battle !== view.id ||
+                spellSelection?.version !== view.version || spellSelection?.actor !== view.turn.active) {
+            spellSelection = null;
+        }
+        el.cells.querySelectorAll('.spell-cell').forEach(cell => cell.classList.remove('spell-cell', 'enemy-spell-cell'));
+        el.stacks.querySelectorAll('.spell-target-stack').forEach(stack => stack.classList.remove('spell-target-stack'));
+        el.stacks.classList.toggle('spell-aiming', Boolean(spellSelection));
+        $('spell-target-controls').hidden = !spellSelection;
+        if (!spellSelection) return;
+        const {spell} = spellSelection;
+        const {cell: [x, y], size: [w, h], side} = spell.target;
+        $('spell-target-status').textContent = `${spell.name} · клітинка ${x + 1}, ${y + 1}`;
+        for (const cell of footprint(x, y, w, h)) {
+            cell.classList.add('spell-cell');
+            cell.classList.toggle('enemy-spell-cell', side !== view.my_side);
+            const stack = Object.values(view.state.stacks).find(unit =>
+                Number(cell.dataset.x) >= unit.x && Number(cell.dataset.x) < unit.x + unit.w &&
+                Number(cell.dataset.y) >= unit.y && Number(cell.dataset.y) < unit.y + unit.h);
+            if (stack) stackEls[stack.id]?.classList.add('spell-target-stack');
+        }
+    }
+
+    function confirmSpellAt(x, y) {
+        if (!spellSelection || !canUseSpellbook()) return;
+        const {spell, battle, version, actor} = spellSelection;
+        if (battle !== view.id || version !== view.version || actor !== view.turn.active) return;
+        const target = (view.turn.spells ?? []).find(option => option.element === spell.element)?.target;
+        if (!target) return;
+        const [left, top] = target.cell;
+        const [w, h] = target.size;
+        if (x < left || x >= left + w || y < top || y >= top + h) {
+            toast('Обери підсвічену клітинку або скасуй виклик.');
+            return;
+        }
+        spellSelection = null;
+        renderSpellSelection();
+        send({type: 'summon', element: spell.element});
     }
 
     function renderHeroes(canCast) {
@@ -620,16 +693,25 @@
             card.dataset.side = hero.owner;
             card.className = 'field-hero' + (st.active_id === hero.id ? ' active' : '');
             const portrait = document.createElement('img');
-            portrait.src = '/static/images/simple-elfe.png';
+            portrait.className = 'field-hero-sprite';
+            portrait.src = '/static/images/battle/elf-hero.png';
+            portrait.addEventListener('error', () => { portrait.src = '/static/images/simple-elfe.png'; }, {once: true});
             portrait.alt = '';
             const details = document.createElement('div');
             const name = document.createElement('strong');
+            name.className = 'sr-only';
             name.textContent = hero.name;
             const energy = document.createElement('small');
             const magic = st.summoning?.[hero.owner];
-            if (magic) energy.textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
+            if (magic) {
+                energy.textContent = `${magic.energy}/${magic.max_energy}`;
+                energy.setAttribute('aria-label', `Енергія ${magic.energy}/${magic.max_energy}`);
+            }
             details.append(name, energy);
             card.title = `Рівень ${hero.level} · Ініціатива ${hero.initiative} · Атака ${hero.attack} · Захист ${hero.defense} · Знання ${hero.knowledge} · Сила магії ${hero.spell_power} · Удача ${hero.luck ?? 0} · Бойовий дух ${hero.morale ?? 0} · Шкода ${hero.damage_min}–${hero.damage_max}`;
+            if (st.status === 'finished' && st.winner != null) {
+                card.dataset.outcome = st.winner === hero.owner ? 'victory' : 'defeat';
+            }
             card.append(portrait, details);
             card.addEventListener('mouseenter', () => highlightInitiative(hero.id));
             card.addEventListener('mouseleave', () => highlightInitiative(null));
@@ -637,7 +719,9 @@
                 const book = document.createElement('button');
                 book.type = 'button';
                 book.className = 'btn alt';
-                book.textContent = '📖 Книга заклять';
+                book.textContent = '📖';
+                book.setAttribute('aria-label', 'Книга заклять');
+                book.title = 'Книга заклять';
                 book.disabled = !canCast;
                 book.addEventListener('click', openSpellbook);
                 card.append(book);
@@ -782,6 +866,7 @@
         if (!view) return;
         const s = view.state.stacks[id];
         highlightInitiative(s ? id : null);
+        if (spellSelection) return;
         if (!s || isAlly(id)) return;
         footprint(s.x, s.y, s.w, s.h).forEach((c) => c.classList.add('hit'));
         if (!view.turn) return;
@@ -867,7 +952,7 @@
     // ---------- Дії гравця ----------
     function setBusy(b) {
         busy = b;
-        if (view) renderPanel();
+        if (view) { renderPanel(); renderSpellSelection(); }
     }
 
     async function send(action) {
@@ -929,6 +1014,7 @@
     $('deployment-begin').addEventListener('click', () => deploymentCommand('/begin'));
 
     function onCellClick(x, y) {
+        if (spellSelection) { confirmSpellAt(x, y); return; }
         if (view?.deployment && deploymentStack) {
             const split = $('deployment-split');
             if (!split.disabled && !split.reportValidity()) return;
@@ -949,6 +1035,14 @@
     }
 
     function onStackClick(id, event) {
+        if (spellSelection) {
+            const stack = view.state.stacks[id];
+            const box = event.currentTarget.getBoundingClientRect();
+            const x = stack.x + Math.floor((event.clientX - box.left) * stack.w / box.width);
+            const y = stack.y + Math.floor((event.clientY - box.top) * stack.h / box.height);
+            confirmSpellAt(x, y);
+            return;
+        }
         if (view?.deployment) { selectDeploymentStack(id); return; }
         if (!view || !view.turn) return;
         const t = view.turn.targets.find((q) => q.id === id);
@@ -958,6 +1052,15 @@
 
     el.btnWait.addEventListener('click', () => send({ type: 'wait' }));
     $('legacy-spellbook').addEventListener('click', openSpellbook);
+    function cancelSpellSelection() {
+        spellSelection = null;
+        renderSpellSelection();
+        $('field-heroes').querySelector('button')?.focus();
+    }
+    $('cancel-spell').addEventListener('click', cancelSpellSelection);
+    $('confirm-spell').addEventListener('click', () => {
+        if (spellSelection) confirmSpellAt(...spellSelection.spell.target.cell);
+    });
     el.btnDefend.addEventListener('click', () => send({ type: 'defend' }));
     el.btnSurrender.addEventListener('click', () => el.confirm.classList.remove('hidden'));
     $('confirm-yes').addEventListener('click', doSurrender);
@@ -965,6 +1068,11 @@
     document.addEventListener('keydown', (ev) => {
         if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
         const k = ev.key.toLowerCase();
+        if ($('spellbook').open) return;
+        if (ev.key === 'Escape' && spellSelection) {
+            cancelSpellSelection();
+            return;
+        }
         if (ev.key === 'Escape') el.confirm.classList.add('hidden');
         if (!el.confirm.classList.contains('hidden')) return;
         if (k === 'w' && !el.btnWait.disabled) send({ type: 'wait' });
@@ -1004,6 +1112,7 @@
     $('btn-auto').addEventListener('click', () => {
         auto = !auto;
         renderPanel();
+        renderSpellSelection();
         schedulePoll();
     });
 
@@ -1031,6 +1140,8 @@
         auto = false;
         deploymentStack = null;
         hoveredStackId = null;
+        completedActor = null;
+        spellSelection = null;
     }
 
     function showMenu() {
@@ -1098,10 +1209,46 @@
         }
     }
 
+    function heroEffect(event, speed) {
+        const casting = event.type === 'ELEMENTAL_SUMMONED';
+        if ((!casting && event.type !== 'HERO_ATTACKED') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const sprite = $('field-' + event.actor_id)?.querySelector('.field-hero-sprite');
+        if (!sprite?.animate) return;
+        const source = sprite.getBoundingClientRect();
+        const target = casting && event.payload.position
+            ? cellEl(...event.payload.position) : stackEls[event.target_id];
+        const bounds = target?.getBoundingClientRect();
+        const duration = (casting ? 420 : 260) / speed;
+        const motion = sprite.animate([
+            {transform: 'translateY(0)'},
+            {transform: casting ? 'translateY(-4px)' : 'translateY(-2px)', opacity: .78},
+            {transform: 'translateY(0)'},
+        ], {duration});
+        if (!bounds) return motion;
+
+        const startX = source.left + source.width / 2;
+        const startY = source.top + source.height * .45;
+        const dx = bounds.left + bounds.width / 2 - startX;
+        const dy = bounds.top + bounds.height / 2 - startY;
+        const glow = document.createElement('span');
+        glow.className = 'battle-hero-effect' + (casting ? ' cast' : '');
+        glow.style.left = startX + 'px';
+        glow.style.top = startY + 'px';
+        glow.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(glow);
+        const effect = glow.animate([
+            {transform: 'scale(.65)', opacity: .7},
+            {transform: `translate(${dx}px, ${dy}px) scale(1)`, opacity: 1, offset: .75},
+            {transform: `translate(${dx}px, ${dy}px) scale(2)`, opacity: 0},
+        ], {duration});
+        effect.finished.then(() => glow.remove(), () => { motion.cancel(); glow.remove(); });
+        return effect;
+    }
+
     async function animateEvent(event, state, speed) {
         const entry = BattleEvents.logEvent(event);
         if (entry) showEvents([entry]);
-        const effect = BattleEvents.animate(event, stackEls, state,
+        const effect = heroEffect(event, speed) ?? BattleEvents.animate(event, stackEls, state,
             el.cells.firstElementChild.offsetWidth, speed);
         animation = effect;
         if (effect) await effect.finished.catch(() => {});
@@ -1120,6 +1267,7 @@
             await animateEvent(event, state, 1);
             if (view !== animating) return;
             BattleEvents.apply(state, event);
+            if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
             renderStacks();
         }
         applyView(result, []);
@@ -1173,13 +1321,14 @@
     function seekReplay(cursor) {
         pauseReplay();
         const state = structuredClone(replay.initial_state);
-        replay.damage = BattleEvents.damageTracker(replay.partial);
+        replay.damage = BattleEvents.damageTracker(replay.partial, state.heroes);
         resetClientState();
         view = replayView(state);
         for (const stack of Object.values(state.stacks)) known[stack.id] = stack;
         for (const event of replay.events.slice(0, cursor)) {
             replayLog(event);
             BattleEvents.apply(state, event);
+            if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
             replay.damage.apply(event);
         }
         updateReplay(state, cursor);
@@ -1197,6 +1346,7 @@
             await animateEvent(event, view.state, speed);
             if (generation !== playbackGeneration) return;
             BattleEvents.apply(view.state, event);
+            if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
             replay.damage.apply(event);
             updateReplay(view.state, replay.cursor + 1);
             await new Promise(resolve => setTimeout(resolve, 100 / speed));

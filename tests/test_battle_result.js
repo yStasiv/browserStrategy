@@ -10,6 +10,20 @@ vm.runInContext(readFileSync(resolve(__dirname, '../frontend/static/js/battle_re
 const BattleResult = context.result;
 const plain = value => JSON.parse(JSON.stringify(value));
 
+test('rebuilds hero damage from replay events after seeking', () => {
+    vm.runInContext(readFileSync(resolve(__dirname, '../frontend/static/js/battle_events.js'), 'utf8') +
+        '\nthis.events = BattleEvents;', context);
+    const heroes = {hero_0: {owner: 0}};
+    const events = [{hero_damage: {side: 0, amount: 40}}, {hero_damage: {side: 0, amount: 2}}];
+    for (let i = 0; i < 2; i++) {
+        const tracker = context.events.damageTracker(false, heroes);
+        assert.equal(tracker.summary().sides[0].hero_total, 0);
+        for (const event of events) tracker.apply(event);
+        assert.equal(tracker.summary().sides[0].hero_total, 42);
+        assert.equal(tracker.summary().sides[1].hero_total, null);
+    }
+});
+
 function result(id = 12, winner = 1, replay = true) {
     return {
         battle_id: id,
@@ -143,14 +157,16 @@ test('shows a separate damage section with allies first regardless of the winner
     controller.present(12, result(), {
         partial: true, sides: [
             {side: 1, total: 12345, creatures: [{unit: 'archer', amount: 12345}]},
-            {side: 0, total: 0, creatures: []},
+            {side: 0, total: 0, hero_total: 250, creatures: []},
         ],
     }, 0);
     const damage = nodes['[data-result-content]'].children.at(-1);
     assert.equal(damage.className, 'battle-result-damage');
     const [title, columns, note] = damage.children;
-    assert.equal(title.textContent, 'Шкода створінь');
-    assert.equal(columns.children[0].children[0].textContent, 'Союзники · 0');
+    assert.equal(title.textContent, 'Завдана шкода');
+    assert.equal(columns.children[0].children[0].textContent, 'Союзники · 250');
+    assert.deepEqual(columns.children[0].children[1].children[0].children.map(node => node.textContent),
+        ['Герой', '250']);
     assert.equal(columns.children[1].children[0].textContent, 'Вороги · 12,345');
     assert.deepEqual(columns.children[1].children[1].children[0].children.map(node => node.textContent),
         ['Лучник', '12,345']);

@@ -17,7 +17,7 @@
         {
           "form": 1,
           "name": "Сільвен-вісник",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_1.png",
           "attack": 2,
           "defense": 2,
           "hp": 5,
@@ -29,7 +29,7 @@
         {
           "form": 2,
           "name": "Сільвен-стежовик",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_1_form_2.png",
           "attack": 3,
           "defense": 3,
           "hp": 6,
@@ -42,7 +42,7 @@
         {
           "form": 3,
           "name": "Сільвен-вітрохід",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_1_form_3.png",
           "attack": 4,
           "defense": 4,
           "hp": 7,
@@ -71,7 +71,7 @@
         {
           "form": 1,
           "name": "Кора-страж",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_2.png",
           "attack": 4,
           "defense": 5,
           "hp": 12,
@@ -83,7 +83,7 @@
         {
           "form": 2,
           "name": "Ясеневий бастіон",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_2_form_2.png",
           "attack": 5,
           "defense": 6,
           "hp": 14,
@@ -96,7 +96,7 @@
         {
           "form": 3,
           "name": "Дубовий колос",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_2_form_3.png",
           "attack": 6,
           "defense": 7,
           "hp": 16,
@@ -127,7 +127,7 @@
         {
           "form": 1,
           "name": "Луностріл",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_3.png",
           "attack": 6,
           "defense": 6,
           "hp": 18,
@@ -139,7 +139,7 @@
         {
           "form": 2,
           "name": "Срібний луностріл",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_3_form_2.png",
           "attack": 7,
           "defense": 7,
           "hp": 21,
@@ -152,7 +152,7 @@
         {
           "form": 3,
           "name": "Зоряний луностріл",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_3_form_3.png",
           "attack": 8,
           "defense": 8,
           "hp": 24,
@@ -183,7 +183,7 @@
         {
           "form": 1,
           "name": "Мірель-ткаля",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_4.png",
           "attack": 8,
           "defense": 8,
           "hp": 25,
@@ -195,7 +195,7 @@
         {
           "form": 2,
           "name": "Мірель-чарівниця",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_4_form_2.png",
           "attack": 9,
           "defense": 9,
           "hp": 30,
@@ -208,7 +208,7 @@
         {
           "form": 3,
           "name": "Мірель-віщунка",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_4_form_3.png",
           "attack": 10,
           "defense": 10,
           "hp": 35,
@@ -237,7 +237,7 @@
         {
           "form": 1,
           "name": "Клинкотан",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_5.png",
           "attack": 11,
           "defense": 10,
           "hp": 34,
@@ -249,7 +249,7 @@
         {
           "form": 2,
           "name": "Вихровий клинкотан",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_5_form_2.png",
           "attack": 13,
           "defense": 12,
           "hp": 40,
@@ -262,7 +262,7 @@
         {
           "form": 3,
           "name": "Гранд-клинкотан",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_5_form_3.png",
           "attack": 15,
           "defense": 14,
           "hp": 46,
@@ -291,7 +291,7 @@
         {
           "form": 1,
           "name": "Фавн-вершник",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_6.png",
           "attack": 14,
           "defense": 13,
           "hp": 46,
@@ -303,7 +303,7 @@
         {
           "form": 2,
           "name": "Світловий фавн-вершник",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_6_form_2.png",
           "attack": 16,
           "defense": 15,
           "hp": 55,
@@ -316,7 +316,7 @@
         {
           "form": 3,
           "name": "Зоряний фавн-вершник",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_6_form_3.png",
           "attack": 18,
           "defense": 17,
           "hp": 64,
@@ -345,7 +345,7 @@
         {
           "form": 1,
           "name": "Молодий арборент",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_7.png",
           "attack": 22,
           "defense": 21,
           "hp": 85,
@@ -357,7 +357,7 @@
         {
           "form": 2,
           "name": "Арборент",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_7_form_2.png",
           "attack": 26,
           "defense": 25,
           "hp": 102,
@@ -370,7 +370,7 @@
         {
           "form": 3,
           "name": "Пра-арборент",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_7_form_3.png",
           "attack": 30,
           "defense": 29,
           "hp": 119,
@@ -399,7 +399,7 @@
         {
           "form": 1,
           "name": "Іскра соларіса",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_8.png",
           "attack": 32,
           "defense": 30,
           "hp": 145,
@@ -411,7 +411,7 @@
         {
           "form": 2,
           "name": "Соларіс-фенікс",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_8_form_2.png",
           "attack": 38,
           "defense": 36,
           "hp": 174,
@@ -424,7 +424,7 @@
         {
           "form": 3,
           "name": "Верховний соларіс-фенікс",
-          "image_url": null,
+          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_8_form_3.png",
           "attack": 44,
           "defense": 42,
           "hp": 203,

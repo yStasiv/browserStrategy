@@ -32,6 +32,13 @@ def require_player(request, db):
 def render_castle(request, db, player, error=None, building_error=None):
     entries, resource_catalog = castle_buildings.catalog()
     built = castle_buildings.built_ids(db, player, entries)
+    buildings = [
+        building for building in entries.values()
+        if castle_buildings.available_to_faction(building, player)
+    ]
+    unaffordable = castle_buildings.unaffordable_buildings(
+        db, player, [building for building in buildings if building.id not in built],
+    )
     army = army_options(db, player, built)
     build_icon = (
         "/static/images/buildings/build.png" if castle_buildings.BUILD_ICON_FILE.is_file()
@@ -41,10 +48,7 @@ def render_castle(request, db, player, error=None, building_error=None):
         "request": request, "player": player, "units": recruitment_cards(army),
         "retained_squads": sum(not unit["recruitable"] and unit["quantity"] > 0 for unit in army),
         "slot_limit": field_rules(user_level(player), "pve").max_slots,
-        "buildings": [
-            building for building in entries.values()
-            if castle_buildings.available_to_faction(building, player)
-        ],
+        "buildings": buildings, "unaffordable": unaffordable,
         "built": built, "resource_catalog": resource_catalog, "build_icon": build_icon,
         "forge_built": castle_buildings.FORGE in built,
         "magic_school_built": castle_buildings.MAGIC_SCHOOL in built,

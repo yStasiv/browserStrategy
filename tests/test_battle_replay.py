@@ -108,7 +108,14 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     assert replay["reward"] == battle["reward"]
     assert replay["result"] == battle["result"]
     damage = {0: {}, 1: {}}
+    hero_damage = {hero["owner"]: 0 for hero in replay["initial_state"]["heroes"].values()}
     for event in replay["events"]:
+        hero_hit = event.get("hero_damage")
+        if hero_hit:
+            assert event["type"] == "DAMAGE_APPLIED"
+            assert hero_hit["amount"] == event["payload"]["hp_before"] - event["payload"]["hp_after"]
+            assert event["actor_id"] in replay["initial_state"]["heroes"]
+            hero_damage[hero_hit["side"]] += hero_hit["amount"]
         hit = event.get("creature_damage")
         if hit:
             assert hit["amount"] == event["payload"]["hp_before"] - event["payload"]["hp_after"]
@@ -116,9 +123,11 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
             side = damage[hit["side"]]
             side[hit["unit"]] = side.get(hit["unit"], 0) + hit["amount"]
     assert any(damage.values())
+    assert hero_damage[0] > 0
     for side in battle["creature_damage"]["sides"]:
         assert {entry["unit"]: entry["amount"] for entry in side["creatures"]} == damage[side["side"]]
         assert side["total"] == sum(damage[side["side"]].values())
+        assert side["hero_total"] == hero_damage.get(side["side"])
     assert call("GET", root)[1]["creature_damage"] == battle["creature_damage"]
     result = battle["result"]
     assert result["battle_id"] == battle["id"] and result["winner_side"] == battle["winner_side"]

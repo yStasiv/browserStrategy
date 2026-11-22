@@ -126,6 +126,8 @@ def load_creatures():
 UNITS = load_creatures()
 UNIT_PRESENTATION = {u.key: {"name": u.name, "emoji": u.icon} for u in UNITS.values()}
 for unit in UNITS.values():
+    if unit.image_url:
+        UNIT_PRESENTATION[unit.key]["image_url"] = unit.image_url
     if unit.form is not None:
         UNIT_PRESENTATION[unit.key].update(tier=unit.tier, form=unit.form)
     if unit.element is not None:

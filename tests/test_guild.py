@@ -680,6 +680,16 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     assert call("POST", "/castle/build", {"building_id": "forest_tower"})[0] == 403
     assert call("POST", "/castle/build", {"building_id": "dark_tower"})[0] == 404
     assert call("GET", "/castle/metalworking")[0] == 403
+    def forge_button(html):
+        return html.split(b'name="building_id" value="forge"', 1)[1].split(b">", 1)[0]
+
+    assert b"disabled" not in forge_button(body)
+    with sessions.begin() as db:
+        db.get(PlayerResourceBalance, (10, "pulse_spark")).quantity = 9
+    assert b"disabled" in forge_button(call("GET", "/castle?section=building")[1])
+    assert call("POST", "/castle/build", {"building_id": "forge"})[0] == 409
+    with sessions.begin() as db:
+        db.get(PlayerResourceBalance, (10, "pulse_spark")).quantity = 10
     assert call("POST", "/castle/build", {"building_id": "forge"})[0] == 303
     assert call("POST", "/castle/build", {"building_id": "forge"})[0] == 409
     assert call("POST", "/castle/build", {"building_id": "magic_school_1"})[0] == 303
@@ -857,6 +867,11 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert any(entry["id"] == "hero_0" for entry in battle["forecast"])
     assert summon("earth", battle["version"])[0] == 400
     battle = advance_to_hero(battle, root)
+    options = {spell["element"]: spell for spell in battle["turn"]["spells"]}
+    assert set(options) == {"earth", "water"}
+    assert options["earth"]["energy_cost"] == 10
+    assert options["earth"]["target"]["side"] == 0
+    assert options["earth"]["description"] and options["earth"]["target_label"]
     assert summon("fire", battle["version"])[0] == 400
     first_version = battle["version"]
     status, body = summon("earth", first_version)
@@ -864,6 +879,7 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     battle = json.loads(body)
     first = next(stack for stack in battle["state"]["stacks"].values() if stack.get("summoned"))
     assert (first["count"], first["top_hp"], first["x"], first["y"]) == (3, 20, 0, 0)
+    assert options["earth"]["target"]["cell"] == [first["x"], first["y"]]
     assert battle["state"]["summoning"]["0"]["energy"] == 10
     assert summon("earth", first_version)[0] == 409
 
@@ -878,6 +894,8 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert (summoned["count"], summoned["top_hp"]) == (4, 10)
     assert battle["state"]["summoning"]["0"]["energy"] == 0
     battle = advance_to_hero(battle, root)
+    assert all("target" not in spell and "Недостатньо енергії" in spell["unavailable"]
+               for spell in battle["turn"]["spells"])
     status, body = summon("earth", battle["version"])
     assert status == 400 and "Недостатньо енергії" in body.decode()
     status, body = call("GET", root + "/events")

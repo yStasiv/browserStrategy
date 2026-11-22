@@ -17,7 +17,7 @@ from typing import Dict, List, Optional, Tuple
 from .actions import Attack, Defend, Move, Skip, Summon, Wait
 from .data import UNITS
 from .state import ATB_SCALE, MAX_ACTIONS, BattleState, HeroTurn, Stack
-from .summoning import spawn_position, squad_health
+from .summoning import spell_options, summon_plan
 
 Cell = Tuple[int, int]
 
@@ -264,19 +264,11 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
 def _do_summon(state, actor, action, events):
     if state.heroes and not isinstance(actor, HeroTurn):
         raise IllegalAction("Викликати елементаля можна лише під час ходу героя.")
-    magic = state.summoning.get(str(actor.owner))
-    if not magic or action.element not in magic["elements"]:
-        raise IllegalAction("Цей виклик недоступний.")
-    if magic["energy"] < magic["cost"]:
-        raise IllegalAction("Недостатньо енергії для виклику.")
-    previous = next((s for s in state.stacks.values() if s.owner == actor.owner and s.summoned), None)
-    unit = UNITS[f"elemental_{action.element}"]
-    position = spawn_position(state, unit, previous)
-    if position is None:
-        raise IllegalAction("На полі немає місця для елементаля.")
-    count, top_hp = squad_health(magic["hp_pool"], unit.hp)
-    if not count:
-        raise IllegalAction("Недостатньо сили магії для виклику.")
+    try:
+        previous, unit, position, count, top_hp = summon_plan(state, actor.owner, action.element)
+    except ValueError as exc:
+        raise IllegalAction(str(exc)) from exc
+    magic = state.summoning[str(actor.owner)]
 
     if previous:
         del state.stacks[previous.id]
@@ -292,6 +284,7 @@ def _do_summon(state, actor, action, events):
         "type": "summon", "stack": actor.id, "target": stack.id, "unit": unit.key,
         "count": count, "top_hp": top_hp, "unit_hp": unit.hp,
         "replaced": previous.id if previous else None, "energy": magic["energy"],
+        "position": position,
     })
     _end_turn(state, actor, events)
 
@@ -384,6 +377,7 @@ def turn_info(state: BattleState) -> Optional[dict]:
             "active": actor.id, "owner": actor.owner, "hero": True, "move": [],
             "targets": [{"id": stack.id, "from": []} for stack in state.stacks.values() if stack.owner != actor.owner],
             "can_wait": False, "ranged": True,
+            "spells": spell_options(state, actor.owner),
         }
     dist = reachable(state, actor)
     ranged = is_ranged(state, actor)
@@ -405,6 +399,7 @@ def turn_info(state: BattleState) -> Optional[dict]:
         "targets": targets,
         "can_wait": not actor.waited,
         "ranged": ranged,   # False у стрільця з ворогом поруч — він б'ється врукопашну
+        **({"spells": spell_options(state, actor.owner)} if not state.heroes and state.summoning else {}),
     }
 
 

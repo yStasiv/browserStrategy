@@ -76,7 +76,7 @@
                 </div>
                 <form action="/castle/build" method="post">
                     <button class="castle-section castle-build-action" type="submit" name="building_id" value="{{ building.id }}"
-                            title="Побудувати {{ building.name }}" aria-label="Побудувати {{ building.name }}"{% if player.level < building.min_level or missing %} disabled{% endif %}>
+                            title="Побудувати {{ building.name }}" aria-label="Побудувати {{ building.name }}"{% if player.level < building.min_level or missing or building.id in unaffordable %} disabled{% endif %}>
                         <img src="{{ build_icon }}" alt="">
                     </button>
                 </form>
