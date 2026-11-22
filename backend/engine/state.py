@@ -56,6 +56,7 @@ class HeroTurn:
     morale: int | float = 0
     ready: int = 0
     portrait: str | None = None
+    faction: str | None = None
 
 
 @dataclass
@@ -100,6 +101,8 @@ class BattleState:
             for hero in snapshot["heroes"].values():
                 if hero["portrait"] is None:
                     del hero["portrait"]
+                if hero["faction"] is None:
+                    del hero["faction"]
         for stack in snapshot["stacks"].values():
             if not stack["summoned"]:
                 del stack["summoned"]

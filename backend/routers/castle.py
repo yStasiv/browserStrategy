@@ -32,10 +32,22 @@ def require_player(request, db):
 def render_castle(request, db, player, error=None, building_error=None):
     entries, resource_catalog = castle_buildings.catalog()
     built = castle_buildings.built_ids(db, player, entries)
+    faction = faction_key(player.fraction)
+    elementals = ELEMENTALS if faction == "elves" else {}
+    recruits_by_building = {}
+    for unit in UNITS.values():
+        recruitment = unit.recruitment
+        if recruitment and (not recruitment.factions or faction in map(faction_key, recruitment.factions)):
+            recruits_by_building.setdefault(recruitment.building, []).append(unit)
+    spells_by_building = {
+        key: [spell for spell in elementals.values() if spell["school_level"] == level]
+        for key, level in castle_buildings.MAGIC_SCHOOL_LEVELS.items()
+    }
     buildings = [
         building for building in entries.values()
         if castle_buildings.available_to_faction(building, player)
     ]
+    buildings.sort(key=lambda building: building.min_level)
     unaffordable = castle_buildings.unaffordable_buildings(
         db, player, [building for building in buildings if building.id not in built],
     )
@@ -45,7 +57,8 @@ def render_castle(request, db, player, error=None, building_error=None):
         else "/static/images/guild_icons/workshop_weapons.png"
     )
     return templates.TemplateResponse("castle.html", {
-        "request": request, "player": player, "units": recruitment_cards(army),
+        "request": request, "player": player, "faction": faction,
+        "units": recruitment_cards(army),
         "retained_squads": sum(not unit["recruitable"] and unit["quantity"] > 0 for unit in army),
         "slot_limit": field_rules(user_level(player), "pve").max_slots,
         "buildings": buildings, "unaffordable": unaffordable,
@@ -53,7 +66,8 @@ def render_castle(request, db, player, error=None, building_error=None):
         "forge_built": castle_buildings.FORGE in built,
         "magic_school_built": castle_buildings.MAGIC_SCHOOL in built,
         "school_level": castle_buildings.school_level(built),
-        "elementals": ELEMENTALS if faction_key(player.fraction) == "elves" else {},
+        "elementals": elementals,
+        "recruits_by_building": recruits_by_building, "spells_by_building": spells_by_building,
         "building_names": {key: building.name for key, building in entries.items()},
         "building_error": building_error,
         "saved": request.query_params.get("saved") == "1" and not error, "error": error,

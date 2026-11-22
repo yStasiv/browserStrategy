@@ -15,6 +15,7 @@ CATALOG_FILE = Path(__file__).resolve().parents[2] / "content" / "castle_buildin
 BUILD_ICON_FILE = CATALOG_FILE.parents[1] / "frontend" / "static" / "images" / "buildings" / "build.png"
 FORGE = "forge"
 MAGIC_SCHOOL = "magic_school_1"
+MAGIC_SCHOOL_LEVELS = {f"magic_school_{level}": level for level in range(1, 8)}
 Cost = Annotated[int, Field(strict=True, gt=0, le=2_147_483_647)]
 
 
@@ -25,6 +26,7 @@ class Building(BaseModel):
     name: str = Field(min_length=1)
     description: str = ""
     image_url: str | None = None
+    faction_image_urls: dict[str, str] = Field(default_factory=dict)
     factions: list[str] = Field(default_factory=list)
     min_level: int = Field(strict=True, ge=1)
     resources: dict[str, Cost] = Field(default_factory=dict)
@@ -79,7 +81,7 @@ def grant_starter_buildings(db, player):
 
 
 def school_level(built):
-    return max((level for level in range(1, 8) if f"magic_school_{level}" in built), default=0)
+    return max((MAGIC_SCHOOL_LEVELS[key] for key in built if key in MAGIC_SCHOOL_LEVELS), default=0)
 
 
 def resource_owners(db, player, resource_ids):

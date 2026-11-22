@@ -3,7 +3,7 @@
     "id": "elves_recruitment_tier_1",
     "name": "Гай вісників",
     "description": "Відкриває найм істоти «Сільвен-вісник».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_1_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_1_building.png",
     "factions": [
       "elves"
     ],
@@ -16,7 +16,7 @@
     "id": "elves_recruitment_tier_1_form_2",
     "name": "Гай вісників · форма 2",
     "description": "Відкриває найм істоти «Сільвен-стежовик».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_1_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_1_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -34,7 +34,7 @@
     "id": "elves_recruitment_tier_1_form_3",
     "name": "Гай вісників · форма 3",
     "description": "Відкриває найм істоти «Сільвен-вітрохід».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_1_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_1_form_3_building.png",
     "factions": [
       "elves"
     ],
@@ -53,7 +53,7 @@
     "id": "elves_recruitment_tier_2",
     "name": "Діброва стражів",
     "description": "Відкриває найм істоти «Кора-страж».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_2_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_2_building.png",
     "factions": [
       "elves"
     ],
@@ -66,7 +66,7 @@
     "id": "elves_recruitment_tier_2_form_2",
     "name": "Діброва стражів · форма 2",
     "description": "Відкриває найм істоти «Ясеневий бастіон».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_2_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_2_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -84,7 +84,7 @@
     "id": "elves_recruitment_tier_2_form_3",
     "name": "Діброва стражів · форма 3",
     "description": "Відкриває найм істоти «Дубовий колос».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_2_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_2_form_3_building.png",
     "factions": [
       "elves"
     ],
@@ -103,7 +103,7 @@
     "id": "underground_elves_recruitment_tier_1",
     "name": "Притулок шейдів",
     "description": "Відкриває найм істоти «Шейд-нищівник».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_1_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_1_building.png",
     "factions": [
       "undergroundElves"
     ],
@@ -116,7 +116,7 @@
     "id": "underground_elves_recruitment_tier_1_form_2",
     "name": "Притулок шейдів · форма 2",
     "description": "Відкриває найм істоти «Шейд-лазутчик».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_1_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_1_form_2_building.png",
     "factions": [
       "undergroundElves"
     ],
@@ -134,7 +134,7 @@
     "id": "underground_elves_recruitment_tier_1_form_3",
     "name": "Притулок шейдів · форма 3",
     "description": "Відкриває найм істоти «Шейд-примара».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_1_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_1_form_3_building.png",
     "factions": [
       "undergroundElves"
     ],
@@ -153,7 +153,7 @@
     "id": "underground_elves_recruitment_tier_2",
     "name": "Кристальна печера",
     "description": "Відкриває найм істоти «Кристалопанцир».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_2_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_2_building.png",
     "factions": [
       "undergroundElves"
     ],
@@ -166,7 +166,7 @@
     "id": "underground_elves_recruitment_tier_2_form_2",
     "name": "Кристальна печера · форма 2",
     "description": "Відкриває найм істоти «Базальтовий кристалопанцир».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_2_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_2_form_2_building.png",
     "factions": [
       "undergroundElves"
     ],
@@ -184,7 +184,7 @@
     "id": "underground_elves_recruitment_tier_2_form_3",
     "name": "Кристальна печера · форма 3",
     "description": "Відкриває найм істоти «Іридієвий кристалопанцир».",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_2_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_2_form_3_building.png",
     "factions": [
       "undergroundElves"
     ],
@@ -210,6 +210,9 @@
       "gold": 5000,
       "basalt_bone": 10,
       "pulse_spark": 10
+    },
+    "faction_image_urls": {
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_forge.png"
     }
   },
   {
@@ -222,6 +225,9 @@
     "resources": {
       "gold": 250,
       "singing_resin": 10
+    },
+    "faction_image_urls": {
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_1.png"
     }
   },
   {
@@ -251,7 +257,10 @@
     },
     "requires": [
       "magic_school_1"
-    ]
+    ],
+    "faction_image_urls": {
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_2.png"
+    }
   },
   {
     "id": "magic_school_3",
@@ -266,7 +275,10 @@
     },
     "requires": [
       "magic_school_2"
-    ]
+    ],
+    "faction_image_urls": {
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_3.png"
+    }
   },
   {
     "id": "magic_school_4",
@@ -281,7 +293,10 @@
     },
     "requires": [
       "magic_school_3"
-    ]
+    ],
+    "faction_image_urls": {
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_4.png"
+    }
   },
   {
     "id": "magic_school_5",
@@ -296,7 +311,10 @@
     },
     "requires": [
       "magic_school_4"
-    ]
+    ],
+    "faction_image_urls": {
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_5.png"
+    }
   },
   {
     "id": "magic_school_6",
@@ -311,7 +329,10 @@
     },
     "requires": [
       "magic_school_5"
-    ]
+    ],
+    "faction_image_urls": {
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_6.png"
+    }
   },
   {
     "id": "magic_school_7",
@@ -326,7 +347,10 @@
     },
     "requires": [
       "magic_school_6"
-    ]
+    ],
+    "faction_image_urls": {
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_7.png"
+    }
   },
   {
     "id": "elves_recruitment_tier_3_outpost",
@@ -347,7 +371,7 @@
     "id": "elves_recruitment_tier_3",
     "name": "Зала третього рангу",
     "description": "Після спорудження застави відкриває найм третього типу істот своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_3_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_3_building.png",
     "factions": [
       "elves"
     ],
@@ -367,7 +391,7 @@
     "id": "elves_recruitment_tier_3_form_2",
     "name": "Зала третього рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_3_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_3_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -387,7 +411,7 @@
     "id": "elves_recruitment_tier_3_form_3",
     "name": "Зала третього рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_3_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_3_form_3_building.png",
     "factions": [
       "elves"
     ],
@@ -407,7 +431,7 @@
     "id": "elves_recruitment_tier_4",
     "name": "Зала четвертого рангу",
     "description": "Дозволяє наймати істот 4-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_4_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_4_building.png",
     "factions": [
       "elves"
     ],
@@ -425,7 +449,7 @@
     "id": "elves_recruitment_tier_4_form_2",
     "name": "Зала четвертого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_4_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_4_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -445,7 +469,7 @@
     "id": "elves_recruitment_tier_4_form_3",
     "name": "Зала четвертого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_4_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_4_form_3_building.png",
     "factions": [
       "elves"
     ],
@@ -465,7 +489,7 @@
     "id": "elves_recruitment_tier_5",
     "name": "Зала п’ятого рангу",
     "description": "Дозволяє наймати істот 5-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_5_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_5_building.png",
     "factions": [
       "elves"
     ],
@@ -483,7 +507,7 @@
     "id": "elves_recruitment_tier_5_form_2",
     "name": "Зала п’ятого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_5_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_5_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -503,7 +527,7 @@
     "id": "elves_recruitment_tier_5_form_3",
     "name": "Зала п’ятого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_5_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_5_form_3_building.png",
     "factions": [
       "elves"
     ],
@@ -523,7 +547,7 @@
     "id": "elves_recruitment_tier_6",
     "name": "Зала шостого рангу",
     "description": "Дозволяє наймати істот 6-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_6_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_6_building.png",
     "factions": [
       "elves"
     ],
@@ -541,7 +565,7 @@
     "id": "elves_recruitment_tier_6_form_2",
     "name": "Зала шостого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_6_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_6_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -561,7 +585,7 @@
     "id": "elves_recruitment_tier_6_form_3",
     "name": "Зала шостого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_6_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_6_form_3_building.png",
     "factions": [
       "elves"
     ],
@@ -581,7 +605,7 @@
     "id": "elves_recruitment_tier_7",
     "name": "Зала сьомого рангу",
     "description": "Дозволяє наймати істот 7-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_7_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_7_building.png",
     "factions": [
       "elves"
     ],
@@ -599,7 +623,7 @@
     "id": "elves_recruitment_tier_7_form_2",
     "name": "Зала сьомого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_7_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_7_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -619,7 +643,7 @@
     "id": "elves_recruitment_tier_7_form_3",
     "name": "Зала сьомого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_7_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_7_form_3_building.png",
     "factions": [
       "elves"
     ],
@@ -639,7 +663,7 @@
     "id": "elves_recruitment_tier_8",
     "name": "Зала восьмого рангу",
     "description": "Дозволяє наймати істот 8-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_8_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_8_building.png",
     "factions": [
       "elves"
     ],
@@ -657,7 +681,7 @@
     "id": "elves_recruitment_tier_8_form_2",
     "name": "Зала восьмого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_8_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_8_form_2_building.png",
     "factions": [
       "elves"
     ],
@@ -677,7 +701,7 @@
     "id": "elves_recruitment_tier_8_form_3",
     "name": "Зала восьмого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/elves_recruitment_tier_8_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_8_form_3_building.png",
     "factions": [
       "elves"
     ],
@@ -712,7 +736,7 @@
     "id": "underground_elves_recruitment_tier_3",
     "name": "Зала третього рангу",
     "description": "Після спорудження застави відкриває найм третього типу істот своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_3_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_3_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -732,7 +756,7 @@
     "id": "underground_elves_recruitment_tier_3_form_2",
     "name": "Зала третього рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_3_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_3_form_2_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -752,7 +776,7 @@
     "id": "underground_elves_recruitment_tier_3_form_3",
     "name": "Зала третього рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_3_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_3_form_3_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -772,7 +796,7 @@
     "id": "underground_elves_recruitment_tier_4",
     "name": "Зала четвертого рангу",
     "description": "Дозволяє наймати істот 4-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_4_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_4_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -790,7 +814,7 @@
     "id": "underground_elves_recruitment_tier_4_form_2",
     "name": "Зала четвертого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_4_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_4_form_2_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -810,7 +834,7 @@
     "id": "underground_elves_recruitment_tier_4_form_3",
     "name": "Зала четвертого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_4_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_4_form_3_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -830,7 +854,7 @@
     "id": "underground_elves_recruitment_tier_5",
     "name": "Зала п’ятого рангу",
     "description": "Дозволяє наймати істот 5-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_5_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_5_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -848,7 +872,7 @@
     "id": "underground_elves_recruitment_tier_5_form_2",
     "name": "Зала п’ятого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_5_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_5_form_2_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -868,7 +892,7 @@
     "id": "underground_elves_recruitment_tier_5_form_3",
     "name": "Зала п’ятого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_5_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_5_form_3_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -888,7 +912,7 @@
     "id": "underground_elves_recruitment_tier_6",
     "name": "Зала шостого рангу",
     "description": "Дозволяє наймати істот 6-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_6_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_6_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -906,7 +930,7 @@
     "id": "underground_elves_recruitment_tier_6_form_2",
     "name": "Зала шостого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_6_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_6_form_2_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -926,7 +950,7 @@
     "id": "underground_elves_recruitment_tier_6_form_3",
     "name": "Зала шостого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_6_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_6_form_3_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -946,7 +970,7 @@
     "id": "underground_elves_recruitment_tier_7",
     "name": "Зала сьомого рангу",
     "description": "Дозволяє наймати істот 7-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_7_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_7_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -964,7 +988,7 @@
     "id": "underground_elves_recruitment_tier_7_form_2",
     "name": "Зала сьомого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_7_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_7_form_2_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -984,7 +1008,7 @@
     "id": "underground_elves_recruitment_tier_7_form_3",
     "name": "Зала сьомого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_7_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_7_form_3_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -1004,7 +1028,7 @@
     "id": "underground_elves_recruitment_tier_8",
     "name": "Зала восьмого рангу",
     "description": "Дозволяє наймати істот 8-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_8_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_8_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -1022,7 +1046,7 @@
     "id": "underground_elves_recruitment_tier_8_form_2",
     "name": "Зала восьмого рангу · форма 2",
     "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_8_form_2_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_8_form_2_building.png",
     "factions": [
       "underground_elves"
     ],
@@ -1042,7 +1066,7 @@
     "id": "underground_elves_recruitment_tier_8_form_3",
     "name": "Зала восьмого рангу · форма 3",
     "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/unit_buildings/underground_elves_recruitment_tier_8_form_3_building.png",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_8_form_3_building.png",
     "factions": [
       "underground_elves"
     ],

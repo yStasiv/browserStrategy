@@ -129,7 +129,7 @@ for unit in UNITS.values():
     if unit.image_url:
         UNIT_PRESENTATION[unit.key]["image_url"] = unit.image_url
     if unit.form is not None:
-        UNIT_PRESENTATION[unit.key].update(tier=unit.tier, form=unit.form)
+        UNIT_PRESENTATION[unit.key].update(tier=unit.tier, form=unit.form, faction=unit.faction)
     if unit.element is not None:
         UNIT_PRESENTATION[unit.key].update(element=unit.element, hp=unit.hp)
 

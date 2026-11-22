@@ -4,6 +4,7 @@ from sqlalchemy import select
 from backend.models import Item
 from backend.services.hero_attributes import HERO_RULES, hero_attributes
 from backend.services.hero_equipment import equipment_ids
+from .data import faction_key
 from .state import HeroTurn
 
 
@@ -17,4 +18,5 @@ def make_hero(db, user, side, level):
         damage_min=max(1, HERO_RULES["damage_min"] + attack),
         damage_max=max(1, HERO_RULES["damage_max"] + attack),
         portrait=user.avatar_url if (user.avatar_url or "").startswith("/avatars/") else None,
+        faction=faction_key(user.fraction),
     )

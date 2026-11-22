@@ -558,7 +558,7 @@
             }
             if (hero) {
                 const portrait = document.createElement('img');
-                portrait.src = hero.portrait || '/static/images/battle/elf-hero.png';
+                portrait.src = hero.portrait || heroSprite(hero);
                 if (!hero.portrait) portrait.className = 'hero-default-portrait';
                 portrait.alt = '';
                 c.appendChild(portrait);
@@ -682,6 +682,16 @@
         send({type: 'summon', element: spell.element});
     }
 
+    function heroSprite(hero) {
+        const faction = hero.faction ?? Object.values(view.state.stacks)
+            .filter(stack => stack.owner === hero.owner)
+            .map(stack => uv(stack.unit).faction)
+            .find(Boolean);
+        return faction === 'underground_elves'
+            ? '/static/images/units_and_buildings/underground_elves/hero/underground-elf-hero.png'
+            : '/static/images/units_and_buildings/elves/hero/elf-hero.png';
+    }
+
     function renderHeroes(canCast) {
         const st = view.state;
         const field = $('field-heroes');
@@ -694,7 +704,7 @@
             card.className = 'field-hero' + (st.active_id === hero.id ? ' active' : '');
             const portrait = document.createElement('img');
             portrait.className = 'field-hero-sprite';
-            portrait.src = '/static/images/battle/elf-hero.png';
+            portrait.src = heroSprite(hero);
             portrait.addEventListener('error', () => { portrait.src = '/static/images/simple-elfe.png'; }, {once: true});
             portrait.alt = '';
             const details = document.createElement('div');

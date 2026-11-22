@@ -854,6 +854,7 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert status == 200
     underground = json.loads(body)["state"]
     assert set(underground["heroes"]) == {"hero_0"}
+    assert underground["heroes"]["hero_0"]["faction"] == "underground_elves"
     assert not underground["summoning"]["0"]["elements"]
 
     status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"})
@@ -862,6 +863,7 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     player_army = [stack["unit"] for stack in battle["state"]["stacks"].values() if stack["owner"] == 0]
     assert player_army == ["elves_moon_archer_3"]
     hero = battle["state"]["heroes"]["hero_0"]
+    assert hero["faction"] == "elves"
     assert {key: hero[key] for key in profile_stats} == profile_stats
     assert (hero["attack"], hero["defense"], hero["knowledge"], hero["spell_power"], hero["initiative"]) == (5, 4, 1, 5, 11)
     assert (hero["damage_min"], hero["damage_max"]) == (10, 13)

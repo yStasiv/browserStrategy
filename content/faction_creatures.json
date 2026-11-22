@@ -17,7 +17,7 @@
         {
           "form": 1,
           "name": "Сільвен-вісник",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_1.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_1.png",
           "attack": 2,
           "defense": 2,
           "hp": 5,
@@ -29,7 +29,7 @@
         {
           "form": 2,
           "name": "Сільвен-стежовик",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_1_form_2.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_1_form_2.png",
           "attack": 3,
           "defense": 3,
           "hp": 6,
@@ -42,7 +42,7 @@
         {
           "form": 3,
           "name": "Сільвен-вітрохід",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_1_form_3.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_1_form_3.png",
           "attack": 4,
           "defense": 4,
           "hp": 7,
@@ -71,7 +71,7 @@
         {
           "form": 1,
           "name": "Кора-страж",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_2.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_2.png",
           "attack": 4,
           "defense": 5,
           "hp": 12,
@@ -83,7 +83,7 @@
         {
           "form": 2,
           "name": "Ясеневий бастіон",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_2_form_2.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_2_form_2.png",
           "attack": 5,
           "defense": 6,
           "hp": 14,
@@ -96,7 +96,7 @@
         {
           "form": 3,
           "name": "Дубовий колос",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_2_form_3.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_2_form_3.png",
           "attack": 6,
           "defense": 7,
           "hp": 16,
@@ -127,7 +127,7 @@
         {
           "form": 1,
           "name": "Луностріл",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_3.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_3.png",
           "attack": 6,
           "defense": 6,
           "hp": 18,
@@ -139,7 +139,7 @@
         {
           "form": 2,
           "name": "Срібний луностріл",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_3_form_2.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_3_form_2.png",
           "attack": 7,
           "defense": 7,
           "hp": 21,
@@ -152,7 +152,7 @@
         {
           "form": 3,
           "name": "Зоряний луностріл",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_3_form_3.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_3_form_3.png",
           "attack": 8,
           "defense": 8,
           "hp": 24,
@@ -183,7 +183,7 @@
         {
           "form": 1,
           "name": "Мірель-ткаля",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_4.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_4.png",
           "attack": 8,
           "defense": 8,
           "hp": 25,
@@ -195,7 +195,7 @@
         {
           "form": 2,
           "name": "Мірель-чарівниця",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_4_form_2.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_4_form_2.png",
           "attack": 9,
           "defense": 9,
           "hp": 30,
@@ -208,7 +208,7 @@
         {
           "form": 3,
           "name": "Мірель-віщунка",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_4_form_3.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_4_form_3.png",
           "attack": 10,
           "defense": 10,
           "hp": 35,
@@ -237,7 +237,7 @@
         {
           "form": 1,
           "name": "Клинкотан",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_5.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_5.png",
           "attack": 11,
           "defense": 10,
           "hp": 34,
@@ -249,7 +249,7 @@
         {
           "form": 2,
           "name": "Вихровий клинкотан",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_5_form_2.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_5_form_2.png",
           "attack": 13,
           "defense": 12,
           "hp": 40,
@@ -262,7 +262,7 @@
         {
           "form": 3,
           "name": "Гранд-клинкотан",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_5_form_3.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_5_form_3.png",
           "attack": 15,
           "defense": 14,
           "hp": 46,
@@ -291,7 +291,7 @@
         {
           "form": 1,
           "name": "Фавн-вершник",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_6.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_6.png",
           "attack": 14,
           "defense": 13,
           "hp": 46,
@@ -303,7 +303,7 @@
         {
           "form": 2,
           "name": "Світловий фавн-вершник",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_6_form_2.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_6_form_2.png",
           "attack": 16,
           "defense": 15,
           "hp": 55,
@@ -316,7 +316,7 @@
         {
           "form": 3,
           "name": "Зоряний фавн-вершник",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_6_form_3.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_6_form_3.png",
           "attack": 18,
           "defense": 17,
           "hp": 64,
@@ -345,7 +345,7 @@
         {
           "form": 1,
           "name": "Молодий арборент",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_7.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_7.png",
           "attack": 22,
           "defense": 21,
           "hp": 85,
@@ -357,7 +357,7 @@
         {
           "form": 2,
           "name": "Арборент",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_7_form_2.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_7_form_2.png",
           "attack": 26,
           "defense": 25,
           "hp": 102,
@@ -370,7 +370,7 @@
         {
           "form": 3,
           "name": "Пра-арборент",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_7_form_3.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_7_form_3.png",
           "attack": 30,
           "defense": 29,
           "hp": 119,
@@ -399,7 +399,7 @@
         {
           "form": 1,
           "name": "Іскра соларіса",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_8.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_8.png",
           "attack": 32,
           "defense": 30,
           "hp": 145,
@@ -411,7 +411,7 @@
         {
           "form": 2,
           "name": "Соларіс-фенікс",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_8_form_2.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_8_form_2.png",
           "attack": 38,
           "defense": 36,
           "hp": 174,
@@ -424,7 +424,7 @@
         {
           "form": 3,
           "name": "Верховний соларіс-фенікс",
-          "image_url": "/static/images/units_and_buildings/unit_images/elves_recruitment_tier_8_form_3.png",
+          "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_8_form_3.png",
           "attack": 44,
           "defense": 42,
           "hp": 203,
@@ -455,7 +455,7 @@
         {
           "form": 1,
           "name": "Шейд-нищівник",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_1.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_1.png",
           "attack": 3,
           "defense": 3,
           "hp": 6,
@@ -467,7 +467,7 @@
         {
           "form": 2,
           "name": "Шейд-лазутчик",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_1_form_2.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_1_form_2.png",
           "attack": 4,
           "defense": 4,
           "hp": 7,
@@ -480,7 +480,7 @@
         {
           "form": 3,
           "name": "Шейд-примара",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_1_form_3.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_1_form_3.png",
           "attack": 5,
           "defense": 5,
           "hp": 8,
@@ -509,7 +509,7 @@
         {
           "form": 1,
           "name": "Кварцовий кристалопанцир",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_2.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_2.png",
           "attack": 5,
           "defense": 6,
           "hp": 13,
@@ -521,7 +521,7 @@
         {
           "form": 2,
           "name": "Базальтовий кристалопанцир",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_2_form_2.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_2_form_2.png",
           "attack": 6,
           "defense": 7,
           "hp": 15,
@@ -534,7 +534,7 @@
         {
           "form": 3,
           "name": "Іридієвий кристалопанцир",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_2_form_3.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_2_form_3.png",
           "attack": 7,
           "defense": 8,
           "hp": 17,
@@ -565,7 +565,7 @@
         {
           "form": 1,
           "name": "Токсин-жало",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_3.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_3.png",
           "attack": 7,
           "defense": 7,
           "hp": 20,
@@ -577,7 +577,7 @@
         {
           "form": 2,
           "name": "Ядоносний токсин-жало",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_3_form_2.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_3_form_2.png",
           "attack": 8,
           "defense": 8,
           "hp": 23,
@@ -590,7 +590,7 @@
         {
           "form": 3,
           "name": "Чорний токсин-жало",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_3_form_3.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_3_form_3.png",
           "attack": 9,
           "defense": 9,
           "hp": 26,
@@ -621,7 +621,7 @@
         {
           "form": 1,
           "name": "Ноктіс-послушниця",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_4.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_4.png",
           "attack": 9,
           "defense": 9,
           "hp": 28,
@@ -633,7 +633,7 @@
         {
           "form": 2,
           "name": "Ноктіс-жриця",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_4_form_2.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_4_form_2.png",
           "attack": 10,
           "defense": 10,
           "hp": 33,
@@ -646,7 +646,7 @@
         {
           "form": 3,
           "name": "Ноктіс-владичиця",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_4_form_3.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_4_form_3.png",
           "attack": 11,
           "defense": 11,
           "hp": 38,
@@ -675,7 +675,7 @@
         {
           "form": 1,
           "name": "Тінеріз",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_5.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_5.png",
           "attack": 12,
           "defense": 11,
           "hp": 38,
@@ -687,7 +687,7 @@
         {
           "form": 2,
           "name": "Подвійний тінеріз",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_5_form_2.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_5_form_2.png",
           "attack": 14,
           "defense": 13,
           "hp": 44,
@@ -700,7 +700,7 @@
         {
           "form": 3,
           "name": "Безликий тінеріз",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_5_form_3.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_5_form_3.png",
           "attack": 16,
           "defense": 15,
           "hp": 50,
@@ -729,7 +729,7 @@
         {
           "form": 1,
           "name": "Вершник василіска",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_6.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_6.png",
           "attack": 15,
           "defense": 14,
           "hp": 51,
@@ -741,7 +741,7 @@
         {
           "form": 2,
           "name": "Василіск-наїзник",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_6_form_2.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_6_form_2.png",
           "attack": 17,
           "defense": 16,
           "hp": 60,
@@ -754,7 +754,7 @@
         {
           "form": 3,
           "name": "Глибинний василіск-наїзник",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_6_form_3.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_6_form_3.png",
           "attack": 19,
           "defense": 18,
           "hp": 69,
@@ -783,7 +783,7 @@
         {
           "form": 1,
           "name": "Болотна абіс-гідра",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_7.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_7.png",
           "attack": 23,
           "defense": 22,
           "hp": 95,
@@ -795,7 +795,7 @@
         {
           "form": 2,
           "name": "Абіс-гідра",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_7_form_2.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_7_form_2.png",
           "attack": 27,
           "defense": 26,
           "hp": 112,
@@ -808,7 +808,7 @@
         {
           "form": 3,
           "name": "Безодня абіс-гідра",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_7_form_3.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_7_form_3.png",
           "attack": 31,
           "defense": 30,
           "hp": 129,
@@ -837,7 +837,7 @@
         {
           "form": 1,
           "name": "Молодий обскуро-дракон",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_8.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_8.png",
           "attack": 33,
           "defense": 31,
           "hp": 163,
@@ -849,7 +849,7 @@
         {
           "form": 2,
           "name": "Обскуро-дракон",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_8_form_2.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_8_form_2.png",
           "attack": 39,
           "defense": 37,
           "hp": 192,
@@ -862,7 +862,7 @@
         {
           "form": 3,
           "name": "Владика обскуро-драконів",
-          "image_url": "/static/images/units_and_buildings/unit_images/underground_elves_recruitment_tier_8_form_3.png",
+          "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_8_form_3.png",
           "attack": 45,
           "defense": 43,
           "hp": 221,

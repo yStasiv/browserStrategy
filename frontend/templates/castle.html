@@ -1,8 +1,27 @@
 {% extends 'base.html' %}
-{% macro building_preview(building) %}
+{% macro building_preview(building, faction) %}
+    {% set image_url = building.faction_image_urls.get(faction, building.image_url) %}
     <div class="castle-building-image" aria-hidden="true">
-        {% if building.image_url %}<img src="{{ building.image_url }}" alt="" loading="lazy">{% endif %}
+        {% if image_url %}<img src="{{ image_url }}" alt="" loading="lazy">{% endif %}
     </div>
+{% endmacro %}
+{% macro building_details(building, recruits, spells) %}
+    {% if building.description %}<p>{{ building.description }}</p>{% endif %}
+    {% if building.unit_evolution_tier %}<p>Форма істоти {{ building.unit_evolution_tier }}</p>{% endif %}
+    {% if recruits %}
+    <p>Відкриває найм
+        {% for unit in recruits %}<a href="/unit_info?key={{ unit.key }}">{{ unit.name }}</a>{{ ', ' if not loop.last else '.' }}{% endfor %}
+    </p>
+    {% endif %}
+    {% if spells is not none %}
+        {% if spells %}
+        <p>Відкриває закляття
+            {% for spell in spells %}<a href="/unit_info?key=elemental_{{ spell.element }}">Виклик «{{ spell.name }}»</a>{{ ', ' if not loop.last else '.' }}{% endfor %}
+        </p>
+        {% else %}
+        <p>Закляття для цього рівня будуть додані згодом.</p>
+        {% endif %}
+    {% endif %}
 {% endmacro %}
 {% from 'components/unit_info.html' import portrait, stats %}
 {% block title %}Замок{% endblock %}
@@ -39,11 +58,10 @@
             <div class="castle-building-list">
                 {% for building in buildings if building.id in built %}
                 <article class="castle-building-card">
-                    {{ building_preview(building) }}
+                    {{ building_preview(building, faction) }}
                     <div>
                         <h3>{{ building.name }}</h3>
-                        {% if building.description %}<p>{{ building.description }}</p>{% endif %}
-                        {% if building.unit_evolution_tier %}<p>Форма істоти {{ building.unit_evolution_tier }}</p>{% endif %}
+                        {{ building_details(building, recruits_by_building.get(building.id), spells_by_building.get(building.id)) }}
                     </div>
                 </article>
                 {% else %}
@@ -54,11 +72,10 @@
         <div class="castle-building-list">
             {% for building in buildings if building.id not in built %}
             <article class="castle-building-card">
-                {{ building_preview(building) }}
+                {{ building_preview(building, faction) }}
                 <div>
                     <h3>{{ building.name }}</h3>
-                    {% if building.description %}<p>{{ building.description }}</p>{% endif %}
-                    {% if building.unit_evolution_tier %}<p>Форма істоти {{ building.unit_evolution_tier }}</p>{% endif %}
+                    {{ building_details(building, recruits_by_building.get(building.id), spells_by_building.get(building.id)) }}
                     <p>Бойовий рівень {{ building.min_level }}</p>
                     {% set missing = building.requires | reject('in', built) | list %}
                     {% if building.id in unaffordable %}<p>Недостатньо ресурсів.</p>{% endif %}
