@@ -8,11 +8,12 @@
 {% block title %}Замок{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/unit_info.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/game_panel.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', path='css/castle_army.css') }}">
 <script defer src="{{ url_for('static', path='js/castle_army.js') }}"></script>
 {% endblock %}
 {% block body %}
-<main class="castle-army" lang="uk">
+<main class="game-panel castle-army" lang="uk">
     <header>
         <h1>Замок</h1>
         <nav aria-label="Замок">
@@ -42,6 +43,7 @@
                     <div>
                         <h3>{{ building.name }}</h3>
                         {% if building.description %}<p>{{ building.description }}</p>{% endif %}
+                        {% if building.unit_evolution_tier %}<p>Форма істоти {{ building.unit_evolution_tier }}</p>{% endif %}
                     </div>
                 </article>
                 {% else %}
@@ -56,8 +58,10 @@
                 <div>
                     <h3>{{ building.name }}</h3>
                     {% if building.description %}<p>{{ building.description }}</p>{% endif %}
+                    {% if building.unit_evolution_tier %}<p>Форма істоти {{ building.unit_evolution_tier }}</p>{% endif %}
                     <p>Бойовий рівень {{ building.min_level }}</p>
                     {% set missing = building.requires | reject('in', built) | list %}
+                    {% if building.id in unaffordable %}<p>Недостатньо ресурсів.</p>{% endif %}
                     {% if missing %}
                     <p>Спочатку побудуй {% for key in missing %}{{ building_names[key] }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
                     {% endif %}
@@ -96,8 +100,10 @@
             <h2 id="{{ id }}-title">{{ title }}</h2>
             <form method="dialog"><button class="castle-section" type="submit">Закрити</button></form>
         </header>
-        {% if id == 'castle-magic' and elementals %}
+        {% if id == 'castle-magic' %}
         <p>Рівень школи {{ school_level }} / 7</p>
+        {% endif %}
+        {% if id == 'castle-magic' and elementals %}
         <ul class="castle-elementals">
             {% for element, spell in elementals.items() %}
             <li>

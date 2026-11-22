@@ -1,0 +1,12 @@
+{
+  "pricing": {
+    "minimum_percent": 90,
+    "maximum_percent": 120
+  },
+  "employment": {
+    "multiplier_percent": 100,
+    "penalty_percent": 0,
+    "require_victory_between_shifts": false
+  },
+  "enterprises": {}
+}

@@ -31,6 +31,8 @@ class Building(BaseModel):
     built_by_default: bool = False
     built_on_registration: bool = False
     requires: list[str] = Field(default_factory=list)
+    unit_evolution_tier: int | None = Field(default=None, strict=True, ge=1, le=3)
+    legacy_id: str | None = None
 
 
 def catalog():
@@ -46,14 +48,20 @@ def catalog():
             raise ValueError(f"Невідомі ресурси для {building.id}: {', '.join(sorted(unknown))}")
         if set(building.requires) - entries.keys():
             raise ValueError(f"Невідомі вимоги до будівлі {building.id}.")
+        if building.unit_evolution_tier in (2, 3) and not any(
+            entries[key].unit_evolution_tier == building.unit_evolution_tier - 1
+            for key in building.requires
+        ):
+            raise ValueError(f"Для {building.id} потрібна споруда попередньої форми.")
     return entries, resource_catalog
 
 
 def built_ids(db, player, entries):
-    purchased = db.scalars(select(CastleBuilding.building_id).where(CastleBuilding.player_id == player.id))
-    return set(purchased) | {
+    purchased = set(db.scalars(select(CastleBuilding.building_id).where(CastleBuilding.player_id == player.id)))
+    return purchased | {
         building.id for building in entries.values()
-        if building.built_by_default and available_to_faction(building, player)
+        if (building.built_by_default or building.legacy_id in purchased)
+        and available_to_faction(building, player)
     }
 
 

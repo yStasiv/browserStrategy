@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from datetime import date
 from threading import Barrier
 from urllib.parse import urlencode
+from uuid import uuid4
 
 import pytest
 from alembic import command
@@ -217,11 +218,13 @@ def test_purchase_endpoint_and_guild_auth(sessions):
     purchase = "/enterprise/1/buy-resources"
     assert call("POST", purchase, {"amount": -1})[0] == 422
     assert call("POST", purchase, {"amount": 11})[0] == 409
-    assert call("POST", purchase, {"amount": 3})[0] == 303
+    assert call("POST", purchase, {
+        "amount": 3, "expected_price": 2, "expected_total": 7, "request_key": str(uuid4()),
+    })[0] == 303
     response = json.loads(call("GET", "/api/guild")[1])
     assert all(q["progress"] == 3 for q in response["quests"] if "співочої смоли" in q["description"])
     with sessions() as db:
-        assert db.get(User, 10).gold == 94
+        assert db.get(User, 10).gold == 93
         assert db.get(User, 10).singing_resin == 3
         assert db.get(Enterprise, 1).resource_stored == 7
     with sessions.begin() as db:
@@ -311,13 +314,15 @@ def test_world_locations_protect_enterprises_and_guild(sessions, monkeypatch):
     assert json.loads(call("GET", "/api/world")[1])["current_sector"] == "Castle"
     assert call("GET", "/enterprise/2")[0] == 409
     clock += timedelta(seconds=1)
-    assert call("POST", "/enterprise/2/buy-resources", {"amount": 1})[0] == 303
+    assert call("POST", "/enterprise/2/buy-resources", {
+        "amount": 1, "expected_price": 2, "expected_total": 3, "request_key": str(uuid4()),
+    })[0] == 303
     assert call("GET", "/enterprise/2")[0] == 200
     assert call("GET", "/enterprise/1")[0] == 403
     with sessions() as db:
         traveler = db.get(User, 10)
         assert (traveler.map_sector, traveler.map_x, traveler.map_y, traveler.gold, traveler.basalt_bone) == (
-            "Forest", 83, 50, 98, 1
+            "Forest", 83, 50, 97, 1
         )
         assert db.get(User, 2).map_sector == "Castle"
 
@@ -777,6 +782,9 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
         assert len(lines) == 8 and [line["tier"] for line in lines] == list(range(1, 9))
         for line in lines:
             assert [form["form"] for form in line["forms"]] == [1, 2, 3]
+            base = f"{faction}_recruitment_tier_{line['tier']}"
+            assert line["recruitment"]["building"] == base
+            assert [form["building"] for form in line["forms"][1:]] == [f"{base}_form_2", f"{base}_form_3"]
             assert f"{faction}_{line['key']}_3" in catalog["units"]
     assert len(catalog["summoning"]["elementals"]) == 6
 
@@ -785,8 +793,10 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
         elf.fraction, elf.mind, elf.magic_power = "elfe", 0, 3
         elf.melee_attack = 2
         elf.gold, elf.basalt_bone = 10000, 100
+        elf.singing_resin = 200
         other = db.get(User, 2)
         other.fraction = "undergroundElves"
+        other.gold, other.singing_resin, other.basalt_bone = 500, 20, 10
         db.add_all([
             Item(id=103, owner_id=10, item_type="belt", stats={
                 "mind": 1, "magic_power": 2, "melee_attack": 3, "physical_defense": 4,
@@ -807,18 +817,31 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert b'name="form:underground_elves_shade"' not in body
     assert call("POST", "/castle/build", form={"building_id": "magic_school_4"})[0] == 403
     assert call("POST", "/api/battles/pve", payload={"scenario": "training"})[0] == 400
-    assert call("POST", "/castle/build", form={"building_id": "recruitment_tier_3"})[0] == 303
-    assert call("POST", "/castle/build", form={"building_id": "recruitment_tier_3_form_3"})[0] == 403
+    assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3"})[0] == 403
+    with sessions.begin() as db:
+        db.get(User, 10).level = 3
+    assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3_outpost"})[0] == 303
+    status, body = call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3"})
+    assert status == 403 and "Потрібен бойовий рівень 5".encode() in body
+    assert b'name="form:elves_moon_archer"' not in call("GET", "/castle?section=army")[1]
+    with sessions.begin() as db:
+        db.get(User, 10).level = 8
+    assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3"})[0] == 303
+    assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3_form_3"})[0] == 403
     assert call("POST", "/castle", form={
         "form:elves_moon_archer": "elves_moon_archer_2", "line:elves_moon_archer": 10,
     })[0] == 422
-    assert call("POST", "/castle/build", form={"building_id": "recruitment_tier_3_form_2"})[0] == 303
+    assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3_form_2"})[0] == 303
     status, body = call("GET", "/castle?section=army")
     assert status == 200 and b'<select id="army-form-' not in body
     assert b'type="radio" name="form:elves_moon_archer" value="elves_moon_archer_2"' in body
     assert b'<span class="unit-portrait" title="' in body.split(b'data-army-form', 1)[1].split(b'</label>', 1)[0]
     assert b'value="elves_moon_archer_3"' not in body
-    assert call("POST", "/castle/build", form={"building_id": "recruitment_tier_3_form_3"})[0] == 303
+    assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3_form_3"})[0] == 403
+    with sessions.begin() as db:
+        db.get(User, 10).level = 12
+        db.get(User, 2).level = 5
+    assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3_form_3"})[0] == 303
     assert call("POST", "/castle", form={
         "form:elves_moon_archer": "elves_moon_archer_3", "line:elves_moon_archer": 10,
     })[0] == 303
@@ -826,6 +849,7 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
         "form:elves_moon_archer": "underground_elves_toxin_sting_3", "line:elves_moon_archer": 10,
     })[0] == 422
 
+    assert call("POST", "/castle/build", form={"building_id": "magic_school_2"}, token="other-session")[0] == 303
     status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"}, token="other-session")
     assert status == 200
     underground = json.loads(body)["state"]

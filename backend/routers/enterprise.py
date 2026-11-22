@@ -1,291 +1,178 @@
-from datetime import datetime, timedelta
-from uuid import uuid4
+from datetime import timezone
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-from sqlalchemy import update
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from backend.auth import session_player
 from backend import database, models
-from backend.services.activity_guilds import WORKERS, award_point
-from backend.services.guild import record_collection
-from backend.services.world import require_presence
+from backend.auth import session_player
+from backend.services import economy, enterprises
+from backend.services.world import require_presence, utc_now
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
 
 
-def update_resources(db: Session):
-    """Оновлює ресурси та зарплати"""
-    enterprises = db.query(models.Enterprise).all()
-    current_time = datetime.now()
+def context(request, db, enterprise_id):
+    user = session_player(request, db)
+    if user is None:
+        raise HTTPException(401, "Увійди до гри.")
+    site = db.get(models.Enterprise, enterprise_id)
+    if site is None:
+        raise HTTPException(404, "Підприємство не знайдено.")
+    require_presence(db, user, site.sector)
+    return user, site
 
-    for enterprise in enterprises:
-        # Оновлюємо максимальну кількість працівників (площа * 3)
-        enterprise.max_workers = enterprise.area * 3
 
-        # Оновлюємо максимальний розмір складу
-        enterprise.max_storage = enterprise.area * enterprise.storage_multiplier
-
-        if enterprise.last_production_time:
-            hours_passed = (
-                current_time - enterprise.last_production_time
-            ).total_seconds() / 3600
-            if hours_passed >= 1:
-                # Бонус від кількості працівників (1% за кожні 25 працівників)
-                worker_bonus = 1 + (enterprise.workers_count // 25) * 0.01
-
-                # Розраховуємо базову продуктивність залежно від типу виробництва
-                if enterprise.production_type == "mine":
-                    # Для шахт: 1 ресурс на працівника за годину
-                    base_production = enterprise.workers_count
-                else:
-                    # Для заводів: 1 ресурс * площа на працівника за годину
-                    base_production = enterprise.workers_count * enterprise.area
-
-                # Розраховуємо загальне виробництво
-                resources_produced = int(hours_passed * base_production * worker_bonus)
-
-                # Перевіряємо ліміт складу
-                new_resource_amount = min(
-                    enterprise.max_storage,
-                    enterprise.resource_stored + resources_produced,
-                )
-                enterprise.resource_stored = new_resource_amount
-                enterprise.last_production_time = current_time
-
-        # Оновлюємо зарплати працівників
-        workers = (
-            db.query(models.User)
-            .filter(models.User.workplace == f"enterprise_{enterprise.id}")
-            .all()
-        )
-
-        for worker in workers:
-            if worker.work_start_time:
-                hours_worked = (
-                    current_time - worker.work_start_time
-                ).total_seconds() / 3600
-
-                # Якщо пройшла година, нараховуємо зарплату і звільняємо
-                if hours_worked >= 1:
-                    # Нараховуємо зарплату за годину
-                    gold_earned = enterprise.salary
-                    worker.gold += gold_earned
-                    enterprise.balance -= gold_earned
-
-                    # Звільняємо працівника
-                    worker.workplace = None
-                    worker.work_start_time = None
-                    enterprise.workers_count -= 1
-
-    db.commit()
+def render(request, db, user, site, *, before=None, confirmation=None, error=None, status=200):
+    now = utc_now()
+    names = enterprises.resource_names()
+    history = select(models.EnterpriseEvent).where(models.EnterpriseEvent.enterprise_id == site.id)
+    if before is not None:
+        history = history.where(models.EnterpriseEvent.id < before)
+    history = db.scalars(history.order_by(models.EnterpriseEvent.id.desc()).limit(21)).all()
+    workers = db.scalars(select(models.User).where(
+        models.User.workplace == f"enterprise_{site.id}",
+    ).order_by(models.User.username)).all()
+    shift = enterprises.active_shift(db, user.id)
+    end = shift.completes_at if shift else None
+    started = shift.started_at if shift else None
+    displayed_wage = enterprises.wage(site)
+    if shift is not None and shift.enterprise_id == site.id:
+        displayed_wage = shift
+    if shift is None and user.work_start_time:
+        started = user.work_start_time.astimezone(timezone.utc).replace(tzinfo=None)
+        end = started + enterprises.SHIFT_DURATION
+        if user.workplace == f"enterprise_{site.id}":
+            base = max(0, site.salary)
+            displayed_wage = dict(base_wage=base, multiplier_percent=100, penalty_percent=0, payable=base)
+    projected = enterprises.worker_rate(site) * site.workers_count // 100
+    estimate = min(enterprises.production_limit(site), projected)
+    wages_in_progress = db.scalars(select(models.EnterpriseShift.payable).where(
+        models.EnterpriseShift.enterprise_id == site.id, models.EnterpriseShift.status == "active",
+    )).all()
+    production = enterprises.production_rules(site)
+    inputs = []
+    for key, per_unit in production.inputs_per_unit.items():
+        suppliers = db.scalars(select(models.Enterprise).where(
+            models.Enterprise.id != site.id, models.Enterprise.sector == site.sector,
+            models.Enterprise.resource_type == key, models.Enterprise.resource_stored > 0,
+        ).order_by(models.Enterprise.name)).all()
+        if not enterprises.can_procure(site, user):
+            sellers = []
+        else:
+            sellers = [{"site": seller, "price": enterprises.price(seller), "key": uuid4()} for seller in suppliers]
+        available = site.input_stock.get(key, 0)
+        consumption = per_unit * projected
+        inputs.append(dict(name=names[key], per_unit=per_unit, available=available, consumption=consumption,
+                           missing=max(0, consumption - available), sellers=sellers,
+                           price=min((enterprises.price(seller) for seller in suppliers), default=None)))
+    return templates.TemplateResponse("enterprise.html", {
+        "request": request, "user": user, "enterprise": site, "workers": workers,
+        "current_time": now, "shift_start": started, "shift_end": end,
+        "wage": displayed_wage,
+        "employment_error": enterprises.employment_error(db, site, user),
+        "hourly_wages": sum(wages_in_progress) + max(0, site.workers_count - len(wages_in_progress)) * site.salary,
+        "hourly_output": estimate, "unit_price": enterprises.price(site),
+        "commission_percent": economy.GOLD_COMMISSION_PERCENT, "request_key": uuid4(),
+        "employment_key": uuid4(), "image_url": enterprises.image_url(site),
+        "resource_names": names, "inputs": inputs, "history": history[:20],
+        "next_history": history[19].id if len(history) > 20 else None,
+        "confirmation": confirmation, "action_error": error,
+    }, status_code=status)
 
 
 @router.get("/enterprise/{enterprise_id}", response_class=HTMLResponse)
-async def enterprise_page(
-    enterprise_id: int, request: Request, db: Session = Depends(database.get_db)
-):
-    user_session_id = request.cookies.get("session_id")
-    if not user_session_id:
-        raise HTTPException(status_code=401, detail="Not logged in")
-
-    user = session_player(request, db)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    enterprise = (
-        db.query(models.Enterprise)
-        .filter(models.Enterprise.id == enterprise_id)
-        .first()
-    )
-    if not enterprise:
-        raise HTTPException(status_code=404, detail="Enterprise not found")
-    require_presence(db, user, enterprise.sector)
-
-    # Отримуємо список всіх працівників підприємства
-    workers = (
-        db.query(models.User)
-        .filter(models.User.workplace == f"enterprise_{enterprise.id}")
-        .all()
-    )
-
-    # Release the player lock before production updates other players' balances.
+def enterprise_page(enterprise_id: int, request: Request, before: int | None = Query(None, gt=0),
+                    db: Session = Depends(database.get_db)):
+    context(request, db, enterprise_id)
     db.commit()
-    update_resources(db)
-    require_presence(db, user, enterprise.sector)
+    overdue = enterprises.settlement_candidates(db, enterprise_id)
     db.commit()
-
-    return templates.TemplateResponse(
-        "enterprise.html",
-        {
-            "request": request,
-            "user": user,
-            "enterprise": enterprise,
-            "workers": workers,
-            "current_time": datetime.now(),
-            "timedelta": timedelta,
-        },
-    )
+    for worker_id in overdue:
+        enterprises.settle_shift(db, worker_id)
+        db.commit()
+    user, site = context(request, db, enterprise_id)
+    db.commit()
+    return render(request, db, user, site, before=before)
 
 
 @router.post("/enterprise/{enterprise_id}/start-work")
-async def start_work(
-    enterprise_id: int, request: Request, db: Session = Depends(database.get_db)
-):
-    user_session_id = request.cookies.get("session_id")
-    if not user_session_id:
-        raise HTTPException(status_code=401, detail="Not logged in")
-
-    user = session_player(request, db)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    enterprise = (
-        db.query(models.Enterprise)
-        .filter(models.Enterprise.id == enterprise_id)
-        .first()
-    )
-    if not enterprise:
-        raise HTTPException(status_code=404, detail="Enterprise not found")
-    require_presence(db, user, enterprise.sector)
-
-    current_time = datetime.now()
-
+def start_work(enterprise_id: int, request: Request, db: Session = Depends(database.get_db),
+               return_to_enterprise: bool = Form(False), request_key: UUID | None = Form(None)):
+    user, _ = context(request, db, enterprise_id)
+    key = str(request_key) if request_key else None
+    if enterprises.previous_employment(db, user.id, enterprise_id, key):
+        return RedirectResponse(f"/enterprise/{enterprise_id}", status_code=303)
     if user.workplace:
-        raise HTTPException(status_code=400, detail="Already working somewhere")
-
-    if enterprise.workers_count >= enterprise.max_workers:
-        raise HTTPException(status_code=400, detail="No vacant positions")
-
-    # Розраховуємо зарплату за годину
-    salary_for_hour = enterprise.salary
-
-    # Перевіряємо, чи вистачає балансу на зарплату
-    if enterprise.balance < salary_for_hour:
-        raise HTTPException(
-            status_code=400, detail="Enterprise doesn't have enough money to pay salary"
-        )
-
-    result = db.execute(
-        update(models.Enterprise).where(
-            models.Enterprise.id == enterprise_id,
-            models.Enterprise.workers_count < models.Enterprise.max_workers,
-            models.Enterprise.balance >= salary_for_hour,
-            models.Enterprise.salary == salary_for_hour,
-            models.Enterprise.sector == user.map_sector,
-        ).values(
-            balance=models.Enterprise.balance - salary_for_hour,
-            workers_count=models.Enterprise.workers_count + 1,
-        )
-    )
-    if result.rowcount != 1:
-        raise HTTPException(409, "Умови працевлаштування змінилися.")
-
-    user.workplace = f"enterprise_{enterprise.id}"
-    user.work_start_time = current_time
-    award_point(db, user.id, WORKERS)
-    db.commit()
+        if enterprises.settle_shift(db, user.id):
+            db.commit()
+            user, _ = context(request, db, enterprise_id)
+            if enterprises.previous_employment(db, user.id, enterprise_id, key):
+                return RedirectResponse(f"/enterprise/{enterprise_id}", status_code=303)
+    site = enterprises.lock_enterprise(db, enterprise_id)
+    try:
+        if site.sector != user.map_sector:
+            raise HTTPException(403, "Підприємство має бути в поточному секторі.")
+        enterprises.start_shift(db, site, user, utc_now(), key)
+        db.commit()
+    except HTTPException as exc:
+        if not return_to_enterprise:
+            raise
+        db.rollback()
+        return render(request, db, user, site, error=exc.detail, status=exc.status_code)
+    if return_to_enterprise:
+        return RedirectResponse(f"/enterprise/{site.id}", status_code=303)
     return {"status": "success"}
 
 
-# Додаємо модель для запиту
-class buyResources(BaseModel):
-    amount: int
-
-
 @router.post("/enterprise/{enterprise_id}/buy-resources")
-async def buy_resources(
-    enterprise_id: int,
-    request: Request,
-    db: Session = Depends(database.get_db),
-    amount: int = Form(..., gt=0, le=2_147_483_647),
+@router.post("/enterprise/{enterprise_id}/procure-input")
+def buy_resources(
+    enterprise_id: int, request: Request, db: Session = Depends(database.get_db),
+    amount: int = Form(..., gt=0, le=economy.MAX_GOLD),
+    expected_price: int | None = Form(None, ge=0),
+    expected_total: int | None = Form(None),
+    request_key: UUID | None = Form(None),
+    supplier_id: int | None = Form(None, gt=0),
 ):
-    user_session_id = request.cookies.get("session_id")
-    if not user_session_id:
-        raise HTTPException(status_code=401, detail="Not logged in")
-
-    user = session_player(request, db)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    enterprise = (
-        db.query(models.Enterprise)
-        .filter(models.Enterprise.id == enterprise_id)
-        .first()
-    )
-    if not enterprise:
-        raise HTTPException(status_code=404, detail="Enterprise not found")
-    require_presence(db, user, enterprise.sector)
-
-    total_cost = amount * enterprise.item_price
-    if not 0 <= total_cost <= 2_147_483_647:
-        raise HTTPException(status_code=422, detail="Invalid purchase total")
-
-    resource = enterprise.resource_type
-    record_collection(db, user.id, uuid4().hex, resource, amount)
-
-    wallet = {"gold": models.User.gold - total_cost}
-    if resource == "gold":
-        wallet["gold"] += amount
-    elif resource in {"singing_resin", "basalt_bone"}:
-        wallet[resource] = getattr(models.User, resource) + amount
-    result = db.execute(
-        update(models.User).where(models.User.id == user.id, models.User.gold >= total_cost)
-        .values(**wallet)
-    )
-    if result.rowcount != 1:
-        raise HTTPException(status_code=400, detail="Not enough gold")
-
-    result = db.execute(
-        update(models.Enterprise).where(
-            models.Enterprise.id == enterprise_id,
-            models.Enterprise.resource_stored >= amount,
-            models.Enterprise.item_price == enterprise.item_price,
-            models.Enterprise.resource_type == resource,
-        ).values(
-            balance=models.Enterprise.balance + total_cost,
-            resource_stored=models.Enterprise.resource_stored - amount,
+    user, site = context(request, db, enterprise_id)
+    procuring = request.url.path.endswith("/procure-input")
+    target_id = enterprise_id if procuring else None
+    seller_id = supplier_id if procuring else enterprise_id
+    key = str(request_key or uuid4())
+    if seller_id is None or (procuring and (not enterprises.can_procure(site, user) or seller_id == target_id)):
+        raise HTTPException(403, "Ця закупівля матеріалів недоступна.")
+    if enterprises.previous_trade(db, user.id, seller_id, key, amount, target_id):
+        return RedirectResponse(f"/enterprise/{enterprise_id}", status_code=303)
+    try:
+        locked = {identifier: enterprises.lock_enterprise(db, identifier)
+                  for identifier in sorted({seller_id, enterprise_id})}
+        seller = locked[seller_id]
+        target = locked[target_id] if procuring else None
+        if seller.sector != user.map_sector or (target and target.sector != user.map_sector):
+            raise HTTPException(403, "Постачальник має бути в поточному секторі.")
+        confirmation = enterprises.trade(
+            db, seller, user, amount, expected_price, expected_total if request_key else None,
+            key, utc_now(), target=target,
         )
-    )
-    if result.rowcount != 1:
-        raise HTTPException(status_code=409, detail="Enterprise stock or price changed")
-
-    db.commit()
-    return RedirectResponse(url=f"/enterprise/{enterprise_id}", status_code=303)
-
-
-# @router.post("/move-to-sector")
-# async def move_to_sector(
-#     request: Request,
-#     movement: dict,
-#     db: Session = Depends(database.get_db)
-# ):
-#     user_session_id = request.cookies.get("session_id")
-#     if not user_session_id:
-#         raise HTTPException(status_code=401, detail="Not logged in")
-
-#     user = db.query(models.User).filter(models.User.session_id == user_session_id).first()
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found")
-
-#     # Перевіряємо, чи не працює зараз гравець
-#     if user.workplace and user.work_start_time:
-#         hours_worked = (datetime.now() - user.work_start_time).total_seconds() / 3600
-#         if hours_worked < 8:
-#             raise HTTPException(status_code=400, detail="You cannot leave sector while working! (8 hours not passed)")
-
-#     sector = str(movement.get("sector"))
-#     x = movement.get("x")
-#     y = movement.get("y")
-
-#     if sector in ["Mountain", "Castle", "Forest"] and x is not None and y is not None:
-#         user.map_sector = sector
-#         user.map_x = x
-#         user.map_y = y
-#         db.commit()
-
-#     return {"status": "success"}
+        if confirmation is None:
+            db.commit()
+            return RedirectResponse(f"/enterprise/{enterprise_id}", status_code=303)
+        details = {**confirmation, "amount": amount, "request_key": key, "supplier_id": supplier_id,
+                   "resource": seller.resource_type, "procurement": procuring,
+                   "changed": request_key is not None and expected_price is not None}
+        db.rollback()
+        return render(request, db, user, site, confirmation=details, status=409)
+    except HTTPException as exc:
+        db.rollback()
+        return render(request, db, user, site, error=exc.detail, status=exc.status_code)
+    except IntegrityError:
+        db.rollback()
+        if enterprises.previous_trade(db, user.id, seller_id, key, amount, target_id):
+            return RedirectResponse(f"/enterprise/{enterprise_id}", status_code=303)
+        raise

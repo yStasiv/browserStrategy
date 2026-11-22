@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
+from backend.config import ENTERPRISE_SHIFT_DURATION
 from backend.models import Enterprise, User
 from backend.world_models import PlayerTravel, SectorConnection, WorldSector
 
@@ -49,11 +50,14 @@ def require_presence(db, player, sector):
         raise HTTPException(403, "Для цієї дії потрібно бути у відповідному секторі.")
 
 
-def working_blocks_travel(player):
-    return bool(
-        player.workplace and player.work_start_time
-        and datetime.now() - player.work_start_time < timedelta(hours=8)
-    )
+def working_blocks_travel(db, player, now):
+    if not player.workplace or not player.work_start_time:
+        return False
+    from backend.services.enterprises import active_shift
+    shift = active_shift(db, player.id)
+    if shift is not None:
+        return now < shift.completes_at
+    return datetime.now() - player.work_start_time < ENTERPRISE_SHIFT_DURATION
 
 
 def start_travel(db, player, destination_key):
@@ -68,7 +72,7 @@ def start_travel(db, player, destination_key):
     route = db.get(SectorConnection, (player.map_sector, destination_key))
     if route is None:
         raise HTTPException(409, "Між цими секторами немає прямого сполучення.")
-    if working_blocks_travel(player):
+    if working_blocks_travel(db, player, now):
         raise HTTPException(409, "Під час роботи залишити сектор неможливо.")
 
     journey = PlayerTravel(
@@ -107,6 +111,8 @@ def utc_timestamp(value):
 
 
 def map_state(db, player, journey, now):
+    from backend.services.enterprises import image_url
+
     routes = db.scalars(
         select(SectorConnection).where(SectorConnection.origin == player.map_sector)
     ).all()
@@ -117,7 +123,7 @@ def map_state(db, player, journey, now):
     return {
         "current_sector": player.map_sector,
         "server_time": utc_timestamp(now),
-        "work_blocks_travel": working_blocks_travel(player),
+        "work_blocks_travel": working_blocks_travel(db, player, now),
         "travel": {
             "origin": journey.origin, "destination": journey.destination,
             "started_at": utc_timestamp(journey.started_at), "arrives_at": utc_timestamp(journey.arrives_at),
@@ -133,6 +139,8 @@ def map_state(db, player, journey, now):
         "enterprises": [
             {
                 "id": entry.id, "name": entry.name, "resource_type": entry.resource_type,
+                "production_type": entry.production_type,
+                "image_url": image_url(entry),
                 "area": entry.area, "salary": entry.salary, "workers_count": entry.workers_count,
                 "max_workers": entry.max_workers, "resource_stored": entry.resource_stored,
                 "max_storage": entry.max_storage,

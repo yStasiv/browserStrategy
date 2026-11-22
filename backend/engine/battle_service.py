@@ -388,13 +388,18 @@ def start_hunt(db, user, creature_key):
 
 def hunting_options(player, traveling):
     level = user_level(player)
+    targets = sorted(
+        (creature for creature in UNITS.values() if creature.hunting),
+        key=lambda creature: (creature.hunting.min_level > level, abs(level - creature.hunting.min_level)),
+    )
     return [
         {
             "key": creature.key, "name": creature.name, "icon": creature.icon,
+            "image_url": creature.image_url,
             "count": creature.hunting.count, "min_level": creature.hunting.min_level,
             "difficulty": creature.hunting.difficulty,
             "gold_min": PVE_VICTORY_GOLD[0], "gold_max": PVE_VICTORY_GOLD[1], "xp": PVE_VICTORY_XP,
             "available": not traveling and level >= creature.hunting.min_level,
         }
-        for creature in UNITS.values() if creature.hunting
+        for creature in targets[:2]
     ]

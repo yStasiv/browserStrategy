@@ -1,26 +1,7 @@
-.castle-army {
-    max-width: 45rem;
-    margin: 1.5rem auto;
-    padding: clamp(1rem, 4vw, 2rem);
-    border: 1px solid #a98d62;
-    border-radius: .8rem;
-    background: #f3e9d2;
-    color: #382918;
-}
 .castle-army header, .army-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
 .castle-army h1 { margin: 0 0 .65rem; }
 .castle-army a { color: #365036; }
 .castle-army nav { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
-.castle-section {
-    padding: .45rem .7rem;
-    background: #f9f0de;
-    border: 1px solid #cbb691;
-    border-radius: .45rem;
-    color: #365036;
-    font: inherit;
-    text-decoration: none;
-    cursor: pointer;
-}
 .castle-dialog {
     box-sizing: border-box;
     width: min(40rem, calc(100% - 2rem));
@@ -55,6 +36,10 @@
     border: 1px solid #cbb691;
     border-radius: .45rem;
     background: #f9f0de;
+}
+.castle-built-list .castle-building-card {
+    background: #eaf0df;
+    border-color: #a7b58f;
 }
 .castle-building-card h3, .castle-building-card p { margin: 0 0 .45rem; }
 .castle-building-image {
