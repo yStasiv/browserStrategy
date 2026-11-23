@@ -9,6 +9,7 @@
     {
       "element": "earth",
       "name": "Геоліт-елементаль",
+      "image_url": "/static/images/units_and_buildings/elves/units/elemental_earth.png",
       "icon": "🪨",
       "attack": 5,
       "defense": 10,
@@ -27,6 +28,7 @@
     {
       "element": "water",
       "name": "Гідро-елементаль",
+      "image_url": "/static/images/units_and_buildings/elves/units/elemental_water.png",
       "icon": "💧",
       "attack": 6,
       "defense": 6,
@@ -65,6 +67,7 @@
     {
       "element": "fire",
       "name": "Піро-елементаль",
+      "image_url": "/static/images/units_and_buildings/elves/units/elemental_fire.png",
       "icon": "🔥",
       "attack": 9,
       "defense": 4,
@@ -86,6 +89,7 @@
       "element": "poison",
       "name": "Міазмо-елементаль",
       "icon": "☣",
+      "image_url": "/static/images/units_and_buildings/elves/units/elemental_poison.png",
       "attack": 8,
       "defense": 5,
       "hp": 19,
@@ -104,6 +108,7 @@
       "element": "energy",
       "name": "Вольт-елементаль",
       "icon": "⚡",
+      "image_url": "/static/images/units_and_buildings/elves/units/elemental_energy.png",
       "attack": 10,
       "defense": 5,
       "hp": 20,

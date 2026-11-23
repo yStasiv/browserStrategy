@@ -121,4 +121,5 @@
 .enterprise-panel .game-panel-action:disabled { opacity: .55; cursor: default; }
 #enterprise-history summary { cursor: pointer; font-weight: 700; }
 #enterprise-history li { margin-block: .35rem; }
-#enterprise-history a { color: #365036; margin-inline-end: .6rem; }
+#enterprise-history a { color: #365036; }
+#enterprise-history > a { margin-inline-end: .6rem; }

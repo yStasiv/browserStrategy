@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import (JSON, BigInteger, Boolean, CheckConstraint, Column, DateTime, ForeignKey, Index, Integer,
+from sqlalchemy import (JSON, BigInteger, Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Index, Integer,
                         String, UniqueConstraint, false, text)
 from sqlalchemy.orm import relationship
 
@@ -433,6 +433,7 @@ class EnterpriseShift(Base):
     multiplier_percent = Column(Integer, nullable=False)
     penalty_percent = Column(Integer, nullable=False)
     payable = Column(Integer, nullable=False)
+    enterprise_payable = Column(Integer)
 
 
 class EnterpriseEvent(Base):
@@ -446,3 +447,14 @@ class EnterpriseEvent(Base):
     created_at = Column(DateTime, nullable=False)
     details = Column(JSON, nullable=False)
     request_key = Column(String(36), unique=True)
+
+
+class EnterpriseDailyReport(Base):
+    __tablename__ = "enterprise_daily_reports"
+
+    enterprise_id = Column(Integer, primary_key=True)
+    day = Column(Date, primary_key=True)
+    produced = Column(JSON, nullable=False, default=dict)
+    sold = Column(JSON, nullable=False, default=dict)
+    sale_gold = Column(BigInteger, nullable=False, default=0)
+    wages = Column(BigInteger, nullable=False, default=0)

@@ -212,7 +212,8 @@
       "pulse_spark": 10
     },
     "faction_image_urls": {
-      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_forge.png"
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_forge.png",
+      "elves": "/static/images/units_and_buildings/elves/buildings/elves_forge.png"
     }
   },
   {
@@ -227,7 +228,8 @@
       "singing_resin": 10
     },
     "faction_image_urls": {
-      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_1.png"
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_1.png",
+      "elves": "/static/images/units_and_buildings/elves/buildings/elves_magic_school_level_1.png"
     }
   },
   {
@@ -259,7 +261,8 @@
       "magic_school_1"
     ],
     "faction_image_urls": {
-      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_2.png"
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_2.png",
+      "elves": "/static/images/units_and_buildings/elves/buildings/elves_magic_school_level_2.png"
     }
   },
   {
@@ -277,7 +280,8 @@
       "magic_school_2"
     ],
     "faction_image_urls": {
-      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_3.png"
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_3.png",
+      "elves": "/static/images/units_and_buildings/elves/buildings/elves_magic_school_level_3.png"
     }
   },
   {
@@ -295,7 +299,8 @@
       "magic_school_3"
     ],
     "faction_image_urls": {
-      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_4.png"
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_4.png",
+      "elves": "/static/images/units_and_buildings/elves/buildings/elves_magic_school_level_4.png"
     }
   },
   {
@@ -313,7 +318,8 @@
       "magic_school_4"
     ],
     "faction_image_urls": {
-      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_5.png"
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_5.png",
+      "elves": "/static/images/units_and_buildings/elves/buildings/elves_magic_school_level_5.png"
     }
   },
   {
@@ -331,7 +337,8 @@
       "magic_school_5"
     ],
     "faction_image_urls": {
-      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_6.png"
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_6.png",
+      "elves": "/static/images/units_and_buildings/elves/buildings/elves_magic_school_level_6.png"
     }
   },
   {
@@ -349,7 +356,8 @@
       "magic_school_6"
     ],
     "faction_image_urls": {
-      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_7.png"
+      "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_7.png",
+      "elves": "/static/images/units_and_buildings/elves/buildings/elves_magic_school_level_7.png"
     }
   },
   {

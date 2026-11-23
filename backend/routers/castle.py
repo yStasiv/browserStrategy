@@ -43,6 +43,12 @@ def render_castle(request, db, player, error=None, building_error=None):
         key: [spell for spell in elementals.values() if spell["school_level"] == level]
         for key, level in castle_buildings.MAGIC_SCHOOL_LEVELS.items()
     }
+    forms_by_line = {(unit.line, unit.form): unit for unit in UNITS.values() if unit.line and unit.form}
+    previous_forms = {
+        unit.key: previous
+        for (line, form), unit in forms_by_line.items()
+        if (previous := forms_by_line.get((line, form - 1))) is not None
+    }
     buildings = [
         building for building in entries.values()
         if castle_buildings.available_to_faction(building, player)
@@ -68,6 +74,7 @@ def render_castle(request, db, player, error=None, building_error=None):
         "school_level": castle_buildings.school_level(built),
         "elementals": elementals,
         "recruits_by_building": recruits_by_building, "spells_by_building": spells_by_building,
+        "previous_forms": previous_forms,
         "building_names": {key: building.name for key, building in entries.items()},
         "building_error": building_error,
         "saved": request.query_params.get("saved") == "1" and not error, "error": error,

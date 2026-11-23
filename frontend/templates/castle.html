@@ -5,22 +5,24 @@
         {% if image_url %}<img src="{{ image_url }}" alt="" loading="lazy">{% endif %}
     </div>
 {% endmacro %}
-{% macro building_details(building, recruits, spells) %}
-    {% if building.description %}<p>{{ building.description }}</p>{% endif %}
-    {% if building.unit_evolution_tier %}<p>Форма істоти {{ building.unit_evolution_tier }}</p>{% endif %}
-    {% if recruits %}
-    <p>Відкриває найм
-        {% for unit in recruits %}<a href="/unit_info?key={{ unit.key }}">{{ unit.name }}</a>{{ ', ' if not loop.last else '.' }}{% endfor %}
-    </p>
-    {% endif %}
+{% macro creature_link(unit) %}<a href="/unit_info?key={{ unit.key }}">{{ unit.name }}</a>{% endmacro %}
+{% macro building_details(building, recruits, spells, previous_forms) %}
     {% if spells is not none %}
         {% if spells %}
-        <p>Відкриває закляття
+        <p>Дозволяє герою вивчити закляття
             {% for spell in spells %}<a href="/unit_info?key=elemental_{{ spell.element }}">Виклик «{{ spell.name }}»</a>{{ ', ' if not loop.last else '.' }}{% endfor %}
         </p>
         {% else %}
         <p>Закляття для цього рівня будуть додані згодом.</p>
         {% endif %}
+    {% elif recruits %}
+        {% for unit in recruits %}
+        {% set previous = previous_forms.get(unit.key) %}
+        <p>{% if previous %}Покращує {{ creature_link(previous) }} до {{ creature_link(unit) }}.
+           {% else %}Дозволяє наймати {{ creature_link(unit) }}.{% endif %}</p>
+        {% endfor %}
+    {% elif building.description %}
+        <p>{{ building.description }}</p>
     {% endif %}
 {% endmacro %}
 {% from 'components/unit_info.html' import portrait, stats %}
@@ -46,7 +48,7 @@
             <a href="/battle">До боїв</a>
         </nav>
     </header>
-    <dialog id="castle-building" class="castle-dialog" aria-labelledby="castle-building-title"
+    <dialog id="castle-building" class="castle-dialog castle-building-dialog" aria-labelledby="castle-building-title"
             {% if building_error or request.query_params.get('section') == 'building' %}data-open-on-load{% endif %}>
         <header>
             <h2 id="castle-building-title">Будівництво</h2>
@@ -61,7 +63,7 @@
                     {{ building_preview(building, faction) }}
                     <div>
                         <h3>{{ building.name }}</h3>
-                        {{ building_details(building, recruits_by_building.get(building.id), spells_by_building.get(building.id)) }}
+                        {{ building_details(building, recruits_by_building.get(building.id), spells_by_building.get(building.id), previous_forms) }}
                     </div>
                 </article>
                 {% else %}
@@ -71,14 +73,17 @@
         </details>
         <div class="castle-building-list">
             {% for building in buildings if building.id not in built %}
-            <article class="castle-building-card">
+            {% set missing = building.requires | reject('in', built) | list %}
+            {% set level_locked = player.level < building.min_level %}
+            {% set resources_missing = building.id in unaffordable %}
+            {% set status = 'level-locked' if level_locked else 'unaffordable' if resources_missing else 'available' if not missing else '' %}
+            <article class="castle-building-card"{% if status %} data-build-status="{{ status }}"{% endif %}>
                 {{ building_preview(building, faction) }}
                 <div>
                     <h3>{{ building.name }}</h3>
-                    {{ building_details(building, recruits_by_building.get(building.id), spells_by_building.get(building.id)) }}
+                    {{ building_details(building, recruits_by_building.get(building.id), spells_by_building.get(building.id), previous_forms) }}
                     <p>Бойовий рівень {{ building.min_level }}</p>
-                    {% set missing = building.requires | reject('in', built) | list %}
-                    {% if building.id in unaffordable %}<p>Недостатньо ресурсів.</p>{% endif %}
+                    {% if resources_missing %}<p>Недостатньо ресурсів.</p>{% endif %}
                     {% if missing %}
                     <p>Спочатку побудуй {% for key in missing %}{{ building_names[key] }}{% if not loop.last %}, {% endif %}{% endfor %}.</p>
                     {% endif %}
@@ -97,7 +102,7 @@
                 </div>
                 <form action="/castle/build" method="post">
                     <button class="castle-section castle-build-action" type="submit" name="building_id" value="{{ building.id }}"
-                            title="Побудувати {{ building.name }}" aria-label="Побудувати {{ building.name }}"{% if player.level < building.min_level or missing or building.id in unaffordable %} disabled{% endif %}>
+                            title="Побудувати {{ building.name }}" aria-label="Побудувати {{ building.name }}"{% if level_locked or missing or resources_missing %} disabled{% endif %}>
                         <img src="{{ build_icon }}" alt="">
                     </button>
                 </form>

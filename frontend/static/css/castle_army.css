@@ -15,6 +15,10 @@
 .castle-dialog::backdrop { background: #24190c99; }
 .castle-dialog h2 { margin: .25rem 0; }
 .castle-dialog > header { margin-bottom: .8rem; }
+.castle-building-dialog {
+    width: min(72rem, calc(100% - 2rem));
+    overflow-y: auto;
+}
 .castle-army-dialog {
     width: min(74rem, calc(100% - 2rem));
     height: min(46rem, calc(100% - 2rem));
@@ -23,36 +27,53 @@
 }
 .army-saved { color: #365036; }
 .castle-section:disabled { opacity: .55; cursor: default; }
-.castle-building-list { display: grid; gap: .65rem; }
+.castle-building-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+    gap: .65rem;
+}
+.castle-building-list > p { grid-column: 1 / -1; }
 .castle-built-list { margin-bottom: .75rem; }
 .castle-built-list summary { cursor: pointer; font-weight: 700; }
 .castle-built-list[open] summary { margin-bottom: .5rem; }
 .castle-building-card {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 3.75rem) minmax(0, 1fr) auto;
     align-items: start;
     gap: .6rem;
-    padding: .75rem;
+    padding: clamp(.45rem, 1vw, .75rem);
+    min-width: 0;
+    overflow-wrap: anywhere;
     border: 1px solid #cbb691;
     border-radius: .45rem;
     background: #f9f0de;
 }
-.castle-built-list .castle-building-card {
+.castle-built-list .castle-building-card,
+.castle-building-card[data-build-status="available"] {
     background: #eaf0df;
     border-color: #a7b58f;
+}
+.castle-building-card[data-build-status="unaffordable"] {
+    background: #f8e5cb;
+    border-color: #c99256;
+}
+.castle-building-card[data-build-status="level-locked"] {
+    background: #f5dddd;
+    border-color: #c58b86;
 }
 .castle-building-card h3, .castle-building-card p { margin: 0 0 .45rem; }
 .castle-building-image {
     display: grid;
     place-items: center;
-    width: clamp(2.75rem, 12vw, 5rem);
+    box-sizing: border-box;
+    width: 100%;
     aspect-ratio: 1;
     border: 1px solid #cbb691;
     border-radius: .3rem;
     background: #f3e9d2;
 }
 .castle-building-image img { width: 100%; height: 100%; object-fit: contain; }
-.castle-building-cost { display: flex; gap: .55rem; overflow-x: auto; list-style: none; padding: 0; margin: 0; }
+.castle-building-cost { display: flex; flex-wrap: wrap; gap: .3rem .55rem; list-style: none; padding: 0; margin: 0; }
 .castle-building-cost li { display: flex; align-items: center; gap: .2rem; white-space: nowrap; }
 .castle-building-cost img { width: 1.25rem; height: 1.25rem; object-fit: contain; }
 .castle-building-card form { align-self: center; }

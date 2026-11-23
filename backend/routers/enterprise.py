@@ -1,10 +1,10 @@
-from datetime import timezone
+from datetime import date, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -31,10 +31,11 @@ def context(request, db, enterprise_id):
 def render(request, db, user, site, *, before=None, confirmation=None, error=None, status=200):
     now = utc_now()
     names = enterprises.resource_names()
-    history = select(models.EnterpriseEvent).where(models.EnterpriseEvent.enterprise_id == site.id)
+    report = models.EnterpriseDailyReport
+    history = select(report).where(report.enterprise_id == site.id, report.day < enterprises.reporting_day(now))
     if before is not None:
-        history = history.where(models.EnterpriseEvent.id < before)
-    history = db.scalars(history.order_by(models.EnterpriseEvent.id.desc()).limit(21)).all()
+        history = history.where(report.day < before)
+    history = db.scalars(history.order_by(report.day.desc()).limit(21)).all()
     workers = db.scalars(select(models.User).where(
         models.User.workplace == f"enterprise_{site.id}",
     ).order_by(models.User.username)).all()
@@ -52,7 +53,8 @@ def render(request, db, user, site, *, before=None, confirmation=None, error=Non
             displayed_wage = dict(base_wage=base, multiplier_percent=100, penalty_percent=0, payable=base)
     projected = enterprises.worker_rate(site) * site.workers_count // 100
     estimate = min(enterprises.production_limit(site), projected)
-    wages_in_progress = db.scalars(select(models.EnterpriseShift.payable).where(
+    wages_in_progress = db.scalars(select(func.coalesce(models.EnterpriseShift.enterprise_payable,
+                                                       models.EnterpriseShift.payable)).where(
         models.EnterpriseShift.enterprise_id == site.id, models.EnterpriseShift.status == "active",
     )).all()
     production = enterprises.production_rules(site)
@@ -81,13 +83,14 @@ def render(request, db, user, site, *, before=None, confirmation=None, error=Non
         "commission_percent": economy.GOLD_COMMISSION_PERCENT, "request_key": uuid4(),
         "employment_key": uuid4(), "image_url": enterprises.image_url(site),
         "resource_names": names, "inputs": inputs, "history": history[:20],
-        "next_history": history[19].id if len(history) > 20 else None,
+        "hires_by_day": enterprises.daily_hires(db, site.id, {row.day for row in history[:20]}),
+        "next_history": history[19].day.isoformat() if len(history) > 20 else None,
         "confirmation": confirmation, "action_error": error,
     }, status_code=status)
 
 
 @router.get("/enterprise/{enterprise_id}", response_class=HTMLResponse)
-def enterprise_page(enterprise_id: int, request: Request, before: int | None = Query(None, gt=0),
+def enterprise_page(enterprise_id: int, request: Request, before: date | None = Query(None),
                     db: Session = Depends(database.get_db)):
     context(request, db, enterprise_id)
     db.commit()

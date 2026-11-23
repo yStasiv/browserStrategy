@@ -33,7 +33,7 @@ COMBAT_STATS = {
 }
 STAT_LABELS = ATTRIBUTES | COMBAT_STATS
 STAT_LABELS.update({column: name for name, column, _ in PROFILE_STATS.values()})
-FACTIONS = {"elves": "Ельфи", "underground_elves": "Темні ельфи", "admin": "Адміністрація", "system": "Системна"}
+FACTIONS = {"elves": "Ельфи", "underground_elves": "Темні ельфи", "system": "Системна"}
 
 
 def resources(db, player):

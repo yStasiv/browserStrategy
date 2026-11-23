@@ -1,8 +1,10 @@
 """Server-side employment, production and trading for enterprises."""
 import json
-from datetime import datetime, timezone
+from collections import Counter
+from datetime import datetime, time, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
@@ -11,13 +13,14 @@ from sqlalchemy import or_, select, update
 from backend.config import ENTERPRISE_SHIFT_DURATION as SHIFT_DURATION
 from backend.config import LEGACY_BALANCES, RESOURCE_FILE, SYSTEM_PLAYER_ID
 from backend.engine.battle_models import Battle, BattleParticipant
-from backend.models import Enterprise, EnterpriseEvent, EnterpriseShift, PlayerResourceBalance, User
+from backend.models import Enterprise, EnterpriseDailyReport, EnterpriseEvent, EnterpriseShift, PlayerResourceBalance, User
 from backend.services import economy
 from backend.services.activity_guilds import WORKERS, award_point
 from backend.services.guild import record_collection
 from backend.services.world import utc_now
 
 RULES_FILE = RESOURCE_FILE.with_name("enterprise_rules.json")
+KYIV = ZoneInfo("Europe/Kyiv")
 
 
 class ProductionRules(BaseModel):
@@ -86,8 +89,13 @@ def wage(site):
     policy = rules().employment
     base = max(0, site.salary)
     payable = base * policy.multiplier_percent * (100 - policy.penalty_percent) // 10_000
+    share = company_wage(base, policy.multiplier_percent, policy.penalty_percent)
     return dict(base_wage=base, multiplier_percent=policy.multiplier_percent,
-                penalty_percent=policy.penalty_percent, payable=payable)
+                penalty_percent=policy.penalty_percent, payable=payable, enterprise_payable=share)
+
+
+def company_wage(base, multiplier, penalty):
+    return base * min(multiplier, 100) * (100 - penalty) // 10_000
 
 
 def active_shift(db, worker_id):
@@ -101,8 +109,8 @@ def employment_error(db, site, worker):
         return "Ти вже працюєш на підприємстві."
     if site.workers_count >= site.max_workers:
         return "Вільних робочих місць немає."
-    pay = wage(site)["payable"]
-    if pay > economy.MAX_GOLD or site.balance < pay:
+    pay = wage(site)
+    if pay["payable"] > economy.MAX_GOLD or site.balance < pay["enterprise_payable"]:
         return "На рахунку підприємства бракує золота для зарплати."
     if rules().employment.require_victory_between_shifts:
         last = db.scalar(select(EnterpriseShift.completes_at).where(
@@ -130,6 +138,51 @@ def journal(db, site, kind, now, details, actor_id=None, request_key=None):
                           created_at=now, details=details, request_key=request_key))
 
 
+def reporting_day(now):
+    return now.replace(tzinfo=timezone.utc).astimezone(KYIV).date()
+
+
+def daily_hires(db, site_id, days):
+    if not days:
+        return {}
+    start = datetime.combine(min(days), time.min, KYIV).astimezone(timezone.utc).replace(tzinfo=None)
+    end = datetime.combine(max(days) + timedelta(days=1), time.min, KYIV).astimezone(timezone.utc).replace(tzinfo=None)
+    counts = {day: Counter() for day in days}
+    shifts = db.execute(select(EnterpriseShift.started_at, EnterpriseShift.worker_id, User.username)
+                        .outerjoin(User, User.id == EnterpriseShift.worker_id)
+                        .where(EnterpriseShift.enterprise_id == site_id,
+                               EnterpriseShift.started_at >= start, EnterpriseShift.started_at < end))
+    for started, worker_id, username in shifts:
+        day = reporting_day(started)
+        if day in counts:
+            counts[day][(worker_id, username)] += 1
+    return {
+        day: sorted(
+            ((username or f"Гравець {worker_id}", worker_id if username else None, count)
+             for (worker_id, username), count in hires.items()),
+            key=lambda entry: entry[0].casefold(),
+        )
+        for day, hires in counts.items()
+    }
+
+
+def record_daily(db, site, now, *, produced=0, sold=0, sale_gold=0, wages=0):
+    # All callers hold the enterprise row lock.
+    key = (site.id, reporting_day(now))
+    report = db.get(EnterpriseDailyReport, key)
+    if report is None:
+        report = EnterpriseDailyReport(enterprise_id=key[0], day=key[1], produced={}, sold={}, sale_gold=0, wages=0)
+        db.add(report)
+        db.flush([report])
+    resource = site.resource_type
+    if produced:
+        report.produced = {**report.produced, resource: report.produced.get(resource, 0) + produced}
+    if sold:
+        report.sold = {**report.sold, resource: report.sold.get(resource, 0) + sold}
+    report.sale_gold += sale_gold
+    report.wages += wages
+
+
 def start_shift(db, site, worker, now, request_key=None):
     error = employment_error(db, site, worker)
     if error:
@@ -137,12 +190,14 @@ def start_shift(db, site, worker, now, request_key=None):
     pay = wage(site)
     db.add(EnterpriseShift(enterprise_id=site.id, worker_id=worker.id, status="active",
                           started_at=now, completes_at=now + SHIFT_DURATION, **pay))
-    site.balance -= pay["payable"]  # Reserve payroll when the worker is hired.
+    site.balance -= pay["enterprise_payable"]
     site.workers_count += 1
     worker.workplace = f"enterprise_{site.id}"
     worker.work_start_time = now
+    record_daily(db, site, now)
     award_point(db, worker.id, WORKERS)
-    journal(db, site, "employment", now, {"wage": pay["payable"], "worker": worker.username}, worker.id, request_key)
+    if request_key is not None:
+        journal(db, site, "employment", now, {}, worker.id, request_key)
 
 
 def worker_rate(site):
@@ -169,7 +224,7 @@ def produce(db, site, now):
     site.input_stock = {key: amount - consumed.get(key, 0) for key, amount in site.input_stock.items()}
     site.resource_stored += units
     site.last_production_time = now
-    journal(db, site, "production", now, {"resource": site.resource_type, "quantity": units, "inputs": consumed})
+    record_daily(db, site, now, produced=units)
 
 
 def settlement_candidates(db, enterprise_id=None):
@@ -210,14 +265,19 @@ def settle_shift(db, worker_id, now=None):
         base = max(0, site.salary)
         shift = EnterpriseShift(enterprise_id=site.id, worker_id=worker.id, started_at=started,
                                 completes_at=completes, base_wage=base, multiplier_percent=100,
-                                penalty_percent=0, payable=base)
+                                penalty_percent=0, payable=base, enterprise_payable=base)
         db.add(shift)
+        record_daily(db, site, started)
+    if shift.enterprise_payable is None:
+        share = company_wage(shift.base_wage, shift.multiplier_percent, shift.penalty_percent)
+        site.balance += shift.payable - share
+        shift.enterprise_payable = share
     produce(db, site, now)
     worker.gold += shift.payable
     worker.workplace = worker.work_start_time = None
     site.workers_count = max(0, site.workers_count - 1)
     shift.status, shift.settled_at = "completed", now
-    journal(db, site, "settlement", now, {"wage": shift.payable, "worker": worker.username}, worker.id)
+    record_daily(db, site, now, wages=shift.payable)
     return {"type": "work_finished", "earned": shift.payable, "enterprise_name": site.name}
 
 
@@ -271,7 +331,6 @@ def trade(db, seller, worker, amount, shown_price, shown_total, request_key, now
             raise HTTPException(400, "Недостатньо коштів або місця для закупівлі.")
         target.balance -= value["total"]
         target.input_stock = {**target.input_stock, resource: current + amount}
-        journal(db, target, "procurement", now, {"resource": resource, "quantity": amount, **value}, worker.id)
     else:
         if worker.gold < value["total"]:
             raise HTTPException(400, "Недостатньо золота.")
@@ -287,6 +346,7 @@ def trade(db, seller, worker, amount, shown_price, shown_total, request_key, now
         record_collection(db, worker.id, request_key, resource, amount)
     seller.resource_stored -= amount
     seller.balance += value["subtotal"]
+    record_daily(db, seller, now, sold=amount, sale_gold=value["subtotal"])
     journal(db, seller, "sale", now, {"resource": resource, "quantity": amount, **value,
                                      "target": target.id if target else None}, worker.id, request_key)
     return None

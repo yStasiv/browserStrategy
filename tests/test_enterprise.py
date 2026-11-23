@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from backend import database
-from backend.models import Enterprise, EnterpriseEvent, EnterpriseShift, User
+from backend.models import Enterprise, EnterpriseDailyReport, EnterpriseEvent, EnterpriseShift, User
 from backend.routers import enterprise
 from backend.services import economy, enterprises
 from test_guild import asgi_request, sessions
@@ -45,7 +45,7 @@ def test_employment_reservation_snapshots_capacity_and_settlement(sessions, monk
     monkeypatch.setattr(enterprises, "utc_now", lambda: now)
     with sessions.begin() as db:
         site = db.get(Enterprise, 1)
-        site.max_workers, site.max_storage, site.salary, site.balance = 1, 30, 40, 54
+        site.max_workers, site.max_storage, site.salary, site.balance = 1, 30, 40, 36
     call = site_client(sessions)
     key = str(uuid4())
     form = {"request_key": key, "return_to_enterprise": "true"}
@@ -59,6 +59,7 @@ def test_employment_reservation_snapshots_capacity_and_settlement(sessions, monk
         site = db.get(Enterprise, 1)
         shift = enterprises.active_shift(db, 10)
         assert (shift.payable, site.balance, site.workers_count) == (54, 0, 1)
+        assert shift.enterprise_payable == 36
         assert db.get(User, 10).gold == 100
         site.salary = 999
     now += enterprises.SHIFT_DURATION
@@ -70,7 +71,31 @@ def test_employment_reservation_snapshots_capacity_and_settlement(sessions, monk
         assert (site.balance, site.workers_count, site.resource_stored) == (0, 0, 14)
         assert db.get(User, 10).gold == 154
         assert db.scalar(select(EnterpriseShift)).status == "completed"
-        assert db.scalars(select(EnterpriseEvent.kind)).all() == ["employment", "production", "settlement"]
+        assert db.scalars(select(EnterpriseEvent.kind)).all() == ["employment"]
+        report = db.scalar(select(EnterpriseDailyReport))
+        assert (report.produced, report.wages) == ({"singing_resin": 4}, 54)
+    assert b"22-11-2026" not in call("GET")[1]
+    now = datetime(2026, 11, 22, 22)  # 00:00 in Kyiv, after the November UTC+2 transition.
+    status, page = call("GET")
+    assert status == 200 and b"22-11-2026" in page
+    assert "виплачено 54 золота за роботу".encode() in page
+    assert b'<a href="/player_info?id=10">reader</a>.' in page.split(b'id="enterprise-history"', 1)[1]
+
+
+def test_daily_history_groups_shift_starts_by_local_day(sessions, monkeypatch):
+    now = datetime(2026, 11, 22, 20, 30)
+    monkeypatch.setattr(enterprise, "utc_now", lambda: now)
+    monkeypatch.setattr(enterprises, "utc_now", lambda: now)
+    call = site_client(sessions)
+    assert call("POST", "/start-work")[0] == 200
+    assert call("POST", "/start-work", player="other")[0] == 200
+    now += enterprises.SHIFT_DURATION
+    assert call("POST", "/start-work")[0] == 200
+    now = datetime(2026, 11, 22, 22)
+    status, page = call("GET")
+    assert status == 200
+    history = page.decode().split('id="enterprise-history"', 1)[1]
+    assert '<a href="/player_info?id=2">other</a>, <a href="/player_info?id=10">reader</a>(2 рази).' in history
 
 
 def test_manufacturing_procurement_and_stock_limits(sessions, monkeypatch):
@@ -144,6 +169,8 @@ def test_purchase_quote_commission_gold_stock_and_concurrent_retry(sessions):
         events = db.scalars(select(EnterpriseEvent)).all()
         assert (site.resource_stored, site.balance, len(events)) == (0, 1090, 1)
         assert events[0].details["fee"] == 1
+        report = db.scalar(select(EnterpriseDailyReport))
+        assert (report.sold, report.sale_gold) == ({"singing_resin": 10}, 90)
         assert sum(db.get(User, key).gold for key in (10, 2)) == 109
         assert sum(db.get(User, key).singing_resin for key in (10, 2)) == 10
 

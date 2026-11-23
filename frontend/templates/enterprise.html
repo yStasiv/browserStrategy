@@ -164,18 +164,16 @@
         <summary>Історія підприємства</summary>
         {% if history %}
         <ul>
-            {% for event in history %}
-            {% set d = event.details %}
-            <li><time datetime="{{ event.created_at.isoformat() }}Z">{{ event.created_at.strftime('%d.%m.%Y %H:%M') }} UTC</time> ·
-                {% if event.kind == 'employment' %}{{ d.worker }} починає зміну. Зарезервовано {{ d.wage }} золота.
-                {% elif event.kind == 'settlement' %}{{ d.worker }} завершує зміну. Виплачено {{ d.wage }} золота.
-                {% elif event.kind == 'production' %}Вироблено {{ resource_names.get(d.resource, d.resource) }} × {{ d.quantity }}.
-                    {% for key, amount in d.inputs.items() %}Витрачено {{ resource_names.get(key, key) }} × {{ amount }}. {% endfor %}
-                {% else %}{{ 'Закуплено' if event.kind == 'procurement' else 'Продано' }}
-                    {{ resource_names.get(d.resource, d.resource) }} × {{ d.quantity }}.
-                    {{ 'Витрачено' if event.kind == 'procurement' else 'Отримано' }}
-                    {{ d.total if event.kind == 'procurement' else d.subtotal }} золота. Комісія {{ d.fee }}.
-                {% endif %}
+            {% for report in history %}
+            <li><time datetime="{{ report.day.isoformat() }}">{{ report.day.strftime('%d-%m-%Y') }}</time> —
+                вироблено {% for key, amount in report.produced.items() %}{{ "{:,}".format(amount) }} од. «{{ resource_names.get(key, key) }}»{{ ', ' if not loop.last }}{% else %}0 од. «{{ resource_name }}»{% endfor %},
+                продано {% for key, amount in report.sold.items() %}{{ "{:,}".format(amount) }} од. «{{ resource_names.get(key, key) }}»{{ ', ' if not loop.last }}{% else %}0 од. «{{ resource_name }}»{% endfor %}
+                за {{ "{:,}".format(report.sale_gold) }} золота,
+                виплачено {{ "{:,}".format(report.wages) }} золота за роботу.
+                Працевлаштувалися
+                {% for username, worker_id, count in hires_by_day[report.day] -%}
+                    {% if worker_id is not none %}<a href="/player_info?id={{ worker_id }}">{{ username }}</a>{% else %}{{ username }}{% endif %}{% if count > 1 %}({{ count }} {{ 'рази' if count % 10 in [2, 3, 4] and count % 100 not in [12, 13, 14] else 'раз' }}){% endif %}{{ ', ' if not loop.last else '.' }}
+                {%- else %} — ніхто.{% endfor %}
             </li>
             {% endfor %}
         </ul>
