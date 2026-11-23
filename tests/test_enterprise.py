@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from backend import database
 from backend.models import Enterprise, EnterpriseDailyReport, EnterpriseEvent, EnterpriseShift, User
-from backend.routers import enterprise
+from backend.routers import admin, enterprise
 from backend.services import economy, enterprises
 from test_guild import asgi_request, sessions
 
@@ -19,6 +19,7 @@ def site_client(sessions):
     app = FastAPI()
     app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
     app.include_router(enterprise.router)
+    app.include_router(admin.router)
 
     def get_db():
         with sessions() as db:
@@ -27,8 +28,9 @@ def site_client(sessions):
     app.dependency_overrides[database.get_db] = get_db
 
     def call(method, suffix="", form=None, player="reader", site=1):
+        path = suffix if suffix.startswith("/admin/") else f"/enterprise/{site}{suffix}"
         return asyncio.run(asgi_request(
-            app, method, f"/enterprise/{site}{suffix}", f"session_id={player}-session", form,
+            app, method, path, f"session_id={player}-session", form,
         ))
 
     return call
@@ -210,3 +212,22 @@ def test_optional_victory_requirement_and_legacy_shift(sessions, monkeypatch):
         db.flush()
         db.add(BattleParticipant(battle_id=battle.id, side=0, user_id=10))
     assert call("POST", "/start-work")[0] == 200
+
+
+def test_admin_can_edit_enterprises_without_truncating_stock(sessions):
+    call = site_client(sessions)
+    url = "/admin/enterprises"
+    assert call("GET", url)[0] == 403
+    with sessions.begin() as db:
+        db.get(User, 10).is_admin = True
+    status, page = call("GET", url)
+    assert status == 200 and b'action="/admin/enterprises/edit/1"' in page
+    form = {"name": "Тиха шахта", "sector": "Castle", "resource_type": "singing_resin",
+            "production_type": "mine", "salary": 40, "item_price": 10, "max_storage": 9}
+    assert call("POST", url + "/edit/1", form, player="other")[0] == 403
+    assert call("POST", url + "/edit/1", form)[0] == 409
+    form["max_storage"] = 12
+    assert call("POST", url + "/edit/1", form)[0] == 303
+    with sessions() as db:
+        site = db.get(Enterprise, 1)
+        assert (site.production_type, site.max_storage, site.resource_stored, site.salary) == ("mine", 12, 10, 40)

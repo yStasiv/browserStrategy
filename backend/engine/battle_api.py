@@ -1,5 +1,5 @@
 """Нові ендпоінти бою. Підключення в main.py: app.include_router(battle_api.router)"""
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, StrictInt
 from sqlalchemy.orm import Session
 
@@ -33,6 +33,8 @@ async def _user(request: Request, db: Session):
 def _call(fn, *args):
     try:
         return fn(*args)
+    except svc.ArmyRequired as e:
+        raise HTTPException(status_code=e.status_code, detail={"code": "army_required", "message": str(e)})
     except svc.BattleError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
 
@@ -115,5 +117,6 @@ async def begin(battle_id: int, body: SurrenderIn, request: Request, db: Session
 
 
 @router.post("/hunt/{creature_key}")
-async def start_hunt(creature_key: str, request: Request, db: Session = Depends(database.get_db)):
-    return _call(svc.start_hunt, db, await _user(request, db), creature_key)
+async def start_hunt(creature_key: str, request: Request, db: Session = Depends(database.get_db),
+                     difficulty: int | None = Query(None, ge=1)):
+    return _call(svc.start_hunt, db, await _user(request, db), creature_key, difficulty)

@@ -301,7 +301,9 @@
         let data = null;
         try { data = await res.json(); } catch (e) { /* порожня відповідь */ }
         if (!res.ok) {
-            const err = new Error((data && data.detail) || ('Помилка ' + res.status));
+            const detail = data?.detail;
+            const err = new Error(typeof detail === 'string' ? detail : detail?.message ?? ('Помилка ' + res.status));
+            err.code = detail?.code;
             err.status = res.status;
             throw err;
         }
@@ -320,7 +322,7 @@
         el.toast.textContent = text;
         el.toast.classList.remove('hidden');
         clearTimeout(toast._t);
-        toast._t = setTimeout(() => el.toast.classList.add('hidden'), ms);
+        if (ms) toast._t = setTimeout(() => el.toast.classList.add('hidden'), ms);
     }
 
     function renderUnitPortrait(container, unit) {
@@ -1170,8 +1172,16 @@
             resetClientState();
             const r = await api('/pve', 'POST', { scenario: key });
             applyView(r, r.events);
+            el.toast.classList.add('hidden');
         } catch (e) {
-            toast(e.message);
+            toast(e.message, e.code === 'army_required' ? 0 : undefined);
+            if (e.code === 'army_required') {
+                const link = document.createElement('a');
+                link.href = '/castle?section=army';
+                link.textContent = 'Набрати військо';
+                link.className = 'underline';
+                el.toast.append(' ', link);
+            }
             showMenu();
         }
     }

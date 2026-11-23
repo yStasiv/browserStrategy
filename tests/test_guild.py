@@ -415,6 +415,9 @@ def test_hunts_and_faction_recruitment(sessions):
 
     with sessions.begin() as db:
         other = db.get(User, 2)
+        assert {target["key"] for target in battle_service.hunting_options(db, other, False)} == {"goblin", "skeleton"}
+        from backend.engine.hunting import TARGETS
+        assert {target.creature for target in TARGETS.values() if target.min_level <= 2} == {"goblin", "skeleton", "ogre"}
         with pytest.raises(battle_service.Forbidden):
             battle_service.start_hunt(db, other, "dragon")
         with pytest.raises(battle_service.NotFound):
@@ -444,6 +447,17 @@ def test_hunts_and_faction_recruitment(sessions):
         assert replay["initial_state"]["hunt_key"] == "goblin"
         assert player.gold == before
         assert activity_guilds.progress(db, player.id, activity_guilds.HUNTERS)["xp"] == 1
+        player.level = 2
+        db.commit()
+        targets = battle_service.hunting_options(db, player, False)
+        assert targets == battle_service.hunting_options(db, player, False)
+        upgraded = next(target for target in targets if target["key"] == "goblin")
+        assert (upgraded["difficulty"], upgraded["count"]) == (2, 15)
+        with pytest.raises(battle_service.Conflict, match="змінилися"):
+            battle_service.start_hunt(db, player, "goblin", expected_difficulty=1)
+        next_hunt = battle_service.start_hunt(db, player, "goblin", expected_difficulty=2)
+        assert next_hunt["state"]["hunt_level"] == 2
+        assert next_hunt["state"]["stacks"]["s1_0"]["count"] == 15
 
 
 def test_character_dashboard_resources_equipment_and_registered_sections(sessions, tmp_path, monkeypatch):
@@ -489,8 +503,12 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
         guild_progress.level, guild_progress.xp, guild_progress.next_xp = 2, 138, 150
         db.add(ActivityGuildProgress(player_id=10, guild=activity_guilds.workshop_key("jewelry"), points=12))
         db.add(Battle(id=71, mode="pve", status="finished", state={}, initial_state={}))
+        snapshot = {"seq": 0, "stacks": {"s1_0": {"owner": 1, "unit": "goblin", "count": 15}}}
+        db.add(Battle(id=72, mode="pve", status="finished", state={"hunt_key": "goblin"},
+                      initial_state=snapshot, created_at=datetime(2026, 11, 22, 12)))
+        db.add(Battle(id=73, mode="pve", status="finished", state={}, initial_state=snapshot))
         db.flush()
-        db.add(BattleParticipant(battle_id=71, side=0, user_id=10))
+        db.add_all([BattleParticipant(battle_id=battle_id, side=0, user_id=10) for battle_id in (71, 72, 73)])
         db.add(RewardTransaction(issuer_id=SYSTEM_PLAYER_ID, recipient_id=10, source="battle_v1",
                                  source_key="71", gold=83, wood=0, stone=0, created_at=datetime(2026, 11, 21)))
 
@@ -514,6 +532,9 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert "/battle/history?player_id=10" in public_html and "/player_info/transfers?id=10" in public_html
     status, battles = asyncio.run(asgi_request(app, "GET", "/battle/history?player_id=10", ""))
     assert status == 200 and "Бій №71" in battles.decode() and b"/battle?replay=71" not in battles
+    assert battles.count(b"guild_hunters.png") == 1
+    assert battles.decode().count(f"{UNITS['goblin'].name} ×15") == 2
+    assert "22.11.2026 14:00" in battles.decode()
     status, transfers = asyncio.run(asgi_request(app, "GET", "/player_info/transfers?id=10", ""))
     assert status == 200 and "Золото · 83" in transfers.decode()
     assert f'data-hero-slot="head" href="/art_info?id={item_id}"' in html
@@ -816,7 +837,8 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert status == 200 and b'name="form:elves_sylven"' not in body
     assert b'name="form:underground_elves_shade"' not in body
     assert call("POST", "/castle/build", form={"building_id": "magic_school_4"})[0] == 403
-    assert call("POST", "/api/battles/pve", payload={"scenario": "training"})[0] == 400
+    status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"})
+    assert status == 400 and json.loads(body)["detail"]["code"] == "army_required"
     assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3"})[0] == 403
     with sessions.begin() as db:
         db.get(User, 10).level = 3

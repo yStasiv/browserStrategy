@@ -1,0 +1,39 @@
+.battle-history { max-width: 57rem; }
+.battle-history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .65rem;
+}
+.battle-history-header h1 { margin: 0; overflow-wrap: anywhere; }
+.battle-history-list {
+    display: grid;
+    gap: .45rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+.battle-history-list li {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .65rem;
+    padding: .65rem;
+    border: 1px solid #cbb691;
+    border-radius: .45rem;
+    background: #f9f0de;
+}
+.battle-history-list time {
+    font-size: .9rem;
+    color: #604b34;
+    font-variant-numeric: tabular-nums;
+}
+.battle-history-opponents { display: flex; align-items: center; gap: .45rem; overflow-wrap: anywhere; }
+.battle-history-opponents img { flex: none; object-fit: contain; }
+.battle-history-unavailable { color: #604b34; font-size: .85rem; }
+
+@media (max-width: 34rem) {
+    .battle-history-list li { grid-template-columns: minmax(0, 1fr) auto; }
+    .battle-history-opponents { grid-column: 1 / -1; grid-row: 2; }
+}

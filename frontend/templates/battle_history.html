@@ -1,20 +1,41 @@
 {% extends 'base.html' %}
 {% block title %}Історія боїв{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/game_panel.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/battle_history.css') }}">
+{% endblock %}
 {% block body %}
-<main lang="uk" class="guild-board">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/guild.css') }}">
-    <header class="guild-board-header">
+<main lang="uk" class="game-panel battle-history">
+    <header class="battle-history-header">
         <h1>Історія боїв{% if public_history %} · {{ subject.username }}{% endif %}</h1>
-        {% if public_history %}<a href="/player_info?id={{ subject.id }}">До профілю</a>{% else %}<a href="/battle">До боїв</a>{% endif %}
+        {% if public_history %}
+        <a href="/player_info?id={{ subject.id }}" class="game-panel-action">До профілю</a>
+        {% else %}
+        <a href="/battle" class="game-panel-action">До боїв</a>
+        {% endif %}
     </header>
     {% if battles %}
-    <ul style="list-style: none; padding: 0; display: grid; gap: .5rem">
+    <ul class="battle-history-list">
         {% for battle in battles %}
-        <li class="guild-card">
+        <li>
+            <time datetime="{{ battle.created_at.isoformat() }}">{{ battle.created_at.strftime('%d.%m.%Y %H:%M') }}</time>
+            <div class="battle-history-opponents">
+                {% if battle.hunt %}
+                <img src="{{ url_for('static', path='images/guild_icons/guild_hunters.png') }}"
+                     alt="Братство ловців" title="Братство ловців" width="28" height="28">
+                {% endif %}
+                <span>
+                    {%- for enemy in battle.enemies -%}
+                        {{ enemy.name }}{% if enemy.count is not none %} ×{{ "{:,}".format(enemy.count) }}{% endif %}{{ ', ' if not loop.last }}
+                    {%- else -%}
+                        Бій №{{ battle.id }} · супротивник невідомий
+                    {%- endfor -%}
+                </span>
+            </div>
             {% if battle.available and can_replay %}
-            <a href="/battle?replay={{ battle.id }}">Переглянути бій №{{ battle.id }}</a>
-            {% else %}
-            <span>Бій №{{ battle.id }}{% if can_replay %} · повтор недоступний{% endif %}</span>
+            <a href="/battle?replay={{ battle.id }}" class="game-panel-action" aria-label="Переглянути бій №{{ battle.id }}">Переглянути</a>
+            {% elif can_replay %}
+            <span class="battle-history-unavailable">Повтор недоступний</span>
             {% endif %}
         </li>
         {% endfor %}

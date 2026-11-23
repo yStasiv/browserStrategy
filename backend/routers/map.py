@@ -20,7 +20,7 @@ class TravelRequest(BaseModel):
 def location_state(db, player):
     journey, now = world.resolve_location(db, player)
     state = world.map_state(db, player, journey, now)
-    state["hunts"] = hunting_options(player, journey is not None)
+    state["hunts"] = hunting_options(db, player, journey is not None)
     db.commit()
     return state
 
@@ -51,6 +51,6 @@ def start_travel(body: TravelRequest, db: Session = Depends(get_db), player: Use
         db.commit()
         raise
     state = world.map_state(db, player, journey, now)
-    state["hunts"] = hunting_options(player, journey is not None)
+    state["hunts"] = hunting_options(db, player, journey is not None)
     db.commit()
     return state

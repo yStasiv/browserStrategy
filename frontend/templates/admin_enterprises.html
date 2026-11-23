@@ -1,111 +1,43 @@
 {% extends 'base.html' %}
-
 {% block title %}Керування підприємствами{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/game_panel.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/admin_enterprises.css') }}">
+{% endblock %}
 
 {% block body %}
-<div class="admin-panel">
-    <h2>Керування підприємствами</h2>
-    
-    <div class="admin-nav">
-        <a href="/admin/enterprises" class="nav-link">Підприємства</a>
-        <a href="/admin/world" class="nav-link">Сектори й маршрути</a>
-        <a href="/admin/guild" class="nav-link">Гільдія авантюристів</a>
+{% from 'admin/enterprise_form.html' import enterprise_form %}
+<main class="game-panel admin-enterprises">
+    <h1>Керування підприємствами</h1>
+    {% if enterprise_error %}<p role="alert">{{ enterprise_error }}</p>{% endif %}
+    <details class="admin-enterprise-card">
+        <summary>Додати підприємство</summary>
+        {{ enterprise_form(none, sectors, resources, enterprise_types) }}
+    </details>
+    <div class="admin-enterprise-list">
+        {% for enterprise in enterprises %}
+        <details class="admin-enterprise-card">
+            <summary>
+                <strong>{{ enterprise.name }}</strong>
+                <span>{{ enterprise_types.get(enterprise.production_type, enterprise.production_type) }} · {{ resources.get(enterprise.resource_type, enterprise.resource_type) }}</span>
+            </summary>
+            <dl class="admin-enterprise-stats">
+                <div><dt>Запаси</dt><dd>{{ "{:,}".format(enterprise.resource_stored) }} / {{ "{:,}".format(enterprise.max_storage) }}</dd></div>
+                <div><dt>Працівники</dt><dd>{{ enterprise.workers_count }} / {{ enterprise.max_workers }}</dd></div>
+                <div><dt>Баланс</dt><dd>{{ "{:,}".format(enterprise.balance) }} золота</dd></div>
+            </dl>
+            {{ enterprise_form(enterprise, sectors, resources, enterprise_types) }}
+            <details class="admin-enterprise-delete">
+                <summary>Видалення підприємства</summary>
+                <form action="/admin/enterprises/delete/{{ enterprise.id }}" method="post">
+                    <p>Видалити «{{ enterprise.name }}»?</p>
+                    <button type="submit" class="game-panel-action">Підтвердити видалення</button>
+                </form>
+            </details>
+        </details>
+        {% else %}
+        <p>Підприємств поки немає.</p>
+        {% endfor %}
     </div>
-    
-    <div class="enterprise-form-container">
-        <h3>Додати нове підприємство</h3>
-        {% include 'admin/enterprise_form.html' %}
-    </div>
-
-    <div class="enterprises-list">
-        <h3>Існуючі підприємства</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Назва</th>
-                    <th>Сектор</th>
-                    <th>Тип ресурсу</th>
-                    <th>Площа</th>
-                    <th>Коеф. складу</th>
-                    <th>Тип виробництва</th>
-                    <th>Макс. працівників</th>
-                    <th>Макс. склад</th>
-                    <th>Зарплата</th>
-                    <th>Ціна ресурсу</th>
-                    <th>Дії</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for enterprise in enterprises %}
-                <tr>
-                    <td>{{ enterprise.id }}</td>
-                    <td>{{ enterprise.name }}</td>
-                    <td>{{ enterprise.sector }}</td>
-                    <td>{{ enterprise.resource_type }}</td>
-                    <td>{{ enterprise.area }}</td>
-                    <td>{{ enterprise.storage_multiplier }}</td>
-                    <td>{{ enterprise.production_type }}</td>
-                    <td>{{ enterprise.max_workers }}</td>
-                    <td>{{ enterprise.max_storage }}</td>
-                    <td>{{ enterprise.salary }}</td>
-                    <td>{{ enterprise.item_price }}</td>
-                    <td>
-                        <form action="/admin/enterprises/delete/{{ enterprise.id }}" method="POST" style="display: inline;">
-                            <button type="submit" class="delete-btn">Видалити</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<style>
-.admin-panel {
-    padding: 20px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-
-th {
-    background-color: #f4f4f4;
-}
-
-tr:nth-child(even) {
-    background-color: #f9f9f9;
-}
-
-.delete-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-}
-
-.delete-btn:hover {
-    background-color: #c82333;
-}
-
-.enterprise-form-container {
-    max-width: 600px;
-    margin: 20px 0;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 5px;
-}
-</style>
-{% endblock %} 
+</main>
+{% endblock %}

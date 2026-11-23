@@ -98,13 +98,13 @@
             heading.append(portrait, element('strong', hunt.name));
             item.append(
                 heading,
-                element('p', `${hunt.difficulty} · від рівня ${hunt.min_level}`),
-                element('p', `За перемогу ${hunt.gold_min}–${hunt.gold_max} золота та ${hunt.xp} XP`),
+                element('p', `Складність ${number.format(hunt.difficulty)} · від рівня ${hunt.min_level}`),
+                element('p', `За перемогу ${hunt.gold_min}–${hunt.gold_max} золота й 1 очко Братства ловців`),
             );
             const button = element('button', 'Почати полювання');
             button.type = 'button';
             button.disabled = !hunt.available;
-            button.addEventListener('click', () => startHunt(hunt.key));
+            button.addEventListener('click', () => startHunt(hunt));
             item.append(button);
             return item;
         }));
@@ -185,7 +185,10 @@
         const response = await fetch(url, {cache: 'no-store', ...options});
         if (response.ok) return response.json();
         const error = await response.json().catch(() => null);
-        throw new Error(typeof error?.detail === 'string' ? error.detail : 'Не вдалося оновити стан карти.');
+        const detail = error?.detail;
+        const failure = new Error(typeof detail === 'string' ? detail : detail?.message ?? 'Не вдалося оновити стан карти.');
+        failure.code = detail?.code;
+        throw failure;
     }
 
     async function refreshState() {
@@ -201,16 +204,24 @@
         }
     }
 
-    async function startHunt(key) {
+    async function startHunt(hunt) {
         if (busy) return;
         busy = true;
         const buttons = [...hunts.querySelectorAll('button:not(:disabled)')];
         buttons.forEach(button => { button.disabled = true; });
         try {
-            await getState('/api/battles/hunt/' + encodeURIComponent(key), {method: 'POST'});
+            await getState(`/api/battles/hunt/${encodeURIComponent(hunt.key)}?difficulty=${hunt.difficulty}`, {method: 'POST'});
             location.assign('/battle');
         } catch (error) {
-            byId('world-hunt-feedback').textContent = error.message;
+            const notice = byId('world-hunt-feedback');
+            notice.textContent = error.message;
+            if (error.code === 'army_required') {
+                const link = element('a', 'Набрати військо');
+                link.href = '/castle?section=army';
+                notice.append(' ', link);
+            } else {
+                refresh.hidden = false;
+            }
             buttons.forEach(button => { button.disabled = false; });
             busy = false;
         }

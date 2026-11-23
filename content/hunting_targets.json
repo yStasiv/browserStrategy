@@ -1,0 +1,26 @@
+[
+  {
+    "creature": "goblin",
+    "base_count": 12,
+    "count_per_level": 20,
+    "min_level": 1
+  },
+  {
+    "creature": "skeleton",
+    "base_count": 20,
+    "count_per_level": 20,
+    "min_level": 1
+  },
+  {
+    "creature": "ogre",
+    "base_count": 2,
+    "count_per_level": 50,
+    "min_level": 2
+  },
+  {
+    "creature": "dragon",
+    "base_count": 1,
+    "count_per_level": 100,
+    "min_level": 4
+  }
+]
