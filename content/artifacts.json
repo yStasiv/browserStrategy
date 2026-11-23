@@ -3,7 +3,7 @@
     "name": "Меч Лицаря",
     "description": "Класичний одноручний меч, збалансований для бою. Лезо сталеве з легким вигином, руків'я обмотане чорною шкірою, хрестовина пряма, а на наверші гербовий знак.",
     "item_type": "one_handed_weapon",
-    "image_url": "/static/images/items/knight_sword.png",
+    "image_url": "/static/images/items/weapons/knights_sword.png",
     "stats": {
       "melee_attack": 5
     },
@@ -18,7 +18,7 @@
     "name": "Клинок Вбивці",
     "description": "Ллегкий та елегантний меч із загостреним кінцем. Лезо тонке, темного металу, руків'я загорнуте в червону тканину, а хрестовина вигнута, що додає стилю. Виглядає створеним для швидких і точних ударів.",
     "item_type": "one_handed_weapon",
-    "image_url": "/static/images/items/assassin_blade.png",
+    "image_url": "/static/images/items/weapons/assassins_blade.png",
     "stats": {
       "melee_attack": 4
     },
@@ -33,7 +33,7 @@
     "name": "Молот Титана",
     "description": "В величезний дворукий бойовий молот. Головка з масивного темного металу, інкрустована магічними символами. Рукоятка обгорнута шкірою для кращого зчеплення. Випромінює силу та здатен оглушувати ворогів.",
     "item_type": "two_handed_weapon",
-    "image_url": "/static/images/items/titan_hammer.png",
+    "image_url": "/static/images/items/weapons/titans_hammer.png",
     "stats": {
       "melee_attack": 12,
       "stamina": 5
@@ -49,7 +49,7 @@
     "name": "Обладунок Льоду",
     "description": "Крижаний панцир, що захищає від вогню.",
     "item_type": "armor",
-    "image_url": "/static/images/items/ice_armor.svg",
+    "image_url": "/static/images/items/armor/ice_armor.png",
     "stats": {
       "physical_defense": 10,
       "magic_resistance": 5,
@@ -66,7 +66,7 @@
     "name": "Кольчуга",
     "description": "Середня броня з металевих кілець",
     "item_type": "armor",
-    "image_url": "/static/images/items/chainmail.svg",
+    "image_url": "/static/images/items/armor/chainmail.png",
     "stats": {
       "physical_defense": 1,
       "stamina": 3
@@ -82,7 +82,7 @@
     "name": "Шолом Дракона",
     "description": "Легендарний шолом, що входить у комплект 'Драконяча Лють'.",
     "item_type": "helmet",
-    "image_url": "/static/images/items/dragon_helmet.svg",
+    "image_url": "/static/images/items/armor/dragon_helmet.png",
     "stats": {
       "physical_defense": 5,
       "magic_resistance": 3,
@@ -99,7 +99,7 @@
     "name": "Чоботи Тіней",
     "description": "Легкі чоботи, що допомагають зникати в тінях.",
     "item_type": "boots",
-    "image_url": "/static/images/items/shadow_boots.svg",
+    "image_url": "/static/images/items/armor/shadow_boots.png",
     "stats": {
       "physical_defense": 2,
       "magic_resistance": 2
@@ -115,7 +115,7 @@
     "name": "Плащ Тіней",
     "description": "Частина 'Сету Вбивці', робить власника менш помітним.",
     "item_type": "back",
-    "image_url": "/static/images/items/shadow_cloak.svg",
+    "image_url": "/static/images/items/armor/shadow_cloak.png",
     "stats": {
       "physical_defense": 3,
       "magic_resistance": 5
@@ -131,7 +131,7 @@
     "name": "Амулет Сили",
     "description": "Підвищує фізичну силу носія.",
     "item_type": "jewelry",
-    "image_url": "/static/images/items/stamina_amulet.svg",
+    "image_url": "/static/images/items/accessories/power_amulet.png",
     "stats": {
       "stamina": 1
     },
@@ -146,7 +146,7 @@
     "name": "Кільце Захисту",
     "description": "Збільшує броню власника.",
     "item_type": "jewelry",
-    "image_url": "/static/images/items/armor_ring.svg",
+    "image_url": "/static/images/items/accessories/protection_ring.png",
     "stats": {
       "physical_defense": 2
     },
@@ -161,7 +161,7 @@
     "name": "Перстень Влучності",
     "description": "Підвищує точність у дальньому бою.",
     "item_type": "jewelry",
-    "image_url": "/static/images/items/accuracy_ring.svg",
+    "image_url": "/static/images/items/accessories/accuracy_ring.png",
     "stats": {
       "ranged_attack": 2
     },
@@ -176,7 +176,7 @@
     "name": "Амулет Мудрості",
     "description": "Збільшує магічний потенціал носія.",
     "item_type": "jewelry",
-    "image_url": "/static/images/items/wisdom_amulet.svg",
+    "image_url": "/static/images/items/accessories/wisdom_amulet.png",
     "stats": {
       "magic_power": 3,
       "magic_resistance": 1
@@ -192,7 +192,7 @@
     "name": "Смарагдовий Оберіг",
     "description": "Захищає від магії природи.",
     "item_type": "jewelry",
-    "image_url": "/static/images/items/emerald_amulet.svg",
+    "image_url": "/static/images/items/accessories/emerald_charm.png",
     "stats": {
       "magic_resistance": 4,
       "stamina": 2
@@ -208,7 +208,7 @@
     "name": "Криваве Кільце",
     "description": "Посилює ближній бій ціною здоров'я.",
     "item_type": "jewelry",
-    "image_url": "/static/images/items/blood_ring.svg",
+    "image_url": "/static/images/items/accessories/blood_ring.png",
     "stats": {
       "melee_attack": 4,
       "stamina": -1
@@ -224,7 +224,7 @@
     "name": "Сапфіровий Амулет",
     "description": "Древній амулет, що підвищує стійкість до магії.",
     "item_type": "jewelry",
-    "image_url": "/static/images/items/sapphire_amulet.svg",
+    "image_url": "/static/images/items/accessories/sapphire_amulet.png",
     "stats": {
       "magic_resistance": 5
     },
@@ -239,7 +239,7 @@
     "name": "Легендарний меч",
     "description": "Рідкісний могутній меч",
     "item_type": "one_handed_weapon",
-    "image_url": "/static/images/items/legendary_sword.svg",
+    "image_url": "/static/images/items/weapons/legendary_sword.png",
     "stats": {},
     "shop_data": {
       "price": 1000,

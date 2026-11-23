@@ -497,7 +497,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
         hero.gold, hero.singing_resin, hero.basalt_bone = 1200, 17, 19
         db.add(ArmySlot(user_id=10, slot=0, unit_key="archer", count=7))
         db.add(PlayerResourceBalance(player_id=10, resource_id="whisper_dust", quantity=31))
-        db.add(PlayerResourceBalance(player_id=10, resource_id="reserved_resource_7", quantity=11))
+        db.add(PlayerResourceBalance(player_id=10, resource_id="astralit", quantity=11))
         item = Item(name="Срібний шолом", owner_id=10, stats={"physical_defense": 3})
         db.add(item)
         db.flush()
@@ -554,10 +554,10 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert "Знання" in html and "Витривалість" not in html and "Срібний шолом" in html
     assert 'data-hero-stat="defense"' in html and "спорядження 3" in html
     assert html.count("data-hero-slot=") == 11
-    assert html.count("data-resource-id=") == 6
+    assert html.count("data-resource-id=") == 7
     assert html.index('data-resource-id="gold"') < html.index("</nav>")
     assert "1,200" in html and "Співоча смола · 17" in html and "Шепіт-пил · 31" in html
-    assert "reserved_resource_7" not in html
+    assert "Астраліт · 11" in html
     assert "Вміння з’являться згодом." in public_html
     assert "<h2>Вміння</h2>" not in html and "Останній бій" not in html
     assert 'href="/inventory"' in html
@@ -606,12 +606,14 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     public_html = public.decode()
     assert status == 200 and "Тестове вміння" in public_html and 'value="4" max="8"' in public_html
     assert public_html.count("data-resource-id=") == 6
-    assert "Тестовий ресурс" not in public_html and "reserved_resource_7" not in public_html
+    assert 'data-resource-id="astralit"' not in public_html
     assert 'href="/unavailable"' not in html
     assert page("session_id=other-session")[1].count("data-resource-id=") == 6
     with sessions.begin() as db:
-        db.get(PlayerResourceBalance, (10, "reserved_resource_7")).quantity = 0
+        db.get(PlayerResourceBalance, (10, "astralit")).quantity = 0
     assert page()[1].count("data-resource-id=") == 6
+    status, public = asyncio.run(asgi_request(app, "GET", "/player_info?id=10", ""))
+    assert status == 200 and b'data-resource-id="astralit"' not in public
 
 
 def test_hero_endpoints_validate_equipment_and_update_stats_and_army(sessions):

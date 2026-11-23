@@ -77,7 +77,7 @@ def creature_rows():
                     "line": f"{faction}_{line['key']}", "icon": line["icon"],
                     "speed": line["speed"], "shots": line["shots"], "abilities": line["abilities"],
                     "shooting_range": form.get("shooting_range", line.get("shooting_range", DEFAULT_SHOOTING_RANGE)),
-                    "size": (1, 1), "starter_count": 0,
+                    "size": line.get("size", (1, 1)), "starter_count": 0,
                     "recruitment": recruitment,
                     "recruitment_points": form["army_points_cost"],
                 }

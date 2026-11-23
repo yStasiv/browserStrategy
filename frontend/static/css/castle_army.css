@@ -20,10 +20,10 @@
     overflow-y: auto;
 }
 .castle-army-dialog {
-    width: min(74rem, calc(100% - 2rem));
+    width: min(88rem, calc(100% - 2rem));
     height: min(46rem, calc(100% - 2rem));
+    padding: clamp(.6rem, 2vw, 1.15rem);
     overflow-y: auto;
-    scrollbar-gutter: stable;
 }
 .army-saved { color: #365036; }
 .castle-section:disabled { opacity: .55; cursor: default; }
@@ -81,35 +81,34 @@
 .castle-build-action img { width: 2.4rem; height: 2.4rem; object-fit: contain; }
 .army-recruitment-layout.has-unit-preview {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(19rem, .55fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
-    gap: 1rem;
+    gap: .65rem;
 }
 .army-options {
-    --army-columns: 8;
-    --army-gap: .65rem;
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--army-gap);
+    gap: .4rem;
 }
 .army-option {
     box-sizing: border-box;
-    flex: 0 0 max(6rem, calc((100% - (var(--army-columns) - 1) * var(--army-gap)) / var(--army-columns)));
+    flex: 1 0 min(100%, 5.55rem);
     min-width: 0;
     display: grid;
     grid-template-rows: auto 1fr auto;
     justify-items: center;
-    gap: .45rem;
-    padding: .65rem .35rem;
+    gap: .3rem;
+    padding: .4rem .2rem;
     text-align: center;
     overflow-wrap: anywhere;
+    font-size: .86rem;
     border: 1px solid #cbb691;
     border-radius: .45rem;
     background: #f9f0de;
 }
 .army-option[data-unit-active] { border-color: #526747; }
 .army-option-portraits { display: flex; align-items: center; gap: .3rem; }
+.army-option-portraits .unit-portrait { width: 2.75rem; }
 [data-army-portrait][hidden], [data-unit-preview][hidden] { display: none; }
 .army-form-options { display: grid; gap: .3rem; }
 .army-form-option { position: relative; display: block; cursor: pointer; }
@@ -125,8 +124,8 @@
     opacity: 0;
 }
 .army-form-option .unit-portrait {
-    width: 1.85rem;
-    height: 1.85rem;
+    width: 1.45rem;
+    height: 1.45rem;
     border-radius: .2rem;
     font-size: .95rem;
 }
@@ -153,20 +152,14 @@
     writing-mode: vertical-lr;
     direction: rtl;
     width: 1.4rem;
-    height: 4.5rem;
+    height: 3.45rem;
     margin: 0;
     accent-color: #526747;
 }
 .army-limit { color: #695138; font-size: .8rem; }
-.army-footer { margin-top: 1rem; }
+.army-footer { margin-top: .65rem; }
 .army-footer button { min-height: 2.75rem; padding: .5rem 1rem; border: 0; border-radius: .4rem; background: #3e5537; color: white; cursor: pointer; }
 .army-footer button:disabled { opacity: .55; cursor: default; }
-@media (max-width: 60rem) {
-    .army-options { --army-columns: 4; }
-}
-@media (max-width: 52rem) {
-    .army-recruitment-layout.has-unit-preview { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 30rem) {
-    .army-options { --army-columns: 2; }
+@media (min-width: 78rem) {
+    .army-recruitment-layout.has-unit-preview { grid-template-columns: minmax(0, 1fr) minmax(19rem, .35fr); }
 }
