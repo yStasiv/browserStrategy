@@ -140,6 +140,15 @@ test('replays the presented battle and continues independently', async () => {
     assert.equal(dialog.open, false);
 });
 
+test('can reopen a closed result without re-enabling automatic presentation', () => {
+    const {dialog, controller} = fixture();
+    assert.equal(controller.present(12, result()), true);
+    controller.close();
+    assert.equal(controller.present(12, result()), false);
+    assert.equal(controller.present(12, result(), null, 0, {reopen: true}), true);
+    assert.equal(dialog.openings, 2);
+});
+
 test('can present the same battle again after each replay completion', () => {
     const {dialog, controller} = fixture();
     controller.present(12, result());

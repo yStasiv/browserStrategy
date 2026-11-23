@@ -24,13 +24,6 @@ class Recruitment:
 
 
 @dataclass(frozen=True)
-class Hunting:
-    min_level: int
-    count: int
-    difficulty: str
-
-
-@dataclass(frozen=True)
 class UnitType:
     key: str
     name: str
@@ -47,7 +40,6 @@ class UnitType:
     abilities: tuple[str, ...]
     starter_count: int
     recruitment: Recruitment | None
-    hunting: Hunting | None
     recruitment_points: int
     description: str = ""
     image_url: str | None = None
@@ -85,7 +77,7 @@ def creature_rows():
                     "line": f"{faction}_{line['key']}", "icon": line["icon"],
                     "speed": line["speed"], "shots": line["shots"], "abilities": line["abilities"],
                     "shooting_range": form.get("shooting_range", line.get("shooting_range", DEFAULT_SHOOTING_RANGE)),
-                    "size": (1, 1), "starter_count": 0, "hunting": None,
+                    "size": line.get("size", (1, 1)), "starter_count": 0,
                     "recruitment": recruitment,
                     "recruitment_points": form["army_points_cost"],
                 }
@@ -93,27 +85,25 @@ def creature_rows():
         yield {
             **{key: value for key, value in row.items() if key != "school_level"},
             "key": f"elemental_{element}", "size": (1, 1), "starter_count": 0,
-            "recruitment": None, "hunting": None, "recruitment_points": 0,
+            "recruitment": None, "recruitment_points": 0,
         }
 
 
 def load_creatures():
     catalog = {}
     for row in creature_rows():
-        recruit, hunt = row.pop("recruitment"), row.pop("hunting")
+        recruit = row.pop("recruitment")
         row.pop("army_points_cost", None)
         row["size"] = tuple(row["size"])
         row["abilities"] = tuple(row["abilities"])
         if "skills" in row:
             row["skills"] = tuple(row["skills"])
-        unit = UnitType(**row, recruitment=Recruitment(**recruit) if recruit else None,
-                        hunting=Hunting(**hunt) if hunt else None)
+        unit = UnitType(**row, recruitment=Recruitment(**recruit) if recruit else None)
         if (unit.key in catalog or len(unit.size) != 2 or min(*unit.size, unit.hp, unit.initiative) < 1
                 or not 1 <= unit.dmg_min <= unit.dmg_max or not 0 <= unit.initiative <= 100_000
                 or min(unit.speed, unit.shots, unit.starter_count) < 0
                 or type(unit.shooting_range) is not int or unit.shooting_range < 1
                 or type(unit.recruitment_points) is not int or unit.recruitment_points < 0
-                or (unit.hunting and min(unit.hunting.min_level, unit.hunting.count) < 1)
                 or (unit.recruitment and (
                     not unit.recruitment.building or min(unit.recruitment.min_level, unit.recruitment.max_count) < 1
                 ))

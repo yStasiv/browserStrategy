@@ -7,5 +7,5 @@
     {"id": "pulse_spark", "name": "Пульс-іскра", "icon": "/static/images/resources/04_pulse_spark.png", "active": true},
     {"id": "brand_salt", "name": "Клеймо-сіль","icon": "/static/images/resources/05_brand_salt.png", "active": true}
   ],
-  "unique": {"id": "reserved_resource_7", "name":"Астраліт", "icon": "/static/images/resources/06_astralite.png","active": false}
+  "unique": {"id": "astralit", "name":"Астраліт", "icon": "/static/images/resources/06_astralite.png","active": true}
 }

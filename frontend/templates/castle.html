@@ -166,7 +166,7 @@
                                     {% for choice in unit.choices %}
                                     <label class="army-form-option" title="Форма {{ choice.unit.form }} · {{ choice.name }}">
                                         <input type="radio" name="form:{{ unit.group }}" value="{{ choice.key }}"
-                                               data-army-form data-name="{{ choice.name }}" data-damage="{{ choice.unit.dmg_min }}–{{ choice.unit.dmg_max }}"
+                                               data-army-form data-name="{{ choice.name }}"
                                                aria-label="Форма {{ choice.unit.form }} · {{ choice.name }}"{% if choice.key == unit.key %} checked{% endif %}>
                                         {{ portrait(choice.unit) }}
                                     </label>
@@ -179,12 +179,10 @@
                         </div>
                         <div class="army-unit-summary">
                             {% if unit.unit.line %}
-                            <span>Ранг {{ unit.unit.tier }}</span>
                             <label for="army-{{ unit.key }}" data-army-name>{{ unit.name }}</label>
                             {% else %}
                             <label for="army-{{ unit.key }}">{{ unit.name }}</label>
                             {% endif %}
-                            <span>Шкода <span data-army-damage>{{ unit.unit.dmg_min }}–{{ unit.unit.dmg_max }}</span></span>
                         </div>
                         <div class="army-option-controls">
                             <output for="army-{{ unit.key }}">{{ unit.quantity }}</output>

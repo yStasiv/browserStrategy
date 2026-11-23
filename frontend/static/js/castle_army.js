@@ -17,7 +17,6 @@ function showUnit(card, form = card.querySelector('[data-army-form]:checked')) {
             portrait.hidden = portrait.dataset.armyPortrait !== key;
         }
         card.querySelector('[data-army-name]').textContent = form.dataset.name;
-        card.querySelector('[data-army-damage]').textContent = form.dataset.damage;
     }
     for (const item of unitCards) item.toggleAttribute('data-unit-active', item === card);
     for (const preview of unitPreviews) preview.hidden = preview.dataset.unitPreview !== key;

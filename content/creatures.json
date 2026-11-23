@@ -20,8 +20,7 @@
     "icon": "🧑‍🌾",
     "abilities": [],
     "starter_count": 20,
-    "recruitment": null,
-    "hunting": null
+    "recruitment": null
   },
   {
     "key": "archer",
@@ -46,8 +45,7 @@
       "ranged_attack"
     ],
     "starter_count": 10,
-    "recruitment": null,
-    "hunting": null
+    "recruitment": null
   },
   {
     "key": "swordsman",
@@ -70,8 +68,7 @@
     "icon": "⚔️",
     "abilities": [],
     "starter_count": 5,
-    "recruitment": null,
-    "hunting": null
+    "recruitment": null
   },
   {
     "key": "knight",
@@ -94,8 +91,7 @@
     "icon": "🐴",
     "abilities": [],
     "starter_count": 0,
-    "recruitment": null,
-    "hunting": null
+    "recruitment": null
   },
   {
     "key": "goblin",
@@ -118,12 +114,7 @@
     "icon": "👺",
     "abilities": [],
     "starter_count": 0,
-    "recruitment": null,
-    "hunting": {
-      "min_level": 1,
-      "count": 12,
-      "difficulty": "Легке"
-    }
+    "recruitment": null
   },
   {
     "key": "skeleton",
@@ -153,11 +144,6 @@
       ],
       "min_level": 2,
       "max_count": 10
-    },
-    "hunting": {
-      "min_level": 2,
-      "count": 20,
-      "difficulty": "Звичайне"
     }
   },
   {
@@ -181,12 +167,7 @@
     "icon": "👹",
     "abilities": [],
     "starter_count": 0,
-    "recruitment": null,
-    "hunting": {
-      "min_level": 3,
-      "count": 2,
-      "difficulty": "Складне"
-    }
+    "recruitment": null
   },
   {
     "key": "dragon",
@@ -209,11 +190,6 @@
     "icon": "🐉",
     "abilities": [],
     "starter_count": 0,
-    "recruitment": null,
-    "hunting": {
-      "min_level": 4,
-      "count": 1,
-      "difficulty": "Складне"
-    }
+    "recruitment": null
   }
 ]

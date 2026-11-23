@@ -1,10 +1,11 @@
 import random
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import timezone
 import json
 import os
 from typing import Dict, List
+from zoneinfo import ZoneInfo
 from ... import models, database
 from ...auth import get_current_user, playable_users
 from ...engine.battle_service import replay_history
@@ -31,11 +32,15 @@ async def battle_history(request: Request, db: Session = Depends(database.get_db
     subject = viewer if player_id is None else playable_users(db).filter(models.User.id == player_id).first()
     if subject is None:
         raise HTTPException(404, "Персонажа не знайдено.")
+    battles = replay_history(db, subject, limit=None, detailed=True)
+    kyiv = ZoneInfo("Europe/Kyiv")
+    for record in battles:
+        record["created_at"] = record["created_at"].replace(tzinfo=timezone.utc).astimezone(kyiv)
     return templates.TemplateResponse("battle_history.html", {
         "request": request, "player": viewer, "subject": subject,
         "public_history": player_id is not None,
         "can_replay": viewer is not None and viewer.id == subject.id,
-        "battles": replay_history(db, subject, limit=None),
+        "battles": battles,
     })
 
 
@@ -227,4 +232,4 @@ async def battle_history(request: Request, db: Session = Depends(database.get_db
 #     with open(file_path, 'w', encoding='utf-8') as f:
 #         json.dump(turn_data, f, ensure_ascii=False, indent=2)
     
-#     return {"message": "Battle turn saved successfully", "filename": filename} 
+#     return {"message": "Battle turn saved successfully", "filename": filename}

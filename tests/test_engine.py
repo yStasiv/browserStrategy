@@ -203,11 +203,11 @@ def test_faster_units_act_more_often():
     assert counts["archer"] > counts["knight"]
 
 
-def test_wait_only_once_per_battle():
+def test_wait_remains_available_on_the_next_turn():
     st = create_battle([("knight", 1), ("archer", 1)], [("goblin", 1)], 1, level=1, mode="pve")
     first = st.active_id
     st2, ev = apply(st, Wait())
-    assert ev == [{"type": "wait", "stack": first}] and st2.stacks[first].waited is True
+    assert ev == [{"type": "wait", "stack": first}]
     assert st2.stacks[first].ready > st.stacks[first].ready
     cur = st2
     for _ in range(50):                   # доходимо до того ж загону знову
@@ -215,9 +215,9 @@ def test_wait_only_once_per_battle():
             break
         cur, _ = apply(cur, Defend())
     assert cur.active_id == first
-    with pytest.raises(IllegalAction):
-        apply(cur, Wait())
-    assert turn_info(cur)["can_wait"] is False
+    assert turn_info(cur)["can_wait"] is True
+    later, _ = apply(cur, Wait())
+    assert later.stacks[first].ready > cur.stacks[first].ready
 
 
 def test_surrender_ends_battle_with_other_winner():

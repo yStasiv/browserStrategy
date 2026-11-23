@@ -11,6 +11,7 @@ from backend import database, db_base
 from backend.engine import battle_api, battle_service, create_battle
 from backend.engine.actions import Defend, action_to_dict
 from backend.engine.ai import choose_action
+from backend.engine.battle_experience import earned_experience
 from backend.engine.battle_models import ArmySlot, Battle, BattleParticipant
 from backend.engine.events import reconstruct
 from backend.engine.flow import play_turn
@@ -100,8 +101,12 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
         assert battle["reward"] == {"gold": player.gold - 100, "experience": player.experience}
         assert call("GET", root)[1]["reward"] == battle["reward"]
         assert 132 <= player.gold <= 398
-        assert player.experience == 50
-        assert db.get(Battle, battle["id"]).rewarded
+        record = db.get(Battle, battle["id"])
+        state_type = battle_service.BattleState
+        assert player.experience == earned_experience(
+            state_type.from_dict(record.initial_state), state_type.from_dict(record.state), 0,
+        ) > 0
+        assert record.rewarded
     status, replay = call("GET", root + "/replay")
     assert status == 200
     assert replay["schema_version"] == 1
@@ -240,3 +245,19 @@ def test_legacy_active_battle_replays_from_checkpoint(tmp_path, monkeypatch):
         assert replay["events"][0]["type"] == "REPLAY_CHECKPOINT"
         assert replay["initial_state"] == old_state
         assert reconstruct(old_state, replay["events"]) == replay["final_state"]
+
+
+def test_experience_depends_on_enemy_hp_survivors_and_outcome():
+    initial = create_battle([("peasant", 20)], [("goblin", 80)], seed=1)
+    state_type = battle_service.BattleState
+    final = state_type.from_dict(initial.to_dict())
+    final.winner = 0
+    assert earned_experience(initial, final, 0) == 100
+    final.stacks["s0_0"].count = 10
+    assert earned_experience(initial, final, 0) == 75
+    final.winner = None
+    assert earned_experience(initial, final, 0) == 45
+    final.winner = 1
+    assert earned_experience(initial, final, 0) == 18
+    final.surrendered = 0
+    assert earned_experience(initial, final, 0) == 0

@@ -1,0 +1,32 @@
+.admin-enterprises { max-width: 66rem; }
+.admin-enterprises h1 { margin: 0 0 1rem; }
+.admin-enterprise-list { display: grid; gap: .65rem; margin-top: 1rem; }
+.admin-enterprise-card {
+    padding: .8rem;
+    border: 1px solid #cbb691;
+    border-radius: .45rem;
+    background: #f9f0de;
+}
+.admin-enterprise-card summary { cursor: pointer; overflow-wrap: anywhere; }
+.admin-enterprise-card summary span { margin-inline-start: .5rem; color: #56442d; }
+.admin-enterprise-stats, .admin-enterprise-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: .65rem;
+    margin-block: .85rem;
+}
+.admin-enterprise-stats dd { margin: .15rem 0 0; font-weight: 700; }
+.admin-enterprise-form label { display: grid; gap: .25rem; }
+.admin-enterprise-form input, .admin-enterprise-form select {
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+    padding: .4rem;
+    border: 1px solid #cbb691;
+    border-radius: .3rem;
+    background: #fff8e9;
+    color: inherit;
+    font: inherit;
+}
+.admin-enterprise-form button { grid-column: 1 / -1; justify-self: start; }
+.admin-enterprise-delete { padding-top: .6rem; border-top: 1px solid #cbb691; }

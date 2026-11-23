@@ -186,8 +186,8 @@
 .hero-army-squads { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); gap: .45rem; }
 .hero-army-squads li { background: linear-gradient(#fbefd0, #e9d2a4); border: 1px solid #b89159; border-radius: .3rem; padding: .45rem; }
 .hero-army-squads li { display: grid; align-content: center; justify-items: center; min-height: 4rem; text-align: center; }
-.hero-army-squads .hero-army-filled { container-type: inline-size; padding: 0; align-content: stretch; justify-items: stretch; }
-.hero-army-filled .unit-info-link { display: block; position: relative; min-height: 4rem; }
+.hero-army-squads .hero-army-filled { container-type: inline-size; padding: 0; align-self: start; align-content: stretch; justify-items: stretch; }
+.hero-army-filled .unit-info-link { display: block; position: relative; height: 4rem; }
 .hero-army-filled .unit-portrait {
     position: absolute;
     inset: 0;

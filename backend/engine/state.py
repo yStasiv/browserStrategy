@@ -31,7 +31,7 @@ class Stack:
     ready: int = 0     # коли діятиме наступного разу
     shots_left: int = 0
     defending: bool = False
-    waited: bool = False       # «чекати» можна один раз за весь бій
+    waited: bool = False       # Сумісність зі знімками боїв зі старим правилом очікування.
     retaliated: bool = False   # вже контратакував з початку свого останнього ходу
     summoned: bool = False
 
@@ -72,6 +72,7 @@ class BattleState:
     surrendered: Optional[int] = None   # сторона, що здалася
 
     hunt_key: Optional[str] = None
+    hunt_level: Optional[int] = None
     summoning: Dict[str, dict] = field(default_factory=dict)
     heroes: Dict[str, HeroTurn] = field(default_factory=dict)
 
@@ -93,6 +94,8 @@ class BattleState:
         snapshot = asdict(self)
         if self.hunt_key is None:
             del snapshot["hunt_key"]
+        if self.hunt_level is None:
+            del snapshot["hunt_level"]
         if not self.summoning:
             del snapshot["summoning"]
         if not self.heroes:

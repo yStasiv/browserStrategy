@@ -5,6 +5,8 @@
     const sectors = byId('world-sectors');
     const enterpriseTabs = [...document.querySelectorAll('[data-production-type]')];
     const hunts = byId('world-hunts');
+    const huntFeedback = byId('world-hunt-feedback');
+    const huntCooldown = byId('world-hunt-cooldown');
     const feedback = byId('world-feedback');
     const refresh = byId('world-refresh');
     const number = new Intl.NumberFormat('en-US');
@@ -13,6 +15,7 @@
     let readAt;
     let busy = false;
     let timer;
+    let huntTimer;
 
     function name(key) {
         return state.sectors.find(sector => sector.key === key)?.name ?? key;
@@ -26,6 +29,7 @@
 
     function render(next) {
         clearTimeout(timer);
+        clearTimeout(huntTimer);
         state = next;
         readAt = performance.now();
         current.textContent = `Поточний сектор · ${name(state.current_sector)}`;
@@ -98,17 +102,18 @@
             heading.append(portrait, element('strong', hunt.name));
             item.append(
                 heading,
-                element('p', `${hunt.difficulty} · від рівня ${hunt.min_level}`),
-                element('p', `За перемогу ${hunt.gold_min}–${hunt.gold_max} золота та ${hunt.xp} XP`),
+                element('p', `Складність ${number.format(hunt.difficulty)} · від рівня ${hunt.min_level}`),
+                element('p', `За перемогу ${hunt.gold_min}–${hunt.gold_max} золота й 1 очко Братства ловців`),
             );
             const button = element('button', 'Почати полювання');
             button.type = 'button';
             button.disabled = !hunt.available;
-            button.addEventListener('click', () => startHunt(hunt.key));
+            button.addEventListener('click', () => startHunt(hunt));
             item.append(button);
             return item;
         }));
-        byId('world-hunt-feedback').textContent = state.travel ? 'Недоступно під час подорожі.' : '';
+        huntFeedback.textContent = state.travel ? 'Недоступно під час подорожі.' : '';
+        tickHuntCooldown();
         const guildAvailable = !state.travel && state.current_sector === 'Castle';
         byId('world-guild-link').hidden = !guildAvailable;
         byId('world-guild-name').hidden = guildAvailable;
@@ -181,11 +186,32 @@
         timer = setTimeout(remaining ? tick : refreshState, remaining ? Math.min(200, remaining + 10) : 50);
     }
 
+    function tickHuntCooldown() {
+        const now = Date.parse(state.server_time) + performance.now() - readAt;
+        const remaining = state.hunt_ready_at ? Math.max(0, Date.parse(state.hunt_ready_at) - now) : 0;
+        const seconds = Math.ceil(remaining / 1000);
+        hunts.hidden = seconds > 0;
+        huntCooldown.hidden = seconds === 0;
+        if (!seconds) return;
+        const minutes = Math.floor(seconds / 60);
+        byId('world-hunt-countdown').textContent = `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+        huntTimer = setTimeout(tickHuntCooldown, (remaining - (seconds - 1) * 1000) + 5);
+    }
+
+    function showArmyRequired() {
+        const link = element('a', 'Набрати військо');
+        link.href = '/castle?section=army';
+        huntFeedback.replaceChildren('Спочатку набери військо в Замку. ', link);
+    }
+
     async function getState(url, options) {
         const response = await fetch(url, {cache: 'no-store', ...options});
         if (response.ok) return response.json();
         const error = await response.json().catch(() => null);
-        throw new Error(typeof error?.detail === 'string' ? error.detail : 'Не вдалося оновити стан карти.');
+        const detail = error?.detail;
+        const failure = new Error(typeof detail === 'string' ? detail : detail?.message ?? 'Не вдалося оновити стан карти.');
+        failure.code = detail?.code;
+        throw failure;
     }
 
     async function refreshState() {
@@ -201,16 +227,25 @@
         }
     }
 
-    async function startHunt(key) {
-        if (busy) return;
+    async function startHunt(hunt) {
+        if (busy || hunts.hidden) return;
+        if (state.hunt_has_army === false) {
+            showArmyRequired();
+            return;
+        }
         busy = true;
         const buttons = [...hunts.querySelectorAll('button:not(:disabled)')];
         buttons.forEach(button => { button.disabled = true; });
         try {
-            await getState('/api/battles/hunt/' + encodeURIComponent(key), {method: 'POST'});
+            await getState(`/api/battles/hunt/${encodeURIComponent(hunt.key)}?difficulty=${hunt.difficulty}`, {method: 'POST'});
             location.assign('/battle');
         } catch (error) {
-            byId('world-hunt-feedback').textContent = error.message;
+            if (error.code === 'army_required' || error.message === 'Спочатку набери військо в Замку.') {
+                showArmyRequired();
+            } else {
+                huntFeedback.textContent = error.message;
+                refresh.hidden = false;
+            }
             buttons.forEach(button => { button.disabled = false; });
             busy = false;
         }

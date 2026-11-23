@@ -109,15 +109,19 @@ def test_hero_shot_ignores_defense_and_is_recorded_without_retaliation():
     assert reconstruct(st.to_dict(), action_events(st, new, events)) == new.to_dict()
 
 
-def test_wait_only_once_and_delays_by_half_period():
+def test_wait_repeats_and_delays_by_half_period():
+    from backend.engine.rules import forecast, wait_delay
+
     st = create_battle([("knight", 1), ("archer", 1)], [("goblin", 1)], 1)
     actor = st.active()
+    expected = forecast(st, 12, after_wait=True)
     st, _ = apply(st, Wait())
-    assert st.stacks[actor.id].ready == actor.ready + actor.ready // 2
+    assert st.stacks[actor.id].ready == actor.ready + wait_delay(actor)
+    assert expected == forecast(st, 12)
     while st.active_id != actor.id:
         st, _ = apply(st, Defend())
-    with pytest.raises(IllegalAction):
-        apply(st, Wait())
+    next_state, _ = apply(st, Wait())
+    assert next_state.stacks[actor.id].ready == st.stacks[actor.id].ready + wait_delay(actor)
 
 
 def test_input_state_not_mutated_and_roundtrip():

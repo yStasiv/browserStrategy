@@ -387,9 +387,9 @@ def test_castle_sliders_save_the_army_used_by_battle(sessions):
         assert army == [("elves_moon_archer_1", 2), ("peasant", 7), ("knight", 1)]
 
 
-def test_hunts_and_faction_recruitment(sessions):
+def test_hunts_and_faction_recruitment(sessions, monkeypatch):
     from backend.engine import battle_service
-    from backend.engine.battle_models import ArmySlot
+    from backend.engine.battle_models import ArmySlot, Battle
     from backend.models import CastleBuilding
     from backend.routers.castle import army_options
     from backend.services import world
@@ -415,6 +415,9 @@ def test_hunts_and_faction_recruitment(sessions):
 
     with sessions.begin() as db:
         other = db.get(User, 2)
+        assert {target["key"] for target in battle_service.hunting_options(db, other, False)} == {"goblin", "skeleton"}
+        from backend.engine.hunting import TARGETS
+        assert {target.creature for target in TARGETS.values() if target.min_level <= 2} == {"goblin", "skeleton", "ogre"}
         with pytest.raises(battle_service.Forbidden):
             battle_service.start_hunt(db, other, "dragon")
         with pytest.raises(battle_service.NotFound):
@@ -444,6 +447,22 @@ def test_hunts_and_faction_recruitment(sessions):
         assert replay["initial_state"]["hunt_key"] == "goblin"
         assert player.gold == before
         assert activity_guilds.progress(db, player.id, activity_guilds.HUNTERS)["xp"] == 1
+        player.level = 2
+        db.commit()
+        targets = battle_service.hunting_options(db, player, False)
+        assert targets == battle_service.hunting_options(db, player, False)
+        upgraded = next(target for target in targets if target["key"] == "goblin")
+        assert (upgraded["difficulty"], upgraded["count"]) == (2, 15)
+        finished = db.get(Battle, battle["id"]).finished_at
+        monkeypatch.setattr(world, "utc_now", lambda: finished + timedelta(seconds=59))
+        with pytest.raises(battle_service.Conflict, match="через 1 с"):
+            battle_service.start_hunt(db, player, "skeleton")
+        monkeypatch.setattr(world, "utc_now", lambda: finished + timedelta(seconds=60))
+        with pytest.raises(battle_service.Conflict, match="змінилися"):
+            battle_service.start_hunt(db, player, "goblin", expected_difficulty=1)
+        next_hunt = battle_service.start_hunt(db, player, "goblin", expected_difficulty=2)
+        assert next_hunt["state"]["hunt_level"] == 2
+        assert next_hunt["state"]["stacks"]["s1_0"]["count"] == 15
 
 
 def test_character_dashboard_resources_equipment_and_registered_sections(sessions, tmp_path, monkeypatch):
@@ -478,7 +497,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
         hero.gold, hero.singing_resin, hero.basalt_bone = 1200, 17, 19
         db.add(ArmySlot(user_id=10, slot=0, unit_key="archer", count=7))
         db.add(PlayerResourceBalance(player_id=10, resource_id="whisper_dust", quantity=31))
-        db.add(PlayerResourceBalance(player_id=10, resource_id="reserved_resource_7", quantity=11))
+        db.add(PlayerResourceBalance(player_id=10, resource_id="astralit", quantity=11))
         item = Item(name="Срібний шолом", owner_id=10, stats={"physical_defense": 3})
         db.add(item)
         db.flush()
@@ -489,8 +508,12 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
         guild_progress.level, guild_progress.xp, guild_progress.next_xp = 2, 138, 150
         db.add(ActivityGuildProgress(player_id=10, guild=activity_guilds.workshop_key("jewelry"), points=12))
         db.add(Battle(id=71, mode="pve", status="finished", state={}, initial_state={}))
+        snapshot = {"seq": 0, "stacks": {"s1_0": {"owner": 1, "unit": "goblin", "count": 15}}}
+        db.add(Battle(id=72, mode="pve", status="finished", state={"hunt_key": "goblin"},
+                      initial_state=snapshot, created_at=datetime(2026, 11, 22, 12)))
+        db.add(Battle(id=73, mode="pve", status="finished", state={}, initial_state=snapshot))
         db.flush()
-        db.add(BattleParticipant(battle_id=71, side=0, user_id=10))
+        db.add_all([BattleParticipant(battle_id=battle_id, side=0, user_id=10) for battle_id in (71, 72, 73)])
         db.add(RewardTransaction(issuer_id=SYSTEM_PLAYER_ID, recipient_id=10, source="battle_v1",
                                  source_key="71", gold=83, wood=0, stone=0, created_at=datetime(2026, 11, 21)))
 
@@ -514,6 +537,9 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert "/battle/history?player_id=10" in public_html and "/player_info/transfers?id=10" in public_html
     status, battles = asyncio.run(asgi_request(app, "GET", "/battle/history?player_id=10", ""))
     assert status == 200 and "Бій №71" in battles.decode() and b"/battle?replay=71" not in battles
+    assert battles.count(b"guild_hunters.png") == 1
+    assert battles.decode().count(f"{UNITS['goblin'].name} ×15") == 2
+    assert "22.11.2026 14:00" in battles.decode()
     status, transfers = asyncio.run(asgi_request(app, "GET", "/player_info/transfers?id=10", ""))
     assert status == 200 and "Золото · 83" in transfers.decode()
     assert f'data-hero-slot="head" href="/art_info?id={item_id}"' in html
@@ -528,10 +554,10 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert "Знання" in html and "Витривалість" not in html and "Срібний шолом" in html
     assert 'data-hero-stat="defense"' in html and "спорядження 3" in html
     assert html.count("data-hero-slot=") == 11
-    assert html.count("data-resource-id=") == 6
+    assert html.count("data-resource-id=") == 7
     assert html.index('data-resource-id="gold"') < html.index("</nav>")
     assert "1,200" in html and "Співоча смола · 17" in html and "Шепіт-пил · 31" in html
-    assert "reserved_resource_7" not in html
+    assert "Астраліт · 11" in html
     assert "Вміння з’являться згодом." in public_html
     assert "<h2>Вміння</h2>" not in html and "Останній бій" not in html
     assert 'href="/inventory"' in html
@@ -580,12 +606,14 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     public_html = public.decode()
     assert status == 200 and "Тестове вміння" in public_html and 'value="4" max="8"' in public_html
     assert public_html.count("data-resource-id=") == 6
-    assert "Тестовий ресурс" not in public_html and "reserved_resource_7" not in public_html
+    assert 'data-resource-id="astralit"' not in public_html
     assert 'href="/unavailable"' not in html
     assert page("session_id=other-session")[1].count("data-resource-id=") == 6
     with sessions.begin() as db:
-        db.get(PlayerResourceBalance, (10, "reserved_resource_7")).quantity = 0
+        db.get(PlayerResourceBalance, (10, "astralit")).quantity = 0
     assert page()[1].count("data-resource-id=") == 6
+    status, public = asyncio.run(asgi_request(app, "GET", "/player_info?id=10", ""))
+    assert status == 200 and b'data-resource-id="astralit"' not in public
 
 
 def test_hero_endpoints_validate_equipment_and_update_stats_and_army(sessions):
@@ -816,7 +844,10 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert status == 200 and b'name="form:elves_sylven"' not in body
     assert b'name="form:underground_elves_shade"' not in body
     assert call("POST", "/castle/build", form={"building_id": "magic_school_4"})[0] == 403
-    assert call("POST", "/api/battles/pve", payload={"scenario": "training"})[0] == 400
+    status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"})
+    assert status == 400 and json.loads(body)["detail"]["code"] == "army_required"
+    status, body = call("POST", "/api/battles/hunt/goblin?difficulty=1")
+    assert status == 400 and json.loads(body)["detail"]["code"] == "army_required"
     assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3"})[0] == 403
     with sessions.begin() as db:
         db.get(User, 10).level = 3
@@ -977,3 +1008,28 @@ def test_registration_grants_only_own_faction_starter_buildings(sessions):
             assert saved_army(db, user.id) == []
             options = castle.army_options(db, user)
             assert [(item["unit"].tier, item["unit"].form) for item in options] == [(1, 1), (2, 1)]
+
+
+def test_hunt_cooldown_after_defeat_is_shared_and_expires(sessions, monkeypatch):
+    from backend.engine import battle_service
+    from backend.engine.battle_models import Battle, BattleParticipant
+    from backend.routers.map import location_state
+
+    finished = datetime(2026, 11, 22, 12)
+    now = finished + timedelta(seconds=29)
+    monkeypatch.setattr(world, "utc_now", lambda: now)
+    with sessions.begin() as db:
+        battle = Battle(mode="pve", status="finished", state={"hunt_key": "goblin"}, winner_side=1,
+                        finished_at=finished, rewarded=True)
+        db.add(battle)
+        db.flush()
+        db.add(BattleParticipant(battle_id=battle.id, user_id=10, side=0))
+    with sessions() as db:
+        player = db.get(User, 10)
+        state = location_state(db, player)
+        assert state["hunt_ready_at"] == "2026-11-22T12:00:30+00:00"
+        assert state["hunt_has_army"] is False
+        with pytest.raises(battle_service.Conflict, match="через 1 с"):
+            battle_service.start_hunt(db, player, "skeleton")
+        now = finished + timedelta(seconds=30)
+        assert location_state(db, player)["hunt_ready_at"] is None
