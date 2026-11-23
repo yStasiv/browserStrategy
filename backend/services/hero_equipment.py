@@ -46,6 +46,14 @@ def apply_equipment(equipped, player, slot, item, worn):
     item.is_equipped = worn
 
 
+def replacement_slot(candidates, same_type, free, previous):
+    eligible = free or same_type
+    if previous in same_type:
+        index = candidates.index(previous) + 1
+        candidates = candidates[index:] + candidates[:index]
+    return next((slot for slot in candidates if slot in eligible), None)
+
+
 def change_equipment(db, player, *, slot=None, item_id=None, remove=False, replace=False):
     lock_hero(db, player)
     equipped = player.equipped_items
@@ -74,11 +82,21 @@ def change_equipment(db, player, *, slot=None, item_id=None, remove=False, repla
         candidates = ITEM_SLOTS.get(item.item_type, ())
         main = db.get(Item, ids["main_hand"]) if ids["main_hand"] is not None else None
         main_type = main.item_type if main else None
+        free = [key for key in candidates if ids[key] is None
+                and not hand_conflict(item.item_type, key, ids, main_type)]
+        rotation = dict(equipped.replacement_slots or {}) if equipped else {}
+        auto_replace = replace and slot is None and len(candidates) > 1
+        if auto_replace:
+            occupancy = {key: db.get(Item, ids[key]) for key in candidates if ids[key] is not None}
+            same_type = {key for key, occupant in occupancy.items()
+                         if occupant and occupant.owner_id == player.id and occupant.item_type == item.item_type}
+            slot = replacement_slot(candidates, same_type, free, rotation.get(item.item_type))
+            if same_type:
+                rotation[item.item_type] = slot
+            else:
+                rotation.pop(item.item_type, None)
         if slot is None:
-            slot = next((key for key in candidates if ids[key] is None
-                         and not hand_conflict(item.item_type, key, ids, main_type)), None)
-            if slot is None and candidates:
-                slot = candidates[0]
+            slot = next(iter(free or candidates), None)
         if slot not in candidates:
             raise HTTPException(422, "Предмет не підходить до цього слота або слот зайнятий.")
         if ids[slot] is not None and not replace:
@@ -101,6 +119,8 @@ def change_equipment(db, player, *, slot=None, item_id=None, remove=False, repla
                     else:
                         setattr(equipped, f"{SLOT_COLUMNS[key]}_id", None)
         apply_equipment(equipped, player, slot, item, True)
+        if auto_replace:
+            equipped.replacement_slots = rotation
 
 
 MODIFIED_STATS = {

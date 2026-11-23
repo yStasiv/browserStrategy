@@ -124,6 +124,7 @@ class EquippedItems(Base):
     __tablename__ = "equipped_items"
 
     id = Column(Integer, primary_key=True, index=True)
+    replacement_slots = Column(JSON, nullable=False, default=dict, server_default=text("'{}'"))
     user_id = Column(Integer, ForeignKey("users.id"))
     helmet_id = Column(Integer, ForeignKey("items.id"), nullable=True)
     armor_id = Column(Integer, ForeignKey("items.id"), nullable=True)

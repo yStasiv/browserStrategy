@@ -78,3 +78,41 @@ def test_inventory_renders_stats_and_shared_equipment_and_checks_actions(session
         db.flush()
         db.add(BattleParticipant(battle_id=battle.id, side=0, user_id=10))
     assert call("POST", "/inventory/unequip/43")[0] == 409
+
+
+def test_equipment_replacement_cycles_between_compatible_slots(sessions):
+    from backend.services.hero_equipment import change_equipment
+
+    with sessions.begin() as db:
+        db.add_all([Item(id=item_id, owner_id=10, name=f"Перстень {item_id}", item_type="jewelry")
+                    for item_id in range(61, 67)])
+        db.flush()
+        change_equipment(db, db.get(User, 10), item_id=61, slot="acc_1")
+
+    with sessions.begin() as db:
+        player = db.get(User, 10)
+        change_equipment(db, player, item_id=62, replace=True)
+        assert player.equipped_items.jewelry_1_id == 61
+        assert player.equipped_items.jewelry_2_id == 62
+
+    with sessions.begin() as db:
+        player = db.get(User, 10)
+        change_equipment(db, player, item_id=63, replace=True)
+        assert player.equipped_items.jewelry_3_id == 63
+
+    with sessions.begin() as db:
+        player = db.get(User, 10)
+        change_equipment(db, player, item_id=64, replace=True)
+        assert player.equipped_items.jewelry_4_id == 64
+
+    with sessions.begin() as db:
+        player = db.get(User, 10)
+        change_equipment(db, player, item_id=65, replace=True)
+        assert player.equipped_items.jewelry_1_id == 65
+        assert not db.get(Item, 61).is_equipped
+
+    with sessions.begin() as db:
+        player = db.get(User, 10)
+        change_equipment(db, player, item_id=66, replace=True)
+        assert player.equipped_items.jewelry_1_id == 65
+        assert player.equipped_items.jewelry_2_id == 66
