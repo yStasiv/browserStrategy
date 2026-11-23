@@ -387,9 +387,9 @@ def test_castle_sliders_save_the_army_used_by_battle(sessions):
         assert army == [("elves_moon_archer_1", 2), ("peasant", 7), ("knight", 1)]
 
 
-def test_hunts_and_faction_recruitment(sessions):
+def test_hunts_and_faction_recruitment(sessions, monkeypatch):
     from backend.engine import battle_service
-    from backend.engine.battle_models import ArmySlot
+    from backend.engine.battle_models import ArmySlot, Battle
     from backend.models import CastleBuilding
     from backend.routers.castle import army_options
     from backend.services import world
@@ -453,6 +453,11 @@ def test_hunts_and_faction_recruitment(sessions):
         assert targets == battle_service.hunting_options(db, player, False)
         upgraded = next(target for target in targets if target["key"] == "goblin")
         assert (upgraded["difficulty"], upgraded["count"]) == (2, 15)
+        finished = db.get(Battle, battle["id"]).finished_at
+        monkeypatch.setattr(world, "utc_now", lambda: finished + timedelta(seconds=59))
+        with pytest.raises(battle_service.Conflict, match="через 1 с"):
+            battle_service.start_hunt(db, player, "skeleton")
+        monkeypatch.setattr(world, "utc_now", lambda: finished + timedelta(seconds=60))
         with pytest.raises(battle_service.Conflict, match="змінилися"):
             battle_service.start_hunt(db, player, "goblin", expected_difficulty=1)
         next_hunt = battle_service.start_hunt(db, player, "goblin", expected_difficulty=2)
@@ -839,6 +844,8 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert call("POST", "/castle/build", form={"building_id": "magic_school_4"})[0] == 403
     status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"})
     assert status == 400 and json.loads(body)["detail"]["code"] == "army_required"
+    status, body = call("POST", "/api/battles/hunt/goblin?difficulty=1")
+    assert status == 400 and json.loads(body)["detail"]["code"] == "army_required"
     assert call("POST", "/castle/build", form={"building_id": "elves_recruitment_tier_3"})[0] == 403
     with sessions.begin() as db:
         db.get(User, 10).level = 3
@@ -999,3 +1006,28 @@ def test_registration_grants_only_own_faction_starter_buildings(sessions):
             assert saved_army(db, user.id) == []
             options = castle.army_options(db, user)
             assert [(item["unit"].tier, item["unit"].form) for item in options] == [(1, 1), (2, 1)]
+
+
+def test_hunt_cooldown_after_defeat_is_shared_and_expires(sessions, monkeypatch):
+    from backend.engine import battle_service
+    from backend.engine.battle_models import Battle, BattleParticipant
+    from backend.routers.map import location_state
+
+    finished = datetime(2026, 11, 22, 12)
+    now = finished + timedelta(seconds=29)
+    monkeypatch.setattr(world, "utc_now", lambda: now)
+    with sessions.begin() as db:
+        battle = Battle(mode="pve", status="finished", state={"hunt_key": "goblin"}, winner_side=1,
+                        finished_at=finished, rewarded=True)
+        db.add(battle)
+        db.flush()
+        db.add(BattleParticipant(battle_id=battle.id, user_id=10, side=0))
+    with sessions() as db:
+        player = db.get(User, 10)
+        state = location_state(db, player)
+        assert state["hunt_ready_at"] == "2026-11-22T12:00:30+00:00"
+        assert state["hunt_has_army"] is False
+        with pytest.raises(battle_service.Conflict, match="через 1 с"):
+            battle_service.start_hunt(db, player, "skeleton")
+        now = finished + timedelta(seconds=30)
+        assert location_state(db, player)["hunt_ready_at"] is None

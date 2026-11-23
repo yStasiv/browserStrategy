@@ -128,10 +128,10 @@ const BattleResult = (() => {
             if (shown.has(id)) return true;
             try { return storage?.getItem('battle-result:' + id) === '1'; } catch { return false; }
         }
-        function present(id, result, damage, mySide, {fromReplay = false} = {}) {
+        function present(id, result, damage, mySide, {fromReplay = false, reopen = false} = {}) {
             if (!result || result.status !== 'finished' || String(id) !== String(result.battle_id)) return false;
             const key = String(id);
-            if (!fromReplay && hasShown(key)) return false;
+            if (!fromReplay && !reopen && hasShown(key)) return false;
             close();
             current = result;
             render(content, result, damage, mySide, unitName);

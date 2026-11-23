@@ -31,7 +31,7 @@ class Stack:
     ready: int = 0     # коли діятиме наступного разу
     shots_left: int = 0
     defending: bool = False
-    waited: bool = False       # «чекати» можна один раз за весь бій
+    waited: bool = False       # Сумісність зі знімками боїв зі старим правилом очікування.
     retaliated: bool = False   # вже контратакував з початку свого останнього ходу
     summoned: bool = False
 

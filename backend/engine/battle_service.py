@@ -4,6 +4,7 @@ from __future__ import annotations
 import random
 import secrets
 from datetime import datetime
+from math import ceil
 from typing import List
 
 from sqlalchemy import update
@@ -28,7 +29,7 @@ from .setup import ZONE_COLS
 from .rules import init_timeline
 from .events import SCHEMA_VERSION, initial_events
 from .hero import make_hero
-from .hunting import TARGETS, offers, squad_count
+from .hunting import TARGETS, offers, ready_at as hunt_ready_at, squad_count
 from .roster import saved_army
 from .summoning import available_elements, hp_pool, max_energy
 
@@ -80,6 +81,8 @@ def _view(db, battle_id: int, mode: str, status: str, version: int, winner_side,
         "units": UNIT_PRESENTATION,
         "turn": turn_info(state) if active and active.owner == my_side else None,
         "forecast": forecast(state, 50),   # орієнтовна черга на 50 ходів уперед
+        "wait_forecast": forecast(state, 50, after_wait=True)
+        if active and active.owner == my_side and active.id in state.stacks else None,
         "events": events,
         "deployment": {
             "zone_width": ZONE_COLS, "max_slots": slot_limit(level, mode),
@@ -170,7 +173,7 @@ def get_battle_view(db: Session, user, battle_id: int) -> dict:
 def start_pve(db: Session, user, scenario_key: str, *, hunting=False, expected_difficulty=None) -> dict:
     if hunting:
         from backend.services.world import resolve_location
-        journey, _ = resolve_location(db, user)
+        journey, now = resolve_location(db, user)
         if journey is not None:
             raise Conflict("Полювання недоступне під час подорожі.")
     else:
@@ -189,6 +192,9 @@ def start_pve(db: Session, user, scenario_key: str, *, hunting=False, expected_d
             raise NotFound("Невідома ціль полювання.")
         if level < hunt.min_level:
             raise Forbidden("Бойовий рівень занизький для цієї цілі.")
+        deadline = hunt_ready_at(db, user.id, now)
+        if deadline is not None:
+            raise Conflict(f"Наступне полювання через {ceil((deadline - now).total_seconds())} с.")
         offered = {target.creature: difficulty for target, difficulty in offers(db, user.id, level)}
         hunt_level = offered.get(scenario_key)
         if hunt_level is None or (expected_difficulty is not None and hunt_level != expected_difficulty):

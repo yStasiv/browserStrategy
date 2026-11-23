@@ -158,6 +158,10 @@ def period(actor: Stack | HeroTurn) -> int:
     return ATB_SCALE // initiative
 
 
+def wait_delay(actor: Stack) -> int:
+    return max(1, period(actor) // 2)
+
+
 def _tiebreak(stack: Stack | HeroTurn, seq: int) -> int:
     return (stack.owner + seq) % 2  # при рівному ready сторони чергуються
 
@@ -337,10 +341,7 @@ def apply(state: BattleState, action) -> Tuple[BattleState, List[dict]]:
         events.append({"type": "defend", "stack": actor.id})
         _end_turn(st, actor, events)
     elif isinstance(action, Wait):
-        if actor.waited:
-            raise IllegalAction("чекати можна лише один раз за бій")
-        actor.waited = True
-        actor.ready += period(actor) // 2   # діятиме пізніше, але раніше за повний період
+        actor.ready += wait_delay(actor)
         events.append({"type": "wait", "stack": actor.id})
         _advance(st, events)
     elif isinstance(action, Skip):          # у UI немає; лишається для автоходу при таймауті
@@ -397,13 +398,13 @@ def turn_info(state: BattleState) -> Optional[dict]:
         "owner": actor.owner,
         "move": [list(c) for c in dist if c != (actor.x, actor.y)],
         "targets": targets,
-        "can_wait": not actor.waited,
+        "can_wait": True,
         "ranged": ranged,   # False у стрільця з ворогом поруч — він б'ється врукопашну
         **({"spells": spell_options(state, actor.owner)} if not state.heroes and state.summoning else {}),
     }
 
 
-def forecast(state: BattleState, n: int = 50) -> List[dict]:
+def forecast(state: BattleState, n: int = 50, *, after_wait: bool = False) -> List[dict]:
     """Прогноз черги на n наступних ходів: [{"id": ...}].
     Припускає, що кожен загін просто робить звичайну дію (без втрат і «чекати»), тож це орієнтир."""
     if state.status != "active" or state.active_id is None:
@@ -415,6 +416,13 @@ def forecast(state: BattleState, n: int = 50) -> List[dict]:
     out: List[dict] = []
     cur = state.active_id
     seq = state.seq
+    if after_wait:
+        actor = state.stacks.get(cur)
+        if actor is None or seq + 1 >= MAX_ACTIONS:
+            return []
+        ready[cur] += wait_delay(actor)
+        seq += 1
+        cur = min(ready, key=lambda i: (ready[i], (owner[i] + seq) % 2, i))
     for _ in range(n):
         out.append({"id": cur})
         ready[cur] += periods[cur]
