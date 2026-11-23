@@ -552,6 +552,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert asyncio.run(asgi_request(app, "GET", "/art_info?id=-1", ""))[0] == 404
     assert 'value="1500" max="3000"' in html and "Бойовий рівень 2" in html
     assert "Знання" in html and "Витривалість" not in html and "Срібний шолом" in html
+    assert "Чоловік" in html and "elves_male_back_model.png.png" in html
     assert 'data-hero-stat="defense"' in html and "спорядження 3" in html
     assert html.count("data-hero-slot=") == 11
     assert html.count("data-resource-id=") == 7
@@ -993,16 +994,17 @@ def test_registration_grants_only_own_faction_starter_buildings(sessions):
             yield db
 
     app.dependency_overrides[database.get_db] = get_db
-    for username, fraction, group in (
-        ("new_elf", "elfe", "elves"),
-        ("new_underground", "undergroundElves", "underground_elves"),
+    for username, fraction, group, gender in (
+        ("new_elf", "elfe", "elves", "male"),
+        ("new_underground", "undergroundElves", "underground_elves", "female"),
     ):
         assert asyncio.run(asgi_request(app, "POST", "/register", "", {
-            "username": username, "password": "test-password", "fraction": fraction,
+            "username": username, "password": "test-password", "fraction": fraction, "gender": gender,
         }))[0] == 303
         with sessions() as db:
             user = db.scalar(select(User).where(User.username == username))
             assert user.fraction == fraction
+            assert user.gender == gender
             ids = db.scalars(select(CastleBuilding.building_id).where(CastleBuilding.player_id == user.id))
             assert set(ids) == {f"{group}_recruitment_tier_{tier}" for tier in (1, 2)}
             assert saved_army(db, user.id) == []

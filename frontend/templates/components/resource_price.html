@@ -1,0 +1,16 @@
+{% macro resource_price(prices, catalog) %}
+<ul class="artifact-price" aria-label="Вартість у ресурсах">
+    {% for key, amount, missing in prices %}
+    {% set resource = catalog.get(key) %}
+    <li{% if missing %} class="artifact-price-missing"{% endif %}
+        title="{{ resource.name if resource else key }}{% if missing %} · недостатньо{% endif %}">
+        {% if resource and resource.icon %}
+        <img src="{{ resource.icon }}" alt="{{ resource.name }}">
+        {% else %}
+        <span>{{ resource.name if resource else key }}</span>
+        {% endif %}
+        <span>{{ "{:,}".format(amount) }}</span>
+    </li>
+    {% endfor %}
+</ul>
+{% endmacro %}

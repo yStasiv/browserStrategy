@@ -15,7 +15,7 @@ from backend.engine.battle_service import user_level
 from backend.engine.setup import field_rules
 from backend.services.hero_army import army_options
 from backend.services.hero_attributes import PROFILE_STATS, hero_attributes
-from backend.services.hero_equipment import ITEM_SLOTS, SLOT_LABELS, equipment_ids
+from backend.services.hero_equipment import ITEM_SLOTS, SLOT_LABELS, equipment_ids, hand_conflict
 from backend.guild_models import GuildProgress
 from backend.models import Item, PlayerResourceBalance, User
 from backend.services.guild import xp_threshold
@@ -34,6 +34,11 @@ COMBAT_STATS = {
 STAT_LABELS = ATTRIBUTES | COMBAT_STATS
 STAT_LABELS.update({column: name for name, column, _ in PROFILE_STATS.values()})
 FACTIONS = {"elves": "Ельфи", "underground_elves": "Темні ельфи", "system": "Системна"}
+GENDERS = {"male": "Чоловік", "female": "Жінка"}
+EQUIPMENT_MODELS = {
+    "elves": {"male": "elves_male_back_model.png.png", "female": "elves_woman_back_model.png"},
+    "underground_elves": {"male": "underground_elves_male_back_model.png", "female": "underground_elves_woman_back_model.png"},
+}
 
 
 def resources(db, player):
@@ -140,11 +145,12 @@ def stat_icon_url(key):
     return f"/static/images/hero_stats/{icon_file}" if (STAT_ICON_DIR / icon_file).is_file() else None
 
 
-def hero_state(db, player):
+def equipment_state(db, player):
     ids = equipment_ids(player.equipped_items)
     owned = db.scalars(select(Item).where(Item.owner_id == player.id).order_by(Item.id)).all()
     items = {item.id: item for item in owned}
     equipped = {item_id: items[item_id] for item_id in set(ids.values()) if item_id in items}
+    main = equipped.get(ids["main_hand"])
 
     attributes = hero_attributes(player, equipped.values())
     for key, stat in attributes.items():
@@ -156,15 +162,21 @@ def hero_state(db, player):
         equipment[slot] = {
             "name": name,
             "item": {"id": item.id, "name": item.name, "image_url": item.image_url,
+                     "item_type": item.item_type, "durability": item.durability, "max_durability": item.max_durability,
                      "description": item.description,
                      "bonuses": [(STAT_LABELS[k], v)
                                  for k, v in (item.stats or {}).items()
                                  if k in STAT_LABELS and isinstance(v, (int, float)) and v]} if item else None,
             "choices": [{"id": candidate.id, "name": candidate.name} for candidate in owned
-                        if candidate.id not in equipped and slot in ITEM_SLOTS.get(candidate.item_type, ())
+                        if ids[slot] is None and candidate.id not in equipped and slot in ITEM_SLOTS.get(candidate.item_type, ())
+                        and not hand_conflict(candidate.item_type, slot, ids, main.item_type if main else None)
                         and (candidate.durability is None or candidate.durability > 0)],
         }
+    return attributes, equipment, owned
 
+
+def hero_state(db, player):
+    attributes, equipment, _ = equipment_state(db, player)
     options = army_options(db, player)
     roster = saved_army(db, player.id)
     squads = [{"key": key, "name": UNITS[key].name, "icon": UNITS[key].icon, "unit": UNITS[key], "count": count}
@@ -175,7 +187,15 @@ def hero_state(db, player):
                      "free": max(0, limit - len(squads)), "options": options}}
 
 
+def equipment_model_url(faction, gender):
+    model_faction = faction if faction in EQUIPMENT_MODELS else "elves"
+    equipment_model = EQUIPMENT_MODELS[model_faction][gender]
+    return f"/static/images/units_and_buildings/{model_faction}/hero/{equipment_model}"
+
+
 def dashboard(db, player, next_level_exp):
+    faction = faction_key(player.fraction)
+    gender = player.gender or "male"
     recent = db.execute(select(Battle.id, Battle.winner_side, BattleParticipant.side)
                         .join(BattleParticipant, BattleParticipant.battle_id == Battle.id)
                         .where(BattleParticipant.user_id == player.id, Battle.status == "finished")
@@ -184,8 +204,10 @@ def dashboard(db, player, next_level_exp):
         "resources": resources(db, player), **hero_state(db, player),
         "reset_stat_icon": stat_icon_url("reset"),
         "next_level_exp": next_level_exp,
-        "faction": FACTIONS.get(faction_key(player.fraction), player.fraction),
-        "faction_key": faction_key(player.fraction),
+        "faction": FACTIONS.get(faction, player.fraction),
+        "faction_key": faction,
+        "gender": GENDERS[gender],
+        "equipment_model_url": equipment_model_url(faction, gender),
         "guilds": progress_entries(db, player, GUILDS),
         "faction_skills": progress_entries(db, player, FACTION_SKILLS),
         "services": [service for service in sorted(SERVICES, key=lambda service: service.order)

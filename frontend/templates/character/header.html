@@ -5,7 +5,7 @@
     <div>
         <h1 id="hero-name"{% if not read_only %} title="{{ player.username }}"{% endif %}>{% if read_only %}{{ player.username }}{% else %}<a href="/player_info?id={{ player.id }}">{{ player.username }}</a>{% endif %}</h1>
         <p>{% if player.is_system %} · Системний персонаж{% endif %}</p>
-        <p><strong>Бойовий рівень {{ player.level }}</strong>{% if profile.faction %} · {{ profile.faction }}{% endif %}</p>
+        <p><strong>Бойовий рівень {{ player.level }}</strong>{% if profile.faction %} · {{ profile.faction }}{% endif %}{% if profile.gender %} · {{ profile.gender }}{% endif %}</p>
         {% if profile.next_level_exp %}
         <label for="hero-xp">Досвід {{ player.experience }} / {{ profile.next_level_exp }}</label>
         <progress id="hero-xp" value="{{ player.experience }}" max="{{ profile.next_level_exp }}"></progress>

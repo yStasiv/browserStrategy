@@ -1,233 +1,101 @@
-from typing import List
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from backend import database, models
-from backend.auth import get_current_user
-from backend.services.hero_equipment import SLOT_COLUMNS, change_equipment, lock_hero
+from backend.auth import session_player
+from backend.engine.battle_service import get_active_battle_id
+from backend.engine.data import faction_key
+from backend.routers.item import ITEM_TYPES
+from backend.services.artifact_shop import bonuses
+from backend.services.character_profile import equipment_model_url, equipment_state
+from backend.services.hero_attributes import PROFILE_STATS
+from backend.services.hero_equipment import (
+    INVENTORY_LIMIT, MODIFIED_STATS, SLOT_COLUMNS, change_equipment, equipment_ids, lock_hero,
+)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
 
 
-@router.get("/inventory")
-async def get_inventory(request: Request, db: Session = Depends(database.get_db)):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+def inventory_player(request, db):
+    user = session_player(request, db)
+    if user is None:
+        raise HTTPException(401, "Увійди до гри.")
+    return user
 
-    # Отримуємо всі вдягнені предмети
-    equipped_items = {}
-    if user.equipped_items:
-        slots = {
-            "helmet_id": "Шолом",
-            "armor_id": "Броня",
-            "belt_id": "Пояс",
-            "boots_id": "Чоботи",
-            "right_hand_id": "Права рука",
-            "left_hand_id": "Ліва рука",
-            "back_id": "Спина",
-            "jewelry_1_id": "Прикраса 1",
-            "jewelry_2_id": "Прикраса 2",
-            "jewelry_3_id": "Прикраса 3",
-            "jewelry_4_id": "Прикраса 4",
-        }
 
-        for slot_id, slot_name in slots.items():
-            item_id = getattr(user.equipped_items, slot_id)
-            if item_id:
-                item = db.query(models.Item).filter(models.Item.id == item_id).first()
-                if item:
-                    equipped_items[slot_name] = item
-
-    # Оновлені бонуси від предметів
-    user_data = {
-        # Основні характеристики
-        "stamina": user.stamina or 0,
-        "stamina_bonus": sum(
-            item.stats.get("stamina", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "energy": user.energy or 0,
-        "energy_bonus": sum(
-            item.stats.get("energy", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "agility": user.agility or 0,
-        "agility_bonus": sum(
-            item.stats.get("agility", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "mind": user.mind or 0,
-        "mind_bonus": sum(
-            item.stats.get("mind", 0) for item in equipped_items.values() if item.stats
-        ),
-        # Додаткові характеристики
-        "melee_attack": user.melee_attack or 0,
-        "melee_attack_bonus": sum(
-            item.stats.get("melee_attack", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "ranged_attack": user.ranged_attack or 0,
-        "ranged_attack_bonus": sum(
-            item.stats.get("ranged_attack", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "magic_power": user.magic_power or 0,
-        "magic_power_bonus": sum(
-            item.stats.get("magic_power", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "physical_defense": user.physical_defense or 0,
-        "physical_defense_bonus": sum(
-            item.stats.get("physical_defense", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "magic_resistance": user.magic_resistance or 0,
-        "magic_resistance_bonus": sum(
-            item.stats.get("magic_resistance", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        # Бонуси до шкоди
-        "bonus_melee_damage": user.bonus_melee_damage or 0,
-        "bonus_melee_damage_bonus": sum(
-            item.stats.get("bonus_melee_damage", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "bonus_ranged_damage": user.bonus_ranged_damage or 0,
-        "bonus_ranged_damage_bonus": sum(
-            item.stats.get("bonus_ranged_damage", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "bonus_magic_damage": user.bonus_magic_damage or 0,
-        "bonus_magic_damage_bonus": sum(
-            item.stats.get("bonus_magic_damage", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        # Бонуси до захисту
-        "bonus_melee_defense": user.bonus_melee_defense or 0,
-        "bonus_melee_defense_bonus": sum(
-            item.stats.get("bonus_melee_defense", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "bonus_ranged_defense": user.bonus_ranged_defense or 0,
-        "bonus_ranged_defense_bonus": sum(
-            item.stats.get("bonus_ranged_defense", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
-        "bonus_magic_defense": user.bonus_magic_defense or 0,
-        "bonus_magic_defense_bonus": sum(
-            item.stats.get("bonus_magic_defense", 0)
-            for item in equipped_items.values()
-            if item.stats
-        ),
+def render_inventory(request, db, player, *, error=None, status=200):
+    attributes, equipment, owned = equipment_state(db, player)
+    equipped = {slot["item"]["id"] for slot in equipment.values() if slot["item"]}
+    inventory = [item for item in owned if item.id not in equipped]
+    profile = {
+        "attributes": attributes,
+        "equipment": equipment,
+        "equipment_model_url": equipment_model_url(faction_key(player.fraction), player.gender or "male"),
     }
-
-    inventory_items = (
-        db.query(models.Item)
-        .filter(models.Item.owner_id == user.id, models.Item.is_equipped == False)
-        .all()
-    )
-
-    return templates.TemplateResponse(
-        "inventory.html",
-        {
-            "request": request,
-            "user": user_data,
-            "inventory_items": inventory_items,
-            "equipped_items": equipped_items,
-            "max_items": 30,
-        },
-    )
+    return templates.TemplateResponse("inventory.html", {
+        "request": request, "player": player, "profile": profile,
+        "inventory": inventory, "owned_count": len(owned), "max_items": INVENTORY_LIMIT, "item_types": ITEM_TYPES,
+        "artifact_bonuses": {item.id: bonuses(item.stats) for item in owned},
+        "inventory_error": error,
+    }, status_code=status)
 
 
-@router.post("/inventory/equip/{item_id}")
-async def equip_item(item_id: int, request: Request, db: Session = Depends(database.get_db), slot: str = None):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(401, "Увійди до гри.")
-    aliases = {column: key for key, column in SLOT_COLUMNS.items()}
-    change_equipment(db, user, slot=aliases.get(slot, slot), item_id=item_id)
-    db.commit()
-    return {"status": "success"}
+@router.get("/inventory")
+def get_inventory(request: Request, db: Session = Depends(database.get_db)):
+    return render_inventory(request, db, inventory_player(request, db))
 
 
-@router.post("/inventory/unequip/{item_id}")
-async def unequip_item(item_id: int, request: Request, db: Session = Depends(database.get_db)):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(401, "Увійди до гри.")
-    change_equipment(db, user, item_id=item_id, remove=True)
-    db.commit()
-    return {"status": "success"}
-
-
-@router.post("/inventory/destroy/{item_id}")
-async def destroy_item(
-    item_id: int, request: Request, db: Session = Depends(database.get_db)
+@router.post("/inventory/{action}/{item_id}")
+def update_inventory(
+    action: Literal["equip", "unequip", "destroy"], item_id: int, request: Request,
+    db: Session = Depends(database.get_db), slot: str | None = None,
+    selected_slot: str | None = Form(None), return_to_inventory: bool = Form(False),
+    replace: bool = Form(False),
 ):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    lock_hero(db, user)
-    item = (
-        db.query(models.Item)
-        .filter(models.Item.id == item_id, models.Item.owner_id == user.id)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-
-    change_equipment(db, user, item_id=item_id, remove=True)
-
-    # Видаляємо предмет
-    db.delete(item)
-    db.commit()
-
+    user = inventory_player(request, db)
+    try:
+        lock_hero(db, user)
+        if get_active_battle_id(db, user.id) is not None:
+            raise HTTPException(409, "Під час бою спорядження змінити неможливо.")
+        item = db.scalar(select(models.Item).where(models.Item.id == item_id, models.Item.owner_id == user.id))
+        if item is None:
+            raise HTTPException(404, "Предмет не знайдено.")
+        if action == "equip":
+            slot = selected_slot if selected_slot is not None else slot
+            aliases = {column: key for key, column in SLOT_COLUMNS.items()}
+            change_equipment(db, user, slot=aliases.get(slot, slot), item_id=item.id, replace=replace)
+        else:
+            worn = item.id in equipment_ids(user.equipped_items).values()
+            if action == "unequip" and not worn:
+                raise HTTPException(409, "Цей артефакт не вдягнено.")
+            if worn:
+                change_equipment(db, user, item_id=item.id, remove=True)
+            if action == "destroy":
+                db.execute(update(models.RewardTransaction).where(models.RewardTransaction.item_id == item.id)
+                           .values(item_id=None))
+                db.delete(item)
+        db.commit()
+    except HTTPException as exc:
+        if not return_to_inventory:
+            raise
+        db.rollback()
+        message = exc.detail["message"] if isinstance(exc.detail, dict) else exc.detail
+        return render_inventory(request, db, user, error=message, status=exc.status_code)
+    if return_to_inventory:
+        return RedirectResponse("/inventory", status_code=303)
     return {"status": "success"}
 
 
 @router.get("/inventory/stats")
-async def get_stats(request: Request, db: Session = Depends(database.get_db)):
-    user = await get_current_user(request, db)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    return {
-        # Основні характеристики
-        "stamina": user.stamina or 0,
-        "energy": user.energy or 0,
-        "agility": user.agility or 0,
-        "mind": user.mind or 0,
-        # Додаткові характеристики
-        "melee_attack": user.melee_attack or 0,
-        "ranged_attack": user.ranged_attack or 0,
-        "magic_power": user.magic_power or 0,
-        "physical_defense": user.physical_defense or 0,
-        "magic_resistance": user.magic_resistance or 0,
-        # Бонуси до шкоди
-        "bonus_melee_damage": user.bonus_melee_damage or 0,
-        "bonus_ranged_damage": user.bonus_ranged_damage or 0,
-        "bonus_magic_damage": user.bonus_magic_damage or 0,
-        # Бонуси до захисту
-        "bonus_melee_defense": user.bonus_melee_defense or 0,
-        "bonus_ranged_defense": user.bonus_ranged_defense or 0,
-        "bonus_magic_defense": user.bonus_magic_defense or 0,
-    }
+def get_stats(request: Request, db: Session = Depends(database.get_db)):
+    player = inventory_player(request, db)
+    attributes, _, _ = equipment_state(db, player)
+    totals = {column: getattr(player, column) or 0 for column in MODIFIED_STATS}
+    totals.update({column: attributes[key]["total"] for key, (_, column, _) in PROFILE_STATS.items()})
+    return totals

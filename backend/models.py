@@ -23,6 +23,8 @@ class User(Base):
     is_admin = Column(Boolean, nullable=False, server_default=false())
     avatar_url = Column(String, nullable=True)  # user img path
     fraction = Column(String, default="Elfe")
+    gender = Column(String(6), CheckConstraint("gender IN ('male', 'female')", name="ck_users_gender"),
+                    nullable=False, default="male", server_default="male")
 
     pending_attribute_points = Column(Integer, default=1)
     attribute_allocations = Column(JSON, nullable=False, default=dict, server_default=text("'{}'"))
@@ -113,6 +115,7 @@ class Item(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     durability = Column(Integer)  # Поточна міцність
     max_durability = Column(Integer)  # Максимальна міцність
+    level_required = Column(Integer, nullable=False, default=1, server_default="1")
 
     owner = relationship("User", back_populates="inventory_items")
 
@@ -152,6 +155,7 @@ class ShopItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     item_template_id = Column(Integer, ForeignKey("items.id"))
     price = Column(Integer, nullable=False)
+    resource_costs = Column(JSON, nullable=False, default=dict, server_default=text("'{}'"))
     quantity = Column(Integer, default=-1)  # -1 означає необмежену кількість
     level_required = Column(Integer, default=1)
 

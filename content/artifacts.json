@@ -8,8 +8,11 @@
       "melee_attack": 5
     },
     "shop_data": {
-      "price": 200,
-      "level": 3
+      "price": 260,
+      "level": 3,
+      "resources": {
+        "basalt_bone": 8
+      }
     },
     "durability": 20,
     "max_durability": 20
@@ -20,11 +23,16 @@
     "item_type": "one_handed_weapon",
     "image_url": "/static/images/items/weapons/assassins_blade.png",
     "stats": {
-      "melee_attack": 4
+      "melee_attack": 4,
+      "initiative": 1
     },
     "shop_data": {
-      "price": 350,
-      "level": 6
+      "price": 580,
+      "level": 6,
+      "resources": {
+        "basalt_bone": 14,
+        "whisper_dust": 6
+      }
     },
     "durability": 18,
     "max_durability": 18
@@ -35,29 +43,34 @@
     "item_type": "two_handed_weapon",
     "image_url": "/static/images/items/weapons/titans_hammer.png",
     "stats": {
-      "melee_attack": 12,
-      "stamina": 5
+      "melee_attack": 12
     },
     "shop_data": {
-      "price": 800,
-      "level": 10
+      "price": 1400,
+      "level": 10,
+      "resources": {
+        "basalt_bone": 35,
+        "pulse_spark": 12
+      }
     },
     "durability": 25,
     "max_durability": 25
   },
   {
     "name": "Обладунок Льоду",
-    "description": "Крижаний панцир, що захищає від вогню.",
+    "description": "Міцний крижаний панцир, що підвищує захист.",
     "item_type": "armor",
     "image_url": "/static/images/items/armor/ice_armor.png",
     "stats": {
-      "physical_defense": 10,
-      "magic_resistance": 5,
-      "stamina": 3
+      "physical_defense": 10
     },
     "shop_data": {
-      "price": 700,
-      "level": 8
+      "price": 1050,
+      "level": 8,
+      "resources": {
+        "basalt_bone": 24,
+        "brand_salt": 10
+      }
     },
     "durability": 30,
     "max_durability": 30
@@ -68,12 +81,14 @@
     "item_type": "armor",
     "image_url": "/static/images/items/armor/chainmail.png",
     "stats": {
-      "physical_defense": 1,
-      "stamina": 3
+      "physical_defense": 1
     },
     "shop_data": {
-      "price": 100,
-      "level": 1
+      "price": 120,
+      "level": 1,
+      "resources": {
+        "basalt_bone": 4
+      }
     },
     "durability": 12,
     "max_durability": 12
@@ -84,29 +99,35 @@
     "item_type": "helmet",
     "image_url": "/static/images/items/armor/dragon_helmet.png",
     "stats": {
-      "physical_defense": 5,
-      "magic_resistance": 3,
-      "stamina": 2
+      "physical_defense": 5
     },
     "shop_data": {
-      "price": 500,
-      "level": 7
+      "price": 780,
+      "level": 7,
+      "resources": {
+        "basalt_bone": 20,
+        "pulse_spark": 6
+      }
     },
     "durability": 22,
     "max_durability": 22
   },
   {
     "name": "Чоботи Тіней",
-    "description": "Легкі чоботи, що допомагають зникати в тінях.",
+    "description": "Легкі чоботи, що покращують ініціативу й захист.",
     "item_type": "boots",
     "image_url": "/static/images/items/armor/shadow_boots.png",
     "stats": {
       "physical_defense": 2,
-      "magic_resistance": 2
+      "initiative": 1
     },
     "shop_data": {
-      "price": 400,
-      "level": 6
+      "price": 520,
+      "level": 6,
+      "resources": {
+        "singing_resin": 10,
+        "whisper_dust": 6
+      }
     },
     "durability": 18,
     "max_durability": 18
@@ -117,27 +138,33 @@
     "item_type": "back",
     "image_url": "/static/images/items/armor/shadow_cloak.png",
     "stats": {
-      "physical_defense": 3,
-      "magic_resistance": 5
+      "physical_defense": 3
     },
     "shop_data": {
-      "price": 650,
-      "level": 9
+      "price": 1100,
+      "level": 9,
+      "resources": {
+        "singing_resin": 22,
+        "whisper_dust": 12
+      }
     },
     "durability": 20,
     "max_durability": 20
   },
   {
     "name": "Амулет Сили",
-    "description": "Підвищує фізичну силу носія.",
+    "description": "Амулет, що посилює атаку героя.",
     "item_type": "jewelry",
     "image_url": "/static/images/items/accessories/power_amulet.png",
     "stats": {
-      "stamina": 1
+      "melee_attack": 1
     },
     "shop_data": {
-      "price": 200,
-      "level": 2
+      "price": 190,
+      "level": 2,
+      "resources": {
+        "singing_resin": 6
+      }
     },
     "durability": 10,
     "max_durability": 10
@@ -151,86 +178,107 @@
       "physical_defense": 2
     },
     "shop_data": {
-      "price": 200,
-      "level": 2
+      "price": 220,
+      "level": 2,
+      "resources": {
+        "basalt_bone": 7
+      }
     },
     "durability": 10,
     "max_durability": 10
   },
   {
     "name": "Перстень Влучності",
-    "description": "Підвищує точність у дальньому бою.",
+    "description": "Перстень, що підвищує ініціативу героя.",
     "item_type": "jewelry",
     "image_url": "/static/images/items/accessories/accuracy_ring.png",
     "stats": {
-      "ranged_attack": 2
+      "initiative": 1
     },
     "shop_data": {
-      "price": 300,
-      "level": 3
+      "price": 330,
+      "level": 3,
+      "resources": {
+        "basalt_bone": 8,
+        "whisper_dust": 3
+      }
     },
     "durability": 12,
     "max_durability": 12
   },
   {
     "name": "Амулет Мудрості",
-    "description": "Збільшує магічний потенціал носія.",
+    "description": "Амулет, що підвищує силу магії героя.",
     "item_type": "jewelry",
     "image_url": "/static/images/items/accessories/wisdom_amulet.png",
     "stats": {
-      "magic_power": 3,
-      "magic_resistance": 1
+      "magic_power": 3
     },
     "shop_data": {
-      "price": 500,
-      "level": 5
+      "price": 560,
+      "level": 5,
+      "resources": {
+        "singing_resin": 12,
+        "pulse_spark": 5
+      }
     },
     "durability": 15,
     "max_durability": 15
   },
   {
     "name": "Смарагдовий Оберіг",
-    "description": "Захищає від магії природи.",
+    "description": "Зелений оберіг, що підвищує знання героя.",
     "item_type": "jewelry",
     "image_url": "/static/images/items/accessories/emerald_charm.png",
     "stats": {
-      "magic_resistance": 4,
-      "stamina": 2
+      "mind": 2
     },
     "shop_data": {
-      "price": 700,
-      "level": 7
+      "price": 820,
+      "level": 7,
+      "resources": {
+        "singing_resin": 18,
+        "brand_salt": 7
+      }
     },
     "durability": 20,
     "max_durability": 20
   },
   {
     "name": "Криваве Кільце",
-    "description": "Посилює ближній бій ціною здоров'я.",
+    "description": "Перстень, що посилює атаку героя.",
     "item_type": "jewelry",
     "image_url": "/static/images/items/accessories/blood_ring.png",
     "stats": {
-      "melee_attack": 4,
-      "stamina": -1
+      "melee_attack": 4
     },
     "shop_data": {
-      "price": 900,
-      "level": 9
+      "price": 1200,
+      "level": 9,
+      "resources": {
+        "basalt_bone": 25,
+        "brand_salt": 12
+      }
     },
     "durability": 25,
     "max_durability": 25
   },
   {
     "name": "Сапфіровий Амулет",
-    "description": "Древній амулет, що підвищує стійкість до магії.",
+    "description": "Сапфіровий амулет, що підвищує знання й силу магії.",
     "item_type": "jewelry",
     "image_url": "/static/images/items/accessories/sapphire_amulet.png",
     "stats": {
-      "magic_resistance": 5
+      "mind": 2,
+      "magic_power": 1
     },
     "shop_data": {
-      "price": 750,
-      "level": 8
+      "price": 960,
+      "level": 8,
+      "resources": {
+        "pulse_spark": 8,
+        "brand_salt": 10
+      }
     },
     "durability": 22,
     "max_durability": 22
@@ -240,11 +288,20 @@
     "description": "Рідкісний могутній меч",
     "item_type": "one_handed_weapon",
     "image_url": "/static/images/items/weapons/legendary_sword.png",
-    "stats": {},
+    "stats": {
+      "melee_attack": 8,
+      "initiative": 1
+    },
     "shop_data": {
-      "price": 1000,
+      "price": 1600,
       "level": 10,
-      "quantity": 5
-    }
+      "quantity": 5,
+      "resources": {
+        "basalt_bone": 40,
+        "pulse_spark": 16
+      }
+    },
+    "durability": 30,
+    "max_durability": 30
   }
 ]

@@ -6,9 +6,10 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, TypeAdapter
 from sqlalchemy import select
 
-from backend.config import LEGACY_BALANCES, RESOURCE_FILE
+from backend.config import RESOURCE_FILE
 from backend.engine.data import faction_key
-from backend.models import CastleBuilding, PlayerResourceBalance
+from backend.models import CastleBuilding
+from backend.services.resource_balances import resource_owners, resource_quantity
 
 
 CATALOG_FILE = Path(__file__).resolve().parents[2] / "content" / "castle_buildings.json"
@@ -82,24 +83,6 @@ def grant_starter_buildings(db, player):
 
 def school_level(built):
     return max((MAGIC_SCHOOL_LEVELS[key] for key in built if key in MAGIC_SCHOOL_LEVELS), default=0)
-
-
-def resource_owners(db, player, resource_ids):
-    resource_ids = set(resource_ids)
-    owners = {resource: (player, resource) for resource in resource_ids & LEGACY_BALANCES}
-    other_ids = resource_ids - LEGACY_BALANCES
-    if other_ids:
-        rows = db.scalars(select(PlayerResourceBalance).where(
-            PlayerResourceBalance.player_id == player.id,
-            PlayerResourceBalance.resource_id.in_(other_ids),
-        ))
-        owners.update((row.resource_id, (row, "quantity")) for row in rows)
-    return owners
-
-
-def resource_quantity(owners, resource):
-    owner, field = owners.get(resource, (None, None))
-    return (getattr(owner, field) or 0) if owner is not None else 0
 
 
 def unaffordable_buildings(db, player, buildings):
