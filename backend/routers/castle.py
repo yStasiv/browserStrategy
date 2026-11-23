@@ -7,11 +7,11 @@ from sqlalchemy.orm import Session
 from .. import database
 from ..auth import session_player
 from ..engine.battle_service import get_active_battle_id, user_level
-from ..engine.data import UNITS
+from ..engine.data import ELEMENTALS, UNITS, faction_key
 from ..guild_models import ActivityGuildProgress
 from ..models import Item
 from ..services import activity_guilds, castle_buildings
-from ..services.hero_army import army_options, save_roster
+from ..services.hero_army import army_options, recruitment_cards, save_roster
 from ..services.world import require_presence
 from ..engine.setup import field_rules
 
@@ -32,22 +32,50 @@ def require_player(request, db):
 def render_castle(request, db, player, error=None, building_error=None):
     entries, resource_catalog = castle_buildings.catalog()
     built = castle_buildings.built_ids(db, player, entries)
+    faction = faction_key(player.fraction)
+    elementals = ELEMENTALS if faction == "elves" else {}
+    recruits_by_building = {}
+    for unit in UNITS.values():
+        recruitment = unit.recruitment
+        if recruitment and (not recruitment.factions or faction in map(faction_key, recruitment.factions)):
+            recruits_by_building.setdefault(recruitment.building, []).append(unit)
+    spells_by_building = {
+        key: [spell for spell in elementals.values() if spell["school_level"] == level]
+        for key, level in castle_buildings.MAGIC_SCHOOL_LEVELS.items()
+    }
+    forms_by_line = {(unit.line, unit.form): unit for unit in UNITS.values() if unit.line and unit.form}
+    previous_forms = {
+        unit.key: previous
+        for (line, form), unit in forms_by_line.items()
+        if (previous := forms_by_line.get((line, form - 1))) is not None
+    }
+    buildings = [
+        building for building in entries.values()
+        if castle_buildings.available_to_faction(building, player)
+    ]
+    buildings.sort(key=lambda building: building.min_level)
+    unaffordable = castle_buildings.unaffordable_buildings(
+        db, player, [building for building in buildings if building.id not in built],
+    )
     army = army_options(db, player, built)
     build_icon = (
         "/static/images/buildings/build.png" if castle_buildings.BUILD_ICON_FILE.is_file()
         else "/static/images/guild_icons/workshop_weapons.png"
     )
     return templates.TemplateResponse("castle.html", {
-        "request": request, "player": player, "units": [unit for unit in army if unit["recruitable"]],
+        "request": request, "player": player, "faction": faction,
+        "units": recruitment_cards(army),
         "retained_squads": sum(not unit["recruitable"] and unit["quantity"] > 0 for unit in army),
         "slot_limit": field_rules(user_level(player), "pve").max_slots,
-        "buildings": [
-            building for building in entries.values()
-            if castle_buildings.available_to_faction(building, player)
-        ],
+        "buildings": buildings, "unaffordable": unaffordable,
         "built": built, "resource_catalog": resource_catalog, "build_icon": build_icon,
         "forge_built": castle_buildings.FORGE in built,
         "magic_school_built": castle_buildings.MAGIC_SCHOOL in built,
+        "school_level": castle_buildings.school_level(built),
+        "elementals": elementals,
+        "recruits_by_building": recruits_by_building, "spells_by_building": spells_by_building,
+        "previous_forms": previous_forms,
+        "building_names": {key: building.name for key, building in entries.items()},
         "building_error": building_error,
         "saved": request.query_params.get("saved") == "1" and not error, "error": error,
     }, status_code=building_error.status_code if building_error else (422 if error else 200))
@@ -180,12 +208,18 @@ async def save_army(request: Request, db: Session = Depends(database.get_db)):
     form = await request.form()
     player = require_player(request, db)
     try:
-        values = {}
+        values, forms = {}, {}
         for key, raw in form.multi_items():
-            if key in values:
+            if key.startswith("form:"):
+                line = key.removeprefix("form:")
+                if line in forms:
+                    raise ValueError
+                forms[line] = str(raw)
+            elif key in values:
                 raise ValueError
-            values[key] = int(raw)
-        save_roster(db, player, values)
+            else:
+                values[key] = int(raw)
+        save_roster(db, player, values, forms)
     except (TypeError, ValueError, HTTPException) as error:
         db.rollback()
         if isinstance(error, HTTPException) and error.status_code == 409:

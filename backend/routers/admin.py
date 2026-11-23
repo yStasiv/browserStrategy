@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .. import database, models
-from ..services import world
+from ..services import enterprises, world
 from ..world_models import SectorConnection, WorldSector
 
 router = APIRouter()
@@ -83,6 +83,9 @@ async def delete_enterprise(
         .first()
     )
     if enterprise:
+        enterprise = enterprises.lock_enterprise(db, enterprise_id)
+        if db.query(models.User.id).filter(models.User.workplace == f"enterprise_{enterprise_id}").first():
+            raise HTTPException(409, "Дочекайся завершення робочих змін на підприємстві.")
         db.delete(enterprise)
         db.commit()
 

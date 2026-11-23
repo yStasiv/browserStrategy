@@ -11,11 +11,12 @@ from backend import database, db_base
 from backend.engine import battle_api, battle_service, create_battle
 from backend.engine.actions import Defend, action_to_dict
 from backend.engine.ai import choose_action
-from backend.engine.battle_models import Battle
+from backend.engine.battle_models import ArmySlot, Battle, BattleParticipant
 from backend.engine.events import reconstruct
 from backend.engine.flow import play_turn
 from backend.engine.setup import FieldRules
-from backend.models import User
+from backend.models import RewardTransaction, User
+from backend.config import SYSTEM_PLAYER_ID
 from test_guild import asgi_request
 
 
@@ -28,6 +29,11 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
         db.add_all([
             User(id=10, username="fighter", level=4, gold=100, experience=0, session_id="fighter-token"),
             User(id=11, username="outsider", session_id="outsider-token"),
+        ])
+        db.flush()
+        db.add_all([
+            ArmySlot(user_id=10, slot=slot, unit_key=key, count=count)
+            for slot, (key, count) in enumerate((("peasant", 20), ("archer", 10), ("swordsman", 5)))
         ])
     monkeypatch.setattr(battle_service.secrets, "randbits", lambda _: 42)
 
@@ -100,6 +106,38 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     assert status == 200
     assert replay["schema_version"] == 1
     assert replay["reward"] == battle["reward"]
+    assert replay["result"] == battle["result"]
+    damage = {0: {}, 1: {}}
+    hero_damage = {hero["owner"]: 0 for hero in replay["initial_state"]["heroes"].values()}
+    for event in replay["events"]:
+        hero_hit = event.get("hero_damage")
+        if hero_hit:
+            assert event["type"] == "DAMAGE_APPLIED"
+            assert hero_hit["amount"] == event["payload"]["hp_before"] - event["payload"]["hp_after"]
+            assert event["actor_id"] in replay["initial_state"]["heroes"]
+            hero_damage[hero_hit["side"]] += hero_hit["amount"]
+        hit = event.get("creature_damage")
+        if hit:
+            assert hit["amount"] == event["payload"]["hp_before"] - event["payload"]["hp_after"]
+            assert not event["actor_id"].startswith("hero_")
+            side = damage[hit["side"]]
+            side[hit["unit"]] = side.get(hit["unit"], 0) + hit["amount"]
+    assert any(damage.values())
+    assert hero_damage[0] > 0
+    for side in battle["creature_damage"]["sides"]:
+        assert {entry["unit"]: entry["amount"] for entry in side["creatures"]} == damage[side["side"]]
+        assert side["total"] == sum(damage[side["side"]].values())
+        assert side["hero_total"] == hero_damage.get(side["side"])
+    assert call("GET", root)[1]["creature_damage"] == battle["creature_damage"]
+    result = battle["result"]
+    assert result["battle_id"] == battle["id"] and result["winner_side"] == battle["winner_side"]
+    assert result["replay_available"]
+    sides = {side["side"]: side["participants"] for side in result["sides"]}
+    assert sides[0][0]["name"] == "fighter"
+    assert {entry["type"]: entry["amount"] for entry in sides[0][0]["rewards"]} == {
+        key: amount for key, amount in battle["reward"].items() if amount
+    }
+    assert sides[1][0]["name"] and not sides[1][0]["rewards"]
     assert reconstruct(replay["initial_state"], replay["events"]) == replay["final_state"] == battle["state"]
     assert [event["sequence"] for event in replay["events"]] == sorted(
         {event["sequence"] for event in replay["events"]}
@@ -108,11 +146,50 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
         event["type"] for event in replay["events"]
     }
     assert call("GET", root + "/replay")[1] == replay
+    assert call("POST", root + "/surrender", {"version": battle["version"]})[0] == 400
+    with sessions() as db:
+        assert db.query(RewardTransaction).filter_by(source="battle_v1", source_key=str(battle["id"])).count() == 1
     assert call("POST", root + "/actions", payload)[0] == 400
     assert call("GET", "/history")[1] == [{"id": battle["id"], "available": True}]
     with sessions() as db:
         player = db.get(User, 10)
         assert (player.gold, player.experience) == balances
+
+
+def test_draw_result_reads_extensible_ledger_metadata(tmp_path, monkeypatch):
+    engine = create_engine(f"sqlite:///{tmp_path / 'draw.db'}")
+    monkeypatch.setattr(db_base, "engine", engine)
+    command.upgrade(Config("alembic.ini"), "head")
+    sessions = sessionmaker(engine)
+    state = create_battle([("archer", 1)], [("peasant", 1)], 42)
+    state.status, state.active_id = "finished", None
+    with sessions.begin() as db:
+        db.add_all([
+            User(id=10, username="Ада"), User(id=11, username="Лада"),
+            Battle(id=50, mode="pvp", status="finished", state=state.to_dict()),
+        ])
+        db.flush()
+        db.add_all([
+            BattleParticipant(battle_id=50, user_id=10, side=0),
+            BattleParticipant(battle_id=50, user_id=11, side=1),
+            RewardTransaction(
+                issuer_id=SYSTEM_PLAYER_ID, recipient_id=10, source="battle_v1", source_key="50",
+                gold=0, wood=0, stone=0, created_at=db.get(Battle, 50).created_at,
+                reward_entries=[
+                    {"type": "experience", "amount": 12},
+                    {"type": "achievement", "label": "Досягнення", "value": "Суперник гідний"},
+                ],
+            ),
+        ])
+    with sessions() as db:
+        payload = battle_service.get_battle_view(db, db.get(User, 10), 50)
+        assert payload["reward"] == {"experience": 12, "gold": 0}
+        result = payload["result"]
+        assert result["winner_side"] is None and result["replay_available"] is False
+        assert result["sides"][0]["participants"][0]["rewards"][1] == {
+            "type": "achievement", "label": "Досягнення", "value": "Суперник гідний",
+        }
+        assert result["sides"][1]["participants"] == [{"name": "Лада", "rewards": []}]
 
 
 def test_defend_expires_at_own_turn_and_is_recorded():
@@ -142,6 +219,8 @@ def test_legacy_active_battle_replays_from_checkpoint(tmp_path, monkeypatch):
     sessions = sessionmaker(engine, autoflush=False)
     with sessions.begin() as db:
         db.add(User(id=10, username="legacy", level=4, gold=0, experience=0))
+        db.flush()
+        db.add(ArmySlot(user_id=10, slot=0, unit_key="archer", count=10))
     with sessions() as db:
         player = db.get(User, 10)
         battle = battle_service.start_pve(db, player, "training")

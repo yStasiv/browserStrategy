@@ -4,6 +4,8 @@ const BattleEvents = (() => {
         UNIT_MOVED: 'move', UNIT_ATTACKED: 'attack', COUNTERATTACK: 'retaliation',
         UNIT_DEFENDED: 'defend', UNIT_WAITED: 'wait', UNIT_SKIPPED: 'skip',
         SIDE_SURRENDERED: 'surrender', BATTLE_FINISHED: 'battle_end',
+        ELEMENTAL_SUMMONED: 'summon',
+        HERO_ATTACKED: 'hero_attack',
     };
 
     function logEvent(event) {
@@ -51,5 +53,42 @@ const BattleEvents = (() => {
             ], {duration: 160 / speed});
         }
     }
-    return {apply, animate, logEvent};
+    function damageTracker(partial, heroes = {}) {
+        const sides = [new Map(), new Map()];
+        const heroTotals = new Map(Object.values(heroes).map(hero => [hero.owner, 0]));
+        return {
+            apply(event) {
+                const heroHit = event.hero_damage;
+                if (heroHit) {
+                    heroTotals.set(heroHit.side, (heroTotals.get(heroHit.side) ?? 0) + heroHit.amount);
+                }
+                const hit = event.creature_damage;
+                if (!hit) return;
+                const creatures = sides[hit.side];
+                creatures.set(hit.unit, (creatures.get(hit.unit) || 0) + hit.amount);
+            },
+            summary() {
+                return {partial, sides: sides.map((units, side) => {
+                    const creatures = [...units].map(([unit, amount]) => ({unit, amount}));
+                    creatures.sort((a, b) => b.amount - a.amount);
+                    return {
+                        side, creatures, hero_total: heroTotals.get(side) ?? null,
+                        total: creatures.reduce((sum, unit) => sum + unit.amount, 0),
+                    };
+                })};
+            },
+        };
+    }
+
+    function replayQueue(state, turns, cursor, limit = 50) {
+        if (state.status !== 'active' || !state.active_id) return [];
+        const queue = [{id: state.active_id}];
+        for (const turn of turns) {
+            if (queue.length >= limit) break;
+            if (turn.index >= cursor) queue.push({id: turn.id});
+        }
+        return queue;
+    }
+
+    return {apply, animate, logEvent, damageTracker, replayQueue};
 })();

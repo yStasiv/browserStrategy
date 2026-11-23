@@ -7,7 +7,8 @@ from pydantic import BaseModel, StrictInt
 from backend.auth import playable_users, session_player
 from backend import database, models
 from backend.auth import get_current_user
-from backend.services.character_profile import dashboard, hero_state, SPENDABLE_ATTRIBUTES
+from backend.services.character_profile import dashboard, hero_state
+from backend.services.hero_attributes import SPENDABLE_ATTRIBUTES
 from backend.services.hero_equipment import change_equipment, lock_hero
 from backend.services.hero_army import save_roster
 from backend.engine.battle_service import get_active_battle_id

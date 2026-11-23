@@ -3,7 +3,7 @@
     "key": "peasant",
     "name": "Селянин",
     "description": "Ополченець, який тримає стрій у ближньому бою.",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/neutral/units/peasant.png",
     "recruitment_points": 1,
     "attack": 1,
     "defense": 1,
@@ -20,19 +20,14 @@
     "icon": "🧑‍🌾",
     "abilities": [],
     "starter_count": 20,
-    "recruitment": {
-      "building": "recruitment_hall",
-      "factions": [],
-      "min_level": 1,
-      "max_count": 20
-    },
+    "recruitment": null,
     "hunting": null
   },
   {
     "key": "archer",
     "name": "Лучник",
     "description": "Стрілець, який уражає ворогів здалеку, поки вони не підійшли впритул.",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/neutral/units/archer.png",
     "recruitment_points": 2,
     "attack": 6,
     "defense": 3,
@@ -51,19 +46,14 @@
       "ranged_attack"
     ],
     "starter_count": 10,
-    "recruitment": {
-      "building": "archery_range",
-      "factions": [],
-      "min_level": 1,
-      "max_count": 10
-    },
+    "recruitment": null,
     "hunting": null
   },
   {
     "key": "swordsman",
     "name": "Мечник",
     "description": "Піхотинець із мечем для ближнього бою.",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/neutral/units/swordsman.png",
     "recruitment_points": 3,
     "attack": 10,
     "defense": 12,
@@ -80,19 +70,14 @@
     "icon": "⚔️",
     "abilities": [],
     "starter_count": 5,
-    "recruitment": {
-      "building": "recruitment_hall",
-      "factions": [],
-      "min_level": 1,
-      "max_count": 5
-    },
+    "recruitment": null,
     "hunting": null
   },
   {
     "key": "knight",
     "name": "Лицар",
     "description": "Важкоозброєний боєць для удару по ворожому строю.",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/neutral/units/knight.png",
     "recruitment_points": 5,
     "attack": 16,
     "defense": 12,
@@ -109,21 +94,14 @@
     "icon": "🐴",
     "abilities": [],
     "starter_count": 0,
-    "recruitment": {
-      "building": "knight_stables",
-      "factions": [
-        "elfe"
-      ],
-      "min_level": 4,
-      "max_count": 2
-    },
+    "recruitment": null,
     "hunting": null
   },
   {
     "key": "goblin",
     "name": "Гоблін",
     "description": "Дрібний боєць, небезпечний у численному загоні.",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/neutral/units/goblin.png",
     "recruitment_points": 1,
     "attack": 4,
     "defense": 2,
@@ -151,7 +129,7 @@
     "key": "skeleton",
     "name": "Скелет",
     "description": "Оживлений скелет, якого темні ельфи можуть набирати до війська.",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/neutral/units/skeleton.png",
     "recruitment_points": 2,
     "attack": 5,
     "defense": 4,
@@ -171,7 +149,7 @@
     "recruitment": {
       "building": "ossuary",
       "factions": [
-        "darkElfe"
+        "undergroundElves"
       ],
       "min_level": 2,
       "max_count": 10
@@ -186,7 +164,7 @@
     "key": "ogre",
     "name": "Огр",
     "description": "Великий і витривалий боєць ближнього бою.",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/neutral/units/ogre.png",
     "recruitment_points": 6,
     "attack": 13,
     "defense": 9,
@@ -214,7 +192,7 @@
     "key": "dragon",
     "name": "Дракон",
     "description": "Могутня істота з великим запасом здоров’я.",
-    "image_url": null,
+    "image_url": "/static/images/units_and_buildings/neutral/units/dragon.png",
     "recruitment_points": 10,
     "attack": 20,
     "defense": 18,

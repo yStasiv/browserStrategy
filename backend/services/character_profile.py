@@ -8,11 +8,13 @@ from sqlalchemy.orm import Session
 
 from backend.config import LEGACY_BALANCES, RESOURCE_FILE
 
-from backend.engine.battle_models import ArmySlot, Battle, BattleParticipant
-from backend.engine.data import DEFAULT_ARMY, UNITS
+from backend.engine.battle_models import Battle, BattleParticipant
+from backend.engine.data import UNITS, faction_key
+from backend.engine.roster import saved_army
 from backend.engine.battle_service import user_level
 from backend.engine.setup import field_rules
 from backend.services.hero_army import army_options
+from backend.services.hero_attributes import PROFILE_STATS, hero_attributes
 from backend.services.hero_equipment import ITEM_SLOTS, SLOT_LABELS, equipment_ids
 from backend.guild_models import GuildProgress
 from backend.models import Item, PlayerResourceBalance, User
@@ -30,20 +32,8 @@ COMBAT_STATS = {
     "bonus_ranged_defense": "Бонус захисту від стрільби", "bonus_magic_defense": "Бонус захисту від магії",
 }
 STAT_LABELS = ATTRIBUTES | COMBAT_STATS
-PROFILE_STATS = {
-    "attack": ("Атака", "melee_attack", "⚔"),
-    "defense": ("Захист", "physical_defense", "🛡"),
-    "spell_power": ("Сила магії", "magic_power", "✦"),
-    "knowledge": ("Знання", "mind", "📖"),
-    "luck": ("Удача", "luck", "☘"),
-    "morale": ("Бойовий дух", "morale", "⚑"),
-    "initiative": ("Ініціатива", "initiative", "⌛"),
-}
-SPENDABLE_ATTRIBUTES = {
-    key: PROFILE_STATS[key][1] for key in ("attack", "defense", "spell_power", "knowledge")
-}
 STAT_LABELS.update({column: name for name, column, _ in PROFILE_STATS.values()})
-FACTIONS = {"elfe": "Ельфи", "darkelfe": "Темні ельфи", "admin": "Адміністрація", "system": "Системна"}
+FACTIONS = {"elves": "Ельфи", "underground_elves": "Темні ельфи", "system": "Системна"}
 
 
 def resources(db, player):
@@ -156,14 +146,9 @@ def hero_state(db, player):
     items = {item.id: item for item in owned}
     equipped = {item_id: items[item_id] for item_id in set(ids.values()) if item_id in items}
 
-    attributes = {}
-    for key, (name, column, icon) in PROFILE_STATS.items():
-        bonus = sum((item.stats or {}).get(column, 0) for item in equipped.values()
-                    if isinstance((item.stats or {}).get(column, 0), (int, float)))
-        stored = getattr(player, column, None)
-        base = (stored or 0) - bonus if hasattr(player, column) else 0
-        attributes[key] = {"name": name, "icon": icon, "image_url": stat_icon_url(key), "base": base, "equipment": bonus,
-                           "buildings": 0, "total": base + bonus, "spendable": key in SPENDABLE_ATTRIBUTES}
+    attributes = hero_attributes(player, equipped.values())
+    for key, stat in attributes.items():
+        stat["image_url"] = stat_icon_url(key)
 
     equipment = {}
     for slot, name in SLOT_LABELS.items():
@@ -181,8 +166,7 @@ def hero_state(db, player):
         }
 
     options = army_options(db, player)
-    saved = db.scalars(select(ArmySlot).where(ArmySlot.user_id == player.id).order_by(ArmySlot.slot)).all()
-    roster = [(entry.unit_key, entry.count) for entry in saved if entry.count > 0] if saved else DEFAULT_ARMY
+    roster = saved_army(db, player.id)
     squads = [{"key": key, "name": UNITS[key].name, "icon": UNITS[key].icon, "unit": UNITS[key], "count": count}
               for key, count in roster if key in UNITS]
     limit = field_rules(user_level(player), "pve").max_slots
@@ -200,7 +184,8 @@ def dashboard(db, player, next_level_exp):
         "resources": resources(db, player), **hero_state(db, player),
         "reset_stat_icon": stat_icon_url("reset"),
         "next_level_exp": next_level_exp,
-        "faction": FACTIONS.get((player.fraction or "").lower(), player.fraction),
+        "faction": FACTIONS.get(faction_key(player.fraction), player.fraction),
+        "faction_key": faction_key(player.fraction),
         "guilds": progress_entries(db, player, GUILDS),
         "faction_skills": progress_entries(db, player, FACTION_SKILLS),
         "services": [service for service in sorted(SERVICES, key=lambda service: service.order)

@@ -1,7 +1,7 @@
 {% macro portrait(unit) %}
-<span class="unit-portrait" title="{{ unit.name }}" aria-hidden="true">
+<span class="unit-portrait" title="{{ unit.name }}{% if unit.form %} · ранг {{ unit.tier }}, форма {{ unit.form }}/3{% endif %}" aria-hidden="true">
     {% if unit.image_url %}<img src="{{ unit.image_url }}" alt="" loading="lazy">
-    {% else %}{{ unit.icon }}{% endif %}
+    {% else %}{{ unit.icon }}{% if unit.form %}<span class="unit-portrait-form">{{ unit.form }}</span>{% endif %}{% endif %}
 </span>
 {% endmacro %}
 
@@ -19,9 +19,10 @@
         {{ portrait(unit) }}
         <section class="unit-info-abilities" aria-label="Здібності">
             <strong>Здібності</strong>
-            <p>{% if 'ranged_attack' in unit.abilities %}Дальня атака{% else %}—{% endif %}</p>
+            <p>{% if unit.skills %}{{ unit.skills | join(', ') }}{% elif 'ranged_attack' in unit.abilities %}Дальня атака{% else %}—{% endif %}</p>
         </section>
     </div>
+    {% if unit.form %}<p>Ранг {{ unit.tier }} · Форма {{ unit.form }}/3</p>{% endif %}
     {% if unit.description %}<p>{{ unit.description }}</p>{% endif %}
     <dl class="unit-info-stats">
         {% for label, value, icon, symbol in (
@@ -35,7 +36,7 @@
             ('Кількість пострілів', unit.shots, '', '🏹'),
             ('Знання', unit.knowledge, 'hero_stats/knowledge.png', ''),
             ('Очки найму', unit.recruitment_points, '', '👥'),
-            ('Дальність пострілів', 'Усе поле бою' if unit.shots else '—', '', '🎯'),
+            ('Дальність пострілів', unit.shooting_range if unit.shots else '—', '', '🎯'),
             ('Швидкість переміщення', unit.speed, 'attributes/agility.png', '')
         ) %}
         <div>

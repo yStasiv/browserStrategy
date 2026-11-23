@@ -1,0 +1,89 @@
+.battle-stage { position: relative; perspective: 1000px; }
+#field-heroes { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+#field-heroes[hidden], #spell-target-controls[hidden] { display: none; }
+.field-hero {
+    position: absolute;
+    bottom: 12%;
+    inset-inline-start: 0;
+    width: var(--hero-gutter, 3rem);
+    display: grid;
+    justify-items: center;
+    gap: .2rem;
+    color: #f5e6b8;
+    text-align: center;
+    pointer-events: auto;
+}
+.field-hero[data-side="1"] { inset-inline: auto 0; }
+.field-hero-sprite {
+    display: block;
+    width: 100%;
+    height: var(--hero-height, 94px);
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 3px 3px #14150ecc);
+}
+.field-hero[data-side="1"] .field-hero-sprite { scale: -1 1; }
+.field-hero[data-outcome="defeat"] .field-hero-sprite { opacity: .65; filter: grayscale(.6); }
+.field-hero[data-outcome="victory"] .field-hero-sprite { filter: drop-shadow(0 0 6px #e8bc5b); }
+.field-hero.active .field-hero-sprite { filter: drop-shadow(0 0 5px #facc15); }
+.field-hero.hl .field-hero-sprite { filter: drop-shadow(0 0 5px #fff); }
+.field-hero small { font-size: .7rem; overflow-wrap: anywhere; }
+.field-hero button { padding: .25rem .35rem; font-size: .8rem; }
+#initiative .chip img { width: 100%; height: 100%; object-fit: cover; border-radius: .2rem; }
+#initiative .chip img.hero-default-portrait { object-position: center 12%; }
+#initiative .chip.completed { opacity: .6; border-style: dashed; }
+#initiative .chip[aria-current="step"] { box-shadow: 0 0 0 2px #facc15; }
+#spellbook {
+    width: min(30rem, calc(100% - 1.5rem));
+    max-height: min(36rem, calc(100% - 1.5rem));
+    overflow-y: auto;
+    margin: auto;
+    padding: .9rem;
+    border: 1px solid #a88c56;
+    border-radius: .5rem;
+    background: #1e293b;
+    color: #e2e8f0;
+}
+#spellbook::backdrop { background: #080d164d; }
+#spell-list { display: grid; gap: .5rem; }
+.spell-option {
+    width: 100%;
+    display: grid;
+    gap: .15rem;
+    padding: .5rem .65rem;
+    background: #25374b;
+    color: #f1e7c8;
+    border: 1px solid #607b80;
+    border-radius: .35rem;
+    text-align: start;
+    overflow-wrap: anywhere;
+}
+.spell-option:not(:disabled):hover { background: #374d57; }
+.spell-option:disabled { color: #c5bdb0; border-color: #58616d; background: #252f3c; }
+.spell-option small { color: #cbd5e1; }
+.spell-option .spell-unavailable { color: #fecaca; }
+.spell-option:focus-visible, #spell-target-controls button:focus-visible, .field-hero button:focus-visible {
+    outline: 2px solid #ecd088;
+    outline-offset: 2px;
+}
+.cell.spell-cell { background: #1a8764bd; box-shadow: inset 0 0 0 2px #9cf3c6; cursor: crosshair; }
+.cell.spell-cell.enemy-spell-cell { background: #9d4545bd; box-shadow: inset 0 0 0 2px #ffc0b8; }
+.stack.spell-target-stack { cursor: crosshair; }
+#stacks.spell-aiming .stack.target:not(.spell-target-stack) { cursor: default; }
+#stacks.spell-aiming .stack.target:not(.spell-target-stack) .icon { box-shadow: none; }
+#stacks .stack.spell-target-stack .icon { box-shadow: 0 0 0 2px #9cf3c6; }
+.battle-hero-effect {
+    position: fixed;
+    z-index: 15;
+    width: .8rem;
+    height: .8rem;
+    margin: -.4rem;
+    pointer-events: none;
+    border-radius: 50%;
+    background: #f3e1a2;
+    box-shadow: 0 0 9px 3px #f1be65;
+}
+.battle-hero-effect.cast {
+    background: #d6ffec;
+    box-shadow: 0 0 12px 5px #65e5b3;
+}

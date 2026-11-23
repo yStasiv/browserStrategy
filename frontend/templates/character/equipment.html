@@ -1,6 +1,6 @@
 <section class="hero-panel hero-equipment-panel" aria-label="Спорядження">
     <div class="hero-doll-scroll" tabindex="0" role="region" aria-label="Розташування слотів спорядження">
-        <div class="hero-paper-doll{% if (player.fraction or '') | lower == 'darkelfe' %} underground{% endif %}">
+        <div class="hero-paper-doll{% if profile.faction_key == 'underground_elves' %} underground{% endif %}">
             <div class="hero-silhouette" aria-hidden="true"></div>
             {% for key, slot in profile.equipment.items() %}
             {% if slot.item %}

@@ -4,16 +4,18 @@ from __future__ import annotations
 from typing import Iterable, List, Tuple
 
 from .actions import Attack, Defend, Move
-from .rules import apply, dist_stacks, expected_damage, is_ranged, reachable, rect_dist
-from .state import BattleState
+from .rules import apply, dist_stacks, expected_damage, is_ranged, reachable, rect_dist, total_hp
+from .state import BattleState, HeroTurn
 
 
 def choose_action(state: BattleState):
     actor = state.active()
     enemies = [s for s in state.stacks.values() if s.owner != actor.owner]
+    if isinstance(actor, HeroTurn):
+        return Attack(min(enemies, key=total_hp).id)
 
     if is_ranged(state, actor):
-        return Attack(max(enemies, key=lambda e: expected_damage(actor, e)).id)
+        return Attack(max(enemies, key=lambda e: expected_damage(actor, e, ranged=True)).id)
 
     dist = reachable(state, actor)
     best = None

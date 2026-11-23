@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import (JSON, BigInteger, Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer,
+from sqlalchemy import (JSON, BigInteger, Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Index, Integer,
                         String, UniqueConstraint, false, text)
 from sqlalchemy.orm import relationship
 
@@ -348,6 +348,8 @@ class Enterprise(Base):
     item_price = Column(Integer, default=11)  # Ціна за одиницю ресурсу
     balance = Column(Integer, default=1000)  # Додаємо поле балансу
     storage_multiplier = Column(Integer, default=40)  # Коефіцієнт для розміру складу
+    input_stock = Column(JSON, nullable=False, default=dict, server_default=text("'{}'"))
+    production_remainder = Column(Integer, nullable=False, default=0, server_default="0")
     production_type = Column(String, default="factory")  # factory або mine
 
 class BattleHistory(Base):
@@ -393,6 +395,7 @@ class RewardTransaction(Base):
     wood = Column(Integer, nullable=False)
     stone = Column(Integer, nullable=False)
     item_id = Column(Integer, ForeignKey("items.id", ondelete="SET NULL"))
+    reward_entries = Column(JSON(none_as_null=True), nullable=True)
     created_at = Column(DateTime, nullable=False)
 
 
@@ -413,3 +416,45 @@ class CastleBuilding(Base):
 
     player_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     building_id = Column(String(64), primary_key=True)
+
+
+class EnterpriseShift(Base):
+    __tablename__ = "enterprise_shifts"
+    __table_args__ = (Index("ix_enterprise_shifts_worker_status", "worker_id", "status"),)
+
+    id = Column(Integer, primary_key=True)
+    enterprise_id = Column(Integer, nullable=False)
+    worker_id = Column(Integer, nullable=False)
+    started_at = Column(DateTime, nullable=False)
+    completes_at = Column(DateTime, nullable=False)
+    settled_at = Column(DateTime)
+    status = Column(String(16), nullable=False)
+    base_wage = Column(Integer, nullable=False)
+    multiplier_percent = Column(Integer, nullable=False)
+    penalty_percent = Column(Integer, nullable=False)
+    payable = Column(Integer, nullable=False)
+    enterprise_payable = Column(Integer)
+
+
+class EnterpriseEvent(Base):
+    __tablename__ = "enterprise_events"
+    __table_args__ = (Index("ix_enterprise_events_history", "enterprise_id", "id"),)
+
+    id = Column(Integer, primary_key=True)
+    enterprise_id = Column(Integer, nullable=False)
+    actor_id = Column(Integer)
+    kind = Column(String(32), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    details = Column(JSON, nullable=False)
+    request_key = Column(String(36), unique=True)
+
+
+class EnterpriseDailyReport(Base):
+    __tablename__ = "enterprise_daily_reports"
+
+    enterprise_id = Column(Integer, primary_key=True)
+    day = Column(Date, primary_key=True)
+    produced = Column(JSON, nullable=False, default=dict)
+    sold = Column(JSON, nullable=False, default=dict)
+    sale_gold = Column(BigInteger, nullable=False, default=0)
+    wages = Column(BigInteger, nullable=False, default=0)

@@ -26,15 +26,34 @@
     </section>
     <aside class="world-side" aria-label="Місцеві можливості">
         <section class="world-board">
-            <h2>Підприємства</h2>
-            <p id="world-enterprise-message"></p>
-            <ul id="world-enterprises" class="world-enterprises"></ul>
-            <p id="world-castle-links" hidden><a href="/castle">Замок</a> · <a href="/guild">Гільдія авантюристів</a></p>
-        </section>
-        <section class="world-board">
             <h2>Полювання</h2>
             <ul id="world-hunts" class="world-enterprises"></ul>
             <p id="world-hunt-feedback" role="status"></p>
+        </section>
+        <section class="world-board">
+            <h2 class="world-guild">
+                <img src="{{ url_for('static', path='images/guild_icons/guild_adventurers.png') }}" alt="">
+                <a id="world-guild-link" href="/guild" hidden>Гільдія авантюристів</a>
+                <span id="world-guild-name">Гільдія авантюристів</span>
+            </h2>
+        </section>
+        <section class="world-board">
+            <h2>Підприємства</h2>
+            {% set categories = [('mine', 'Шахти'), ('processing', 'Переробка'), ('factory', 'Виробництво')] %}
+            <div class="world-enterprise-tabs" role="tablist" aria-label="Типи підприємств">
+                {% for key, label in categories %}
+                <button type="button" role="tab" id="world-tab-{{ key }}" aria-controls="world-sites-{{ key }}"
+                        aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}"
+                        data-production-type="{{ key }}">{{ label }}</button>
+                {% endfor %}
+            </div>
+            {% for key, label in categories %}
+            <div id="world-sites-{{ key }}" role="tabpanel" aria-labelledby="world-tab-{{ key }}"
+                 tabindex="0"{% if not loop.first %} hidden{% endif %}>
+                <p data-enterprise-message></p>
+                <ul class="world-enterprises"></ul>
+            </div>
+            {% endfor %}
         </section>
     </aside>
     <script type="application/json" id="world-state">{{ world | tojson }}</script>

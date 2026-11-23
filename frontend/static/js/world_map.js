@@ -3,11 +3,12 @@
     const current = byId('world-current');
     const markers = byId('world-markers');
     const sectors = byId('world-sectors');
-    const enterprises = byId('world-enterprises');
+    const enterpriseTabs = [...document.querySelectorAll('[data-production-type]')];
     const hunts = byId('world-hunts');
     const feedback = byId('world-feedback');
     const refresh = byId('world-refresh');
-    const icons = {singing_resin: 'sawmill-icon.png', basalt_bone: 'mine-icon.png', gold: 'gold-mine-icon.png'};
+    const number = new Intl.NumberFormat('en-US');
+    const enterpriseIcon = '/static/images/buildings/build.png';
     let state;
     let readAt;
     let busy = false;
@@ -71,26 +72,32 @@
             markers.append(marker);
         }
 
-        enterprises.replaceChildren(...state.enterprises.map(entry => {
-            const item = element('li');
-            const link = element('a', entry.name);
-            link.href = `/enterprise/${entry.id}`;
-            if (icons[entry.resource_type]) {
-                const icon = element('img');
-                icon.src = `/static/images/${icons[entry.resource_type]}`;
-                icon.alt = '';
-                icon.className = 'world-enterprise-icon';
-                link.prepend(icon);
-            }
-            item.append(link,
-                element('p', `Працівники ${entry.workers_count}/${entry.max_workers} · Склад ${entry.resource_stored}/${entry.max_storage}`),
-                element('p', `Площа ${entry.area} · Зарплата ${entry.salary} золота/год`));
-            return item;
-        }));
+        renderEnterprises();
         hunts.replaceChildren(...state.hunts.map(hunt => {
             const item = element('li');
+            const heading = element('div');
+            heading.className = 'world-hunt-heading';
+            const portrait = element('a');
+            portrait.className = 'world-hunt-portrait';
+            portrait.href = `/unit_info?key=${encodeURIComponent(hunt.key)}`;
+            portrait.setAttribute('aria-label', `Про істоту «${hunt.name}», кількість: ${number.format(hunt.count)}`);
+            if (hunt.image_url) {
+                const icon = element('img');
+                icon.alt = '';
+                icon.addEventListener('error', () => icon.replaceWith(hunt.icon), {once: true});
+                icon.src = hunt.image_url;
+                portrait.append(icon);
+            } else {
+                const icon = element('span', hunt.icon);
+                icon.setAttribute('aria-hidden', 'true');
+                portrait.append(icon);
+            }
+            const count = element('span', number.format(hunt.count));
+            count.className = 'world-hunt-count';
+            portrait.append(count);
+            heading.append(portrait, element('strong', hunt.name));
             item.append(
-                element('strong', `${hunt.icon} ${hunt.name} ×${hunt.count}`),
+                heading,
                 element('p', `${hunt.difficulty} · від рівня ${hunt.min_level}`),
                 element('p', `За перемогу ${hunt.gold_min}–${hunt.gold_max} золота та ${hunt.xp} XP`),
             );
@@ -102,15 +109,67 @@
             return item;
         }));
         byId('world-hunt-feedback').textContent = state.travel ? 'Недоступно під час подорожі.' : '';
-        byId('world-enterprise-message').textContent = state.travel ? 'Недоступні під час подорожі.' :
-            state.enterprises.length ? '' : 'У цьому секторі немає підприємств.';
-        byId('world-castle-links').hidden = Boolean(state.travel) || state.current_sector !== 'Castle';
+        const guildAvailable = !state.travel && state.current_sector === 'Castle';
+        byId('world-guild-link').hidden = !guildAvailable;
+        byId('world-guild-name').hidden = guildAvailable;
         byId('world-travel').hidden = !state.travel;
         if (state.travel) {
             byId('world-travel-label').textContent = `${name(state.travel.origin)} → ${name(state.travel.destination)}`;
             tick();
         }
     }
+
+    function renderEnterprises() {
+        const tab = enterpriseTabs.find(tab => tab.getAttribute('aria-selected') === 'true');
+        const panel = byId(tab.getAttribute('aria-controls'));
+        const entries = state.enterprises.filter(entry => entry.production_type === tab.dataset.productionType);
+        panel.querySelector('[data-enterprise-message]').textContent = state.travel ? 'Недоступні під час подорожі.' :
+            entries.length ? '' : 'У цьому секторі немає підприємств цього типу.';
+        panel.querySelector("ul").replaceChildren(...entries.map(entry => {
+            const item = element('li');
+            item.className = 'world-enterprise-row';
+            const link = element('a');
+            link.href = `/enterprise/${entry.id}`;
+            link.title = entry.name;
+            const icon = element('img');
+            icon.alt = '';
+            icon.className = 'world-enterprise-icon';
+            if (entry.image_url) icon.addEventListener('error', () => { icon.src = enterpriseIcon; }, {once: true});
+            icon.src = entry.image_url || enterpriseIcon;
+            link.append(icon, element('span', entry.name));
+            const stock = element('span', `${number.format(entry.resource_stored)}/${number.format(entry.max_storage)}`);
+            stock.title = 'Ресурси на складі / місткість складу';
+            const salary = element('span', `${number.format(entry.salary)} зол./год`);
+            salary.title = 'Базова зарплата';
+            item.append(link, stock, salary);
+            return item;
+        }));
+    }
+
+    function selectEnterpriseTab(selected) {
+        for (const tab of enterpriseTabs) {
+            const active = tab === selected;
+            tab.setAttribute('aria-selected', String(active));
+            tab.tabIndex = active ? 0 : -1;
+            byId(tab.getAttribute('aria-controls')).hidden = !active;
+        }
+        renderEnterprises();
+    }
+
+    enterpriseTabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => selectEnterpriseTab(tab));
+        tab.addEventListener('keydown', event => {
+            const size = enterpriseTabs.length;
+            const next = {
+                ArrowLeft: (index + size - 1) % size, ArrowRight: (index + 1) % size,
+                Home: 0, End: size - 1,
+            }[event.key];
+            if (next === undefined) return;
+            event.preventDefault();
+            selectEnterpriseTab(enterpriseTabs[next]);
+            enterpriseTabs[next].focus();
+        });
+    });
 
     function tick() {
         const ends = Date.parse(state.travel.arrives_at);

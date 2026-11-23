@@ -1,6 +1,6 @@
 <section class="hero-identity" aria-labelledby="hero-name">
     <div class="hero-portrait-frame">
-        <img class="hero-portrait{% if (player.fraction or '') | lower == 'darkelfe' %} hero-portrait-underground{% endif %}" src="/static/images/simple-elfe.png" alt="Портрет персонажа">
+        <img class="hero-portrait{% if profile.faction_key == 'underground_elves' %} hero-portrait-underground{% endif %}" src="/static/images/simple-elfe.png" alt="Портрет персонажа">
     </div>
     <div>
         <h1 id="hero-name"{% if not read_only %} title="{{ player.username }}"{% endif %}>{% if read_only %}{{ player.username }}{% else %}<a href="/player_info?id={{ player.id }}">{{ player.username }}</a>{% endif %}</h1>

@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Бій</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/battle_hero.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/battle_result.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/navigation.css') }}">
+    <script defer src="{{ url_for('static', path='js/dialog.js') }}"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --cell: 56px; }
         body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
 
         #board-wrap {
-            perspective: 1000px;
             min-height: 12rem;
             padding: clamp(0.5rem, 2vw, 1.4rem);
             border: 1px solid #51432e;
@@ -64,6 +66,10 @@
             text-shadow: 0 2px 4px #050a08;
         }
         .stack.big .icon { width: 90%; height: 87%; border-radius: 30%; }
+        .stack .unit-portrait, .chip .unit-portrait {
+            display: block; width: 100%; height: 100%; object-fit: contain;
+            border-radius: inherit; pointer-events: none;
+        }
         .stack.enemy .icon { border-color: #d98f75; background: radial-gradient(ellipse at 45% 28%, #684b38, #302225 70%); }
         .stack.active .icon { box-shadow: 0 0 0 3px #facc15, 0 0 14px 4px rgba(250, 204, 21, 0.7); }
         .stack.target { cursor: crosshair; }
@@ -80,10 +86,12 @@
         .popup.ret { color: #fbbf24; }
         @keyframes pop { 0% { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px); } }
 
-        .chip { position: relative; width: 2.4rem; height: 2.4rem; flex: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+        #initiative { display: flex; flex: 1 1 0; min-width: 0; gap: .3rem; overflow-x: auto; padding: .25rem .15rem; }
+        #initiative .chip { position: relative; width: 2.4rem; height: 2.4rem; flex: 0 0 2.4rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
                 background: #1e293b; border: 2px solid #3b82f6; border-radius: 0.4rem; }
         .chip.enemy { border-color: #ef4444; }
         .chip.first { box-shadow: 0 0 0 2px #facc15; }
+        .chip.hl { border-color: #fff; background: #475569; }
         .chip .badge { font-size: 0.6rem; min-width: 1rem; }
 
         #log { height: 14rem; overflow-y: auto; font-size: 0.8rem; line-height: 1.3; }
@@ -105,7 +113,7 @@
 <div class="max-w-6xl mx-auto p-3">
     <header class="flex items-center justify-between mb-3">
         <h1 class="text-xl font-bold">Бій</h1>
-        <a href="/player" class="text-sm text-sky-300 hover:underline">До персонажа</a>
+        <a id="battle-return" href="/player" class="text-sm text-sky-300 hover:underline">До персонажа</a>
     </header>
 
     <!-- Вибір бою -->
@@ -128,15 +136,18 @@
         </div>
         <div class="flex items-center gap-2 mb-2">
             <span class="text-xs text-slate-400 shrink-0" title="Прогноз на 50 ходів: не враховує майбутні втрати та «чекати»">Черга (50):</span>
-            <div id="initiative" class="flex flex-1 min-w-0 gap-1 overflow-x-auto py-1"></div>
+            <div id="initiative"></div>
         </div>
 
         <div class="flex flex-col lg:flex-row gap-3">
             <div id="board-wrap" class="flex-1 min-w-0">
-                <div id="board">
-                    <div id="cells"></div>
-                    <div id="stacks"></div>
-                    <div id="popups"></div>
+                <div class="battle-stage" id="battle-stage">
+                    <div id="field-heroes" aria-label="Герої" hidden></div>
+                    <div id="board">
+                        <div id="cells"></div>
+                        <div id="stacks"></div>
+                        <div id="popups"></div>
+                    </div>
                 </div>
             </div>
 
@@ -159,10 +170,34 @@
                     <button id="btn-defend" class="btn alt flex-1" title="Захист (D)">Захист</button>
                     <button id="btn-surrender" class="btn danger flex-1" title="Здатися">Здатись</button>
                 </div>
+                <section id="spell-target-controls" class="bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Ціль закляття" hidden>
+                    <p id="spell-target-status" role="status"></p>
+                    <button id="confirm-spell" type="button" class="btn">Застосувати</button>
+                    <button id="cancel-spell" type="button" class="btn alt">Скасувати</button>
+                </section>
+                <section id="summon-actions" class="hidden bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Виклик елементалів">
+                    <p id="summon-energy"></p>
+                    <p id="summon-status" aria-live="polite"></p>
+                    <button id="legacy-spellbook" type="button" class="btn">Книга заклять</button>
+                </section>
                 <div id="log" class="bg-slate-800 rounded-lg p-2"></div>
+                <section class="bg-slate-800 rounded-lg p-3" aria-labelledby="creature-damage-title">
+                    <h2 id="creature-damage-title" class="font-bold">Шкода створінь</h2>
+                    <div id="creature-damage" class="text-sm space-y-2"></div>
+                    <p id="creature-damage-partial" class="text-xs text-slate-400 mt-2" hidden>Показано шкоду за доступну частину запису.</p>
+                </section>
             </aside>
         </div>
     </section>
+
+    <dialog id="spellbook" aria-labelledby="spellbook-title">
+        <div class="flex items-center justify-between gap-2 mb-3">
+            <h2 id="spellbook-title" class="font-bold">Книга заклять</h2>
+            <form method="dialog"><button class="btn alt" type="submit">Закрити</button></form>
+        </div>
+        <p id="spellbook-energy" class="mb-3"></p>
+        <div id="spell-list"></div>
+    </dialog>
 
     <!-- Підтвердження здачі -->
     <div id="confirm" class="hidden fixed inset-0 z-40 bg-black/70 flex items-center justify-center">
@@ -176,23 +211,13 @@
         </div>
     </div>
 
-    <!-- Результат -->
-    <div id="result" class="hidden fixed inset-0 z-40 bg-black/70 flex items-center justify-center">
-        <div class="bg-slate-800 rounded-xl p-6 text-center">
-            <div id="result-title" class="text-2xl font-bold mb-4"></div>
-            <p id="result-reward" class="mb-4 text-amber-200" aria-live="polite"></p>
-            <div class="flex gap-2 justify-center">
-                <button id="btn-new" class="btn">Новий бій</button>
-                <button id="btn-replay" class="btn alt">Повтор</button>
-                <a href="/player" class="btn alt">До персонажа</a>
-            </div>
-        </div>
-    </div>
+    {% include 'components/battle_result.html' %}
 
     <div id="toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black/85 text-white text-sm px-4 py-2 rounded"></div>
 </div>
 
 <script src="{{ url_for('static', path='js/battle_events.js') }}"></script>
+<script src="{{ url_for('static', path='js/battle_result.js') }}"></script>
 <script>
     // ---------- Конфіг ----------
     const API = '/api/battles';
@@ -210,9 +235,13 @@
     let busy = false;
     let auto = false;
     let deploymentStack = null;
+    let hoveredStackId = null;
+    let completedActor = null;
+    let spellSelection = null;
     let replay = null;
     let playing = false;
     let playbackGeneration = 0;
+    let replayRequest = 0;
     let animation;
     let pollTimer = null;
     const known = {};         // id загону -> {unit, owner} (щоб називати загони, що вже загинули)
@@ -225,9 +254,40 @@
         menu: $('menu'), battle: $('battle'), scenarios: $('scenarios'),
         cells: $('cells'), stacks: $('stacks'), popups: $('popups'), board: $('board'), wrap: $('board-wrap'),
         initiative: $('initiative'), turnText: $('turn-text'), activeInfo: $('active-info'),
-        log: $('log'), result: $('result'), resultTitle: $('result-title'), toast: $('toast'), confirm: $('confirm'),
+        log: $('log'), toast: $('toast'), confirm: $('confirm'),
         btnWait: $('btn-wait'), btnDefend: $('btn-defend'), btnSurrender: $('btn-surrender'),
     };
+
+    let battleStorage;
+    try { battleStorage = sessionStorage; } catch { /* storage is optional */ }
+    const trackedBattleKey = 'battle-in-view';
+
+    function trackBattle(id) {
+        try {
+            if (id == null) battleStorage?.removeItem(trackedBattleKey);
+            else battleStorage?.setItem(trackedBattleKey, String(id));
+        } catch { /* storage is optional */ }
+    }
+
+    function trackedBattle() {
+        try { return battleStorage?.getItem(trackedBattleKey); } catch { return null; }
+    }
+
+    const resultModal = BattleResult.create($('result'), {
+        storage: battleStorage,
+        onReplay: id => view?.id === id ? openReplay(id, {autoplay: true}) : false,
+        onContinue: id => {
+            if (view?.id !== id) return;
+            trackBattle(null);
+            location.assign('/player');
+        },
+        fallbackFocus: () => replay ? $('replay-play') : $('battle-return'),
+        unitName: key => uv(key).name,
+    });
+    const damageNumber = new Intl.NumberFormat('en-US');
+    $('battle-return').addEventListener('click', () => {
+        if (view?.status === 'finished' || replay) trackBattle(null);
+    });
 
     // ---------- API ----------
     async function api(path, method = 'GET', body = null) {
@@ -251,6 +311,10 @@
     // ---------- Допоміжне ----------
     const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
     const uv = (unit) => UNIT_VIEW[unit] || { emoji: '❓', name: unit };
+    const unitTitle = (key) => {
+        const unit = uv(key);
+        return unit.form ? `${unit.name} · ранг ${unit.tier}, форма ${unit.form}/3` : unit.name;
+    };
 
     function toast(text, ms = 2800) {
         el.toast.textContent = text;
@@ -259,7 +323,24 @@
         toast._t = setTimeout(() => el.toast.classList.add('hidden'), ms);
     }
 
+    function renderUnitPortrait(container, unit) {
+        const existing = container.firstElementChild;
+        if (existing?.getAttribute('src') === unit.image_url && unit.image_url) return;
+        if (!unit.image_url) {
+            container.textContent = unit.emoji;
+            return;
+        }
+        const portrait = document.createElement('img');
+        portrait.className = 'unit-portrait';
+        portrait.alt = '';
+        portrait.addEventListener('error', () => portrait.replaceWith(unit.emoji), {once: true});
+        portrait.src = unit.image_url;
+        container.replaceChildren(portrait);
+    }
+
     function stackName(id) {
+        const hero = view?.state.heroes?.[id];
+        if (hero) return 'Герой ' + hero.name;
         const k = known[id];
         if (!k) return '?';
         const u = uv(k.unit);
@@ -267,7 +348,8 @@
     }
 
     function isAlly(id) {
-        return known[id] && view && known[id].owner === view.my_side;
+        const actor = view?.state.heroes?.[id] ?? known[id];
+        return actor && view && actor.owner === view.my_side;
     }
 
     function activeStack() {
@@ -281,9 +363,16 @@
         const w = view.state.width, h = view.state.height;
         const frame = getComputedStyle(el.wrap);
         const padding = parseFloat(frame.paddingLeft) + parseFloat(frame.paddingRight) || 0;
-        const maxW = Math.min(el.wrap.clientWidth - padding - 4, 960);
+        const gutter = Object.keys(view.state.heroes ?? {}).length
+            ? Math.round(Math.max(30, Math.min(78, el.wrap.clientWidth * 0.12))) : 0;
+        const maxW = Math.min(el.wrap.clientWidth - padding - 4 - 2 * gutter, 960);
         const maxH = window.innerHeight * 0.62;
         const cell = Math.max(1, Math.min(72, Math.floor(Math.min(maxW / w, maxH / h)))) + 'px';
+        const stage = $('battle-stage');
+        stage.style.maxWidth = (parseFloat(cell) * w + 4 + 2 * gutter) + 'px';
+        stage.style.marginInline = 'auto';
+        stage.style.setProperty('--hero-gutter', gutter + 'px');
+        stage.style.setProperty('--hero-height', Math.max(48, Math.min(104, parseFloat(cell) * 1.42)) + 'px');
         if (el.board.style.getPropertyValue('--cell') !== cell) {
             el.board.style.setProperty('--cell', cell);
         }
@@ -336,6 +425,7 @@
     // ---------- Відмальовування ----------
     function applyView(v, events) {
         view = v;
+        if (!replay) trackBattle(v.id);
         Object.assign(UNIT_VIEW, v.units);
         for (const s of Object.values(v.state.stacks)) known[s.id] = { unit: s.unit, owner: s.owner };
 
@@ -345,13 +435,18 @@
         buildCells();
         if (events && events.length) showEvents(events);
         renderPanel();
+        renderCreatureDamage(v.creature_damage);
         renderStacks();
         renderInitiative();
         renderHighlights();
+        renderSpellSelection();
 
         for (const s of Object.values(v.state.stacks)) lastPos[s.id] = { x: s.x, y: s.y, w: s.w, h: s.h };
 
-        if (v.status === 'finished' && !replay) showResult(); else el.result.classList.add('hidden');
+        if (v.status === 'finished' && !replay) {
+            el.confirm.classList.add('hidden');
+            resultModal.present(v.id, v.result, v.creature_damage, v.my_side);
+        }
         schedulePoll();
     }
 
@@ -365,9 +460,13 @@
             if (!d) {
                 d = document.createElement('div');
                 d.innerHTML = '<div class="icon"></div><span class="flag"></span><span class="badge"></span>';
-                d.addEventListener('click', () => onStackClick(s.id));
-                d.addEventListener('mouseenter', () => onStackHover(s.id));
-                d.addEventListener('mouseleave', clearHover);
+                d.addEventListener('click', (event) => onStackClick(s.id, event));
+                d.addEventListener('mousemove', (event) => onStackHover(s.id, event));
+                d.addEventListener('mouseenter', (event) => onStackHover(s.id, event));
+                d.addEventListener('mouseleave', () => {
+                    highlightInitiative(null);
+                    clearHover();
+                });
                 el.stacks.appendChild(d);
                 stackEls[s.id] = d;
             }
@@ -380,14 +479,15 @@
             d.style.width = 'calc(var(--cell) * ' + s.w + ')';
             d.style.height = 'calc(var(--cell) * ' + s.h + ')';
             d.children[0].style.fontSize = 'calc(var(--cell) * ' + (0.5 * Math.min(s.w, s.h)) + ')';
-            d.children[0].textContent = u.emoji;
-            d.children[1].textContent = s.defending ? '🛡' : '';
+            renderUnitPortrait(d.children[0], u);
+            d.children[1].textContent = s.defending ? '🛡' : s.summoned ? '✦' : '';
             d.children[2].textContent = s.count;
-            d.title = u.name + ': ' + s.count + ' шт., HP верхнього: ' + s.top_hp +
+            d.title = unitTitle(s.unit) + ': ' + s.count + ' шт., HP верхнього: ' + s.top_hp +
                       (s.shots_left > 0 ? ', пострілів: ' + s.shots_left : '');
         }
         for (const id of Object.keys(stackEls)) {
             if (!stacks[id]) {
+                if (hoveredStackId === id) highlightInitiative(null);
                 const d = stackEls[id];
                 d.classList.add('dead');
                 setTimeout(() => d.remove(), 450);
@@ -396,28 +496,87 @@
         }
     }
 
+    function renderCreatureDamage(summary) {
+        const sides = summary?.sides ?? [];
+        const ordered = [...sides].sort((a, b) => Number(b.side === view.my_side) - Number(a.side === view.my_side));
+        $('creature-damage-partial').hidden = !summary?.partial;
+        $('creature-damage').replaceChildren(...ordered.map(side => {
+            const group = document.createElement('div');
+            const heading = document.createElement('h3');
+            const allied = side.side === view.my_side;
+            heading.className = allied ? 'font-bold text-sky-300' : 'font-bold text-red-300';
+            heading.textContent = `${allied ? 'Союзники' : 'Вороги'} · ${damageNumber.format(side.total)}`;
+            group.append(heading);
+            if (side.creatures.length) {
+                const list = document.createElement('ul');
+                for (const creature of side.creatures) {
+                    const row = document.createElement('li');
+                    row.className = 'flex justify-between gap-2';
+                    const name = document.createElement('span');
+                    name.textContent = uv(creature.unit).name;
+                    const damage = document.createElement('strong');
+                    damage.textContent = damageNumber.format(creature.amount);
+                    row.append(name, damage);
+                    list.append(row);
+                }
+                group.append(list);
+            }
+            return group;
+        }));
+    }
+
+    function highlightInitiative(id) {
+        if (hoveredStackId === id) return;
+        hoveredStackId = id;
+        for (const chip of el.initiative.children) {
+            chip.classList.toggle('hl', chip.dataset.stackId === id);
+        }
+    }
+
     function renderInitiative() {
         el.initiative.innerHTML = '';
         const st = view.state;
         if (st.status !== 'active') return;
-        const list = view.forecast && view.forecast.length
+        const upcoming = view.forecast && view.forecast.length
             ? view.forecast
             : (st.active_id ? [{ id: st.active_id }] : []);
+        const list = completedActor ? [{id: completedActor, completed: true}, ...upcoming] : upcoming;
         let first = true;
         for (const f of list) {
-            const s = st.stacks[f.id];
+            const hero = st.heroes?.[f.id];
+            const currentStack = st.stacks[f.id];
+            const s = currentStack ?? hero ?? replay?.stackIndex?.[f.id];
             if (!s) continue;
             const c = document.createElement('div');
-            c.className = 'chip' + (isAlly(f.id) ? '' : ' enemy') + (first ? ' first' : '');
-            first = false;
-            c.textContent = uv(s.unit).emoji;
-            const b = document.createElement('span');
-            b.className = 'badge';
-            b.textContent = s.count;
-            c.appendChild(b);
-            c.title = uv(s.unit).name + ' ×' + s.count;
-            c.addEventListener('mouseenter', () => { if (stackEls[f.id]) stackEls[f.id].classList.add('hl'); });
-            c.addEventListener('mouseleave', () => { if (stackEls[f.id]) stackEls[f.id].classList.remove('hl'); });
+            c.className = 'chip' + (s.owner === view.my_side ? '' : ' enemy') +
+                (f.completed ? ' completed' : first ? ' first' : '');
+            c.dataset.stackId = f.id;
+            c.classList.toggle('hl', f.id === hoveredStackId);
+            if (!f.completed && first) {
+                c.setAttribute('aria-current', 'step');
+                first = false;
+            }
+            if (hero) {
+                const portrait = document.createElement('img');
+                portrait.src = hero.portrait || heroSprite(hero);
+                if (!hero.portrait) portrait.className = 'hero-default-portrait';
+                portrait.alt = '';
+                c.appendChild(portrait);
+            } else {
+                renderUnitPortrait(c, uv(s.unit));
+            }
+            c.title = hero ? `Герой ${hero.name} · ініціатива ${hero.initiative}`
+                : uv(s.unit).name + (currentStack ? ' ×' + s.count : '');
+            if (f.completed) c.title = 'Хід завершено · ' + c.title;
+            if (currentStack) {
+                const b = document.createElement('span');
+                b.className = 'badge';
+                b.textContent = s.count;
+                c.appendChild(b);
+            }
+            const actorElement = () => hero ? $('field-' + hero.id) : stackEls[f.id];
+            c.addEventListener('mouseenter', () => actorElement()?.classList.add('hl'));
+            c.addEventListener('mouseleave', () => actorElement()?.classList.remove('hl'));
             el.initiative.appendChild(c);
         }
         el.initiative.scrollLeft = 0;
@@ -439,6 +598,166 @@
         });
     }
 
+    function canUseSpellbook() {
+        return !busy && !auto && !replay && view?.status === 'active' && view.turn
+            && (view.turn.hero || !view.state.heroes) && view.state.summoning?.[view.my_side];
+    }
+
+    function openSpellbook() {
+        if (!canUseSpellbook()) return;
+        const magic = view.state.summoning[view.my_side];
+        $('spellbook-energy').textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
+        const spells = (view.turn.spells ?? []).map(spell => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'spell-option';
+            button.disabled = !spell.target;
+            for (const [tag, value, className] of [
+                ['strong', `${spell.icon} ${spell.name}`, ''],
+                ['span', spell.description, ''],
+                ['small', `${spell.energy_cost} енергії · ${spell.target_label}`, ''],
+                ['small', spell.unavailable, 'spell-unavailable'],
+            ]) {
+                if (!value) continue;
+                const line = document.createElement(tag);
+                line.className = className;
+                line.textContent = value;
+                button.append(line);
+            }
+            button.addEventListener('click', () => {
+                if (!canUseSpellbook() || !spell.target) return;
+                spellSelection = {battle: view.id, version: view.version, actor: view.turn.active, spell};
+                $('spellbook').close();
+                renderSpellSelection();
+                $('confirm-spell').focus();
+            });
+            return button;
+        });
+        if (!spells.length) {
+            const empty = document.createElement('p');
+            empty.textContent = 'Немає вивчених заклять.';
+            spells.push(empty);
+        }
+        $('spell-list').replaceChildren(...spells);
+        $('spellbook').showModal();
+    }
+
+    function renderSpellSelection() {
+        if (!canUseSpellbook() || spellSelection?.battle !== view.id ||
+                spellSelection?.version !== view.version || spellSelection?.actor !== view.turn.active) {
+            spellSelection = null;
+        }
+        el.cells.querySelectorAll('.spell-cell').forEach(cell => cell.classList.remove('spell-cell', 'enemy-spell-cell'));
+        el.stacks.querySelectorAll('.spell-target-stack').forEach(stack => stack.classList.remove('spell-target-stack'));
+        el.stacks.classList.toggle('spell-aiming', Boolean(spellSelection));
+        $('spell-target-controls').hidden = !spellSelection;
+        if (!spellSelection) return;
+        const {spell} = spellSelection;
+        const {cell: [x, y], size: [w, h], side} = spell.target;
+        $('spell-target-status').textContent = `${spell.name} · клітинка ${x + 1}, ${y + 1}`;
+        for (const cell of footprint(x, y, w, h)) {
+            cell.classList.add('spell-cell');
+            cell.classList.toggle('enemy-spell-cell', side !== view.my_side);
+            const stack = Object.values(view.state.stacks).find(unit =>
+                Number(cell.dataset.x) >= unit.x && Number(cell.dataset.x) < unit.x + unit.w &&
+                Number(cell.dataset.y) >= unit.y && Number(cell.dataset.y) < unit.y + unit.h);
+            if (stack) stackEls[stack.id]?.classList.add('spell-target-stack');
+        }
+    }
+
+    function confirmSpellAt(x, y) {
+        if (!spellSelection || !canUseSpellbook()) return;
+        const {spell, battle, version, actor} = spellSelection;
+        if (battle !== view.id || version !== view.version || actor !== view.turn.active) return;
+        const target = (view.turn.spells ?? []).find(option => option.element === spell.element)?.target;
+        if (!target) return;
+        const [left, top] = target.cell;
+        const [w, h] = target.size;
+        if (x < left || x >= left + w || y < top || y >= top + h) {
+            toast('Обери підсвічену клітинку або скасуй виклик.');
+            return;
+        }
+        spellSelection = null;
+        renderSpellSelection();
+        send({type: 'summon', element: spell.element});
+    }
+
+    function heroSprite(hero) {
+        const faction = hero.faction ?? Object.values(view.state.stacks)
+            .filter(stack => stack.owner === hero.owner)
+            .map(stack => uv(stack.unit).faction)
+            .find(Boolean);
+        return faction === 'underground_elves'
+            ? '/static/images/units_and_buildings/underground_elves/hero/underground-elf-hero.png'
+            : '/static/images/units_and_buildings/elves/hero/elf-hero.png';
+    }
+
+    function renderHeroes(canCast) {
+        const st = view.state;
+        const field = $('field-heroes');
+        const heroes = Object.values(st.heroes ?? {});
+        field.hidden = heroes.length === 0;
+        field.replaceChildren(...heroes.map(hero => {
+            const card = document.createElement('div');
+            card.id = 'field-' + hero.id;
+            card.dataset.side = hero.owner;
+            card.className = 'field-hero' + (st.active_id === hero.id ? ' active' : '');
+            const portrait = document.createElement('img');
+            portrait.className = 'field-hero-sprite';
+            portrait.src = heroSprite(hero);
+            portrait.addEventListener('error', () => { portrait.src = '/static/images/simple-elfe.png'; }, {once: true});
+            portrait.alt = '';
+            const details = document.createElement('div');
+            const name = document.createElement('strong');
+            name.className = 'sr-only';
+            name.textContent = hero.name;
+            const energy = document.createElement('small');
+            const magic = st.summoning?.[hero.owner];
+            if (magic) {
+                energy.textContent = `${magic.energy}/${magic.max_energy}`;
+                energy.setAttribute('aria-label', `Енергія ${magic.energy}/${magic.max_energy}`);
+            }
+            details.append(name, energy);
+            card.title = `Рівень ${hero.level} · Ініціатива ${hero.initiative} · Атака ${hero.attack} · Захист ${hero.defense} · Знання ${hero.knowledge} · Сила магії ${hero.spell_power} · Удача ${hero.luck ?? 0} · Бойовий дух ${hero.morale ?? 0} · Шкода ${hero.damage_min}–${hero.damage_max}`;
+            if (st.status === 'finished' && st.winner != null) {
+                card.dataset.outcome = st.winner === hero.owner ? 'victory' : 'defeat';
+            }
+            card.append(portrait, details);
+            card.addEventListener('mouseenter', () => highlightInitiative(hero.id));
+            card.addEventListener('mouseleave', () => highlightInitiative(null));
+            if (!replay && st.active_id === hero.id && hero.owner === view.my_side) {
+                const book = document.createElement('button');
+                book.type = 'button';
+                book.className = 'btn alt';
+                book.textContent = '📖';
+                book.setAttribute('aria-label', 'Книга заклять');
+                book.title = 'Книга заклять';
+                book.disabled = !canCast;
+                book.addEventListener('click', openSpellbook);
+                card.append(book);
+            }
+            return card;
+        }));
+    }
+
+    function renderSummoning(canCast) {
+        const st = view.state;
+        const magic = st.summoning?.[view.my_side];
+        const legacy = Boolean(magic && !st.heroes && !view.deployment);
+        const visible = Boolean(magic?.elements.length && !view.deployment);
+        $('summon-actions').classList.toggle('hidden', !visible);
+        $('summon-energy').hidden = !legacy;
+        $('legacy-spellbook').hidden = !legacy || Boolean(replay) || view.status !== 'active';
+        $('legacy-spellbook').disabled = !canCast;
+        if ($('spellbook').open && !canCast) $('spellbook').close();
+        if (!visible) return;
+        $('summon-energy').textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
+        const summon = Object.values(st.stacks).find(stack => stack.owner === view.my_side && stack.summoned);
+        $('summon-status').textContent = summon
+            ? `${uv(summon.unit).name} ×${summon.count} · HP верхнього ${summon.top_hp}/${uv(summon.unit).hp}`
+            : 'Активного елементаля немає';
+    }
+
     function renderPanel() {
         const st = view.state;
         const a = activeStack();
@@ -446,13 +765,17 @@
         const deploying = Boolean(view.deployment);
         $('battle-actions').classList.toggle('hidden', Boolean(replay) || deploying);
         $('deployment-actions').classList.toggle('hidden', !deploying);
+        const can = myTurn && !busy && !auto;
+        const canCast = can && !replay && (view.turn?.hero || !st.heroes);
+        renderHeroes(canCast);
+        renderSummoning(canCast);
 
         if (deploying) {
             const owned = Object.values(st.stacks).filter(stack => stack.owner === view.my_side);
             if (!owned.some(stack => stack.id === deploymentStack)) deploymentStack = owned[0]?.id;
             const select = $('deployment-stack');
             select.replaceChildren(...owned.map(stack =>
-                new Option(uv(stack.unit).name + ' ×' + stack.count, stack.id)));
+                new Option(unitTitle(stack.unit) + ' ×' + stack.count, stack.id)));
             select.value = deploymentStack;
             select.disabled = busy;
             const split = $('deployment-split');
@@ -469,22 +792,25 @@
         if (st.status === 'finished') {
             el.turnText.textContent = 'Бій завершено';
             el.activeInfo.textContent = '';
+        } else if (st.heroes?.[st.active_id]) {
+            const hero = st.heroes[st.active_id];
+            el.turnText.textContent = `Хід героя · ${hero.name}`;
+            el.activeInfo.textContent = `Ініціатива ${hero.initiative} · Шкода ${hero.damage_min}–${hero.damage_max}`;
         } else if (a) {
             const u = uv(a.unit);
             el.turnText.textContent = replay ? 'Хід · ' + u.name : (myTurn ? 'Ваш хід' : 'Хід суперника…');
-            el.activeInfo.textContent = u.emoji + ' ' + u.name + ' ×' + a.count + ' (HP верхнього: ' + a.top_hp + ')' +
+            el.activeInfo.textContent = u.emoji + ' ' + unitTitle(a.unit) + ' ×' + a.count + ' (HP верхнього: ' + a.top_hp + ')' +
                 (a.shots_left > 0
                     ? (view.turn && !view.turn.ranged
                         ? ', ворог поруч — ближній бій (постріли: ' + a.shots_left + ')'
                         : ', постріли: ' + a.shots_left)
                     : '');
         }
-        const can = myTurn && !busy && !auto;
         $('btn-auto').disabled = view.status !== 'active';
         $('btn-auto').setAttribute('aria-pressed', String(auto));
         $('btn-auto').textContent = auto ? 'Авто увімкнено' : 'Авто';
         el.btnWait.disabled = !(can && view.turn.can_wait);
-        el.btnDefend.disabled = !can;
+        el.btnDefend.disabled = !can || Boolean(view.turn?.hero);
         el.btnSurrender.disabled = !!replay || busy || view.status !== 'active';   // здатися можна й не у свій хід
     }
 
@@ -497,6 +823,7 @@
         clearHover();
         if (!view || !view.turn) return;
         const a = activeStack();
+        if (!a) return;
         const [ox, oy] = centerOffset(a);
         const ax = x - ox, ay = y - oy;
         if (view.turn.move.some((p) => p[0] === ax && p[1] === ay)) {
@@ -504,24 +831,59 @@
         }
     }
 
-    function pickFrom(t, a) {
-        // null = б'ємо з місця; інакше — найближча з дозволених позицій (ближній бій)
-        if (t.from.some((p) => p[0] === a.x && p[1] === a.y)) return null;
-        const here = [a.x, a.y];
-        return t.from.slice().sort((p, q) => cheb(p, here) - cheb(q, here))[0];
+    function attackAim(target, event) {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const offsetX = (event.clientX - bounds.left) / bounds.width;
+        const offsetY = (event.clientY - bounds.top) / bounds.height;
+        const x = target.x + offsetX * target.w;
+        const y = target.y + offsetY * target.h;
+        const dx = offsetX - 0.5;
+        const dy = offsetY - 0.5;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 0.08) return null;
+
+        const directions = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+        const sector = (Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8;
+        const [sideX, sideY] = directions[sector];
+        return [
+            sideX === 0 ? x : target.x + (sideX > 0 ? target.w + 0.5 : -0.5),
+            sideY === 0 ? y : target.y + (sideY > 0 ? target.h + 0.5 : -0.5),
+        ];
     }
 
-    function onStackHover(id) {
+    function attackOrigin(positions, actor, aim) {
+        const current = [actor.x, actor.y];
+        function distance([x, y]) {
+            if (!aim) return 0;
+            const dx = Math.max(x + 0.5 - aim[0], 0, aim[0] - (x + actor.w - 0.5));
+            const dy = Math.max(y + 0.5 - aim[1], 0, aim[1] - (y + actor.h - 0.5));
+            return dx * dx + dy * dy;
+        }
+        return positions.reduce((best, position) => {
+            if (!best) return position;
+            const difference = distance(position) - distance(best);
+            return difference < 0 || (difference === 0 && cheb(position, current) < cheb(best, current))
+                ? position : best;
+        }, null);
+    }
+
+    function pickFrom(target, options, event) {
+        if (view.turn.ranged) return null;
+        return attackOrigin(options.from, activeStack(), attackAim(target, event));
+    }
+
+    function onStackHover(id, event) {
         clearHover();
         if (!view) return;
         const s = view.state.stacks[id];
+        highlightInitiative(s ? id : null);
+        if (spellSelection) return;
         if (!s || isAlly(id)) return;
         footprint(s.x, s.y, s.w, s.h).forEach((c) => c.classList.add('hit'));
         if (!view.turn) return;
         const t = view.turn.targets.find((q) => q.id === id);
         if (!t) return;
         const a = activeStack();
-        const pos = pickFrom(t, a);
+        const pos = pickFrom(s, t, event);
         if (pos) footprint(pos[0], pos[1], a.w, a.h).forEach((c) => c.classList.add('from'));  // звідси загін вдарить
     }
 
@@ -563,6 +925,7 @@
                     logLine(stackName(e.stack) + ' рухається', cls);
                     break;
                 case 'attack':
+                case 'hero_attack':
                     logLine(stackName(e.attacker) + (e.ranged ? ' стріляє в ' : ' атакує ') + stackName(e.target) +
                             ': ' + e.damage + ' шкоди, загинуло ' + e.killed, cls);
                     popup(e.target, '-' + e.damage + (e.killed ? ' 💀' + e.killed : ''), '', delay);
@@ -583,6 +946,9 @@
                 case 'skip':
                     logLine(stackName(e.stack) + ' пропускає хід', cls);
                     break;
+                case 'summon':
+                    logLine(`Викликано ${uv(e.unit).name} ×${e.count}${e.replaced ? ' · попередній загін замінено' : ''}`, cls);
+                    break;
                 case 'surrender':
                     logLine(e.side === view.my_side ? 'Ви здалися' : 'Суперник здався', 'sys');
                     break;
@@ -593,35 +959,10 @@
         }
     }
 
-    function showResult() {
-        const w = view.winner_side;
-        const iSurrendered = view.state.surrendered === view.my_side;
-        el.resultTitle.textContent = w === null ? 'Нічия'
-            : (w === view.my_side ? 'Перемога!' : (iSurrendered ? 'Ви здалися' : 'Поразка'));
-        const {reward} = view;
-        const parts = reward && [
-            reward.gold > 0 ? `+${reward.gold} золота` : '',
-            reward.experience > 0 ? `+${reward.experience} досвіду` : '',
-        ].filter(Boolean);
-        $('result-reward').textContent = parts
-            ? (parts.length ? parts.join(' · ') : 'Нагороду не нараховано.')
-            : 'Дані про нагороду недоступні.';
-        $('btn-new').classList.toggle('hidden', Boolean(replay));
-        $('btn-replay').textContent = replay ? 'Переглянути повторно' : 'Повтор';
-        if (replay) {
-            el.result.classList.remove('hidden');
-            return;
-        }
-        const battleId = view.id;
-        setTimeout(() => {
-            if (!replay && view?.id === battleId && view.status === 'finished') el.result.classList.remove('hidden');
-        }, 900);   // дати програтися числам шкоди
-    }
-
     // ---------- Дії гравця ----------
     function setBusy(b) {
         busy = b;
-        if (view) renderPanel();
+        if (view) { renderPanel(); renderSpellSelection(); }
     }
 
     async function send(action) {
@@ -683,6 +1024,7 @@
     $('deployment-begin').addEventListener('click', () => deploymentCommand('/begin'));
 
     function onCellClick(x, y) {
+        if (spellSelection) { confirmSpellAt(x, y); return; }
         if (view?.deployment && deploymentStack) {
             const split = $('deployment-split');
             if (!split.disabled && !split.reportValidity()) return;
@@ -696,20 +1038,39 @@
         }
         if (!view || !view.turn) return;
         const a = activeStack();
+        if (!a) return;
         const [ox, oy] = centerOffset(a);
         const ax = x - ox, ay = y - oy;
         if (view.turn.move.some((p) => p[0] === ax && p[1] === ay)) send({ type: 'move', x: ax, y: ay });
     }
 
-    function onStackClick(id) {
+    function onStackClick(id, event) {
+        if (spellSelection) {
+            const stack = view.state.stacks[id];
+            const box = event.currentTarget.getBoundingClientRect();
+            const x = stack.x + Math.floor((event.clientX - box.left) * stack.w / box.width);
+            const y = stack.y + Math.floor((event.clientY - box.top) * stack.h / box.height);
+            confirmSpellAt(x, y);
+            return;
+        }
         if (view?.deployment) { selectDeploymentStack(id); return; }
         if (!view || !view.turn) return;
         const t = view.turn.targets.find((q) => q.id === id);
         if (!t) return;
-        send({ type: 'attack', target_id: id, from_pos: pickFrom(t, activeStack()) });
+        send({ type: 'attack', target_id: id, from_pos: pickFrom(view.state.stacks[id], t, event) });
     }
 
     el.btnWait.addEventListener('click', () => send({ type: 'wait' }));
+    $('legacy-spellbook').addEventListener('click', openSpellbook);
+    function cancelSpellSelection() {
+        spellSelection = null;
+        renderSpellSelection();
+        $('field-heroes').querySelector('button')?.focus();
+    }
+    $('cancel-spell').addEventListener('click', cancelSpellSelection);
+    $('confirm-spell').addEventListener('click', () => {
+        if (spellSelection) confirmSpellAt(...spellSelection.spell.target.cell);
+    });
     el.btnDefend.addEventListener('click', () => send({ type: 'defend' }));
     el.btnSurrender.addEventListener('click', () => el.confirm.classList.remove('hidden'));
     $('confirm-yes').addEventListener('click', doSurrender);
@@ -717,6 +1078,11 @@
     document.addEventListener('keydown', (ev) => {
         if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
         const k = ev.key.toLowerCase();
+        if ($('spellbook').open) return;
+        if (ev.key === 'Escape' && spellSelection) {
+            cancelSpellSelection();
+            return;
+        }
         if (ev.key === 'Escape') el.confirm.classList.add('hidden');
         if (!el.confirm.classList.contains('hidden')) return;
         if (k === 'w' && !el.btnWait.disabled) send({ type: 'wait' });
@@ -727,12 +1093,13 @@
 
     // ---------- Синхронізація ----------
     async function refresh() {
-        if (!view) return;
+        const current = view;
+        if (!current || replay) return;
         try {
-            const r = await api('/' + view.id);
-            if (r.version !== view.version || r.status !== view.status) applyView(r, []);
+            const r = await api('/' + current.id);
+            if (view === current && !replay && r.id === current.id && r.version > current.version) applyView(r, []);
         } catch (e) {
-            toast(e.message);
+            if (view === current) toast(e.message);
         }
     }
 
@@ -755,6 +1122,7 @@
     $('btn-auto').addEventListener('click', () => {
         auto = !auto;
         renderPanel();
+        renderSpellSelection();
         schedulePoll();
     });
 
@@ -770,6 +1138,8 @@
 
     // ---------- Старт ----------
     function resetClientState() {
+        if ($('spellbook').open) $('spellbook').close();
+        resultModal.close();
         Object.keys(known).forEach(id => delete known[id]);
         Object.keys(lastPos).forEach(id => delete lastPos[id]);
         Object.keys(stackEls).forEach((id) => { stackEls[id].remove(); delete stackEls[id]; });
@@ -779,11 +1149,15 @@
         view = null;
         auto = false;
         deploymentStack = null;
+        hoveredStackId = null;
+        completedActor = null;
+        spellSelection = null;
     }
 
     function showMenu() {
+        replayRequest++;
+        trackBattle(null);
         resetClientState();
-        el.result.classList.add('hidden');
         el.confirm.classList.add('hidden');
         el.battle.classList.add('hidden');
         el.menu.classList.remove('hidden');
@@ -792,6 +1166,7 @@
 
     async function startScenario(key) {
         try {
+            replayRequest++;
             resetClientState();
             const r = await api('/pve', 'POST', { scenario: key });
             applyView(r, r.events);
@@ -844,10 +1219,46 @@
         }
     }
 
+    function heroEffect(event, speed) {
+        const casting = event.type === 'ELEMENTAL_SUMMONED';
+        if ((!casting && event.type !== 'HERO_ATTACKED') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const sprite = $('field-' + event.actor_id)?.querySelector('.field-hero-sprite');
+        if (!sprite?.animate) return;
+        const source = sprite.getBoundingClientRect();
+        const target = casting && event.payload.position
+            ? cellEl(...event.payload.position) : stackEls[event.target_id];
+        const bounds = target?.getBoundingClientRect();
+        const duration = (casting ? 420 : 260) / speed;
+        const motion = sprite.animate([
+            {transform: 'translateY(0)'},
+            {transform: casting ? 'translateY(-4px)' : 'translateY(-2px)', opacity: .78},
+            {transform: 'translateY(0)'},
+        ], {duration});
+        if (!bounds) return motion;
+
+        const startX = source.left + source.width / 2;
+        const startY = source.top + source.height * .45;
+        const dx = bounds.left + bounds.width / 2 - startX;
+        const dy = bounds.top + bounds.height / 2 - startY;
+        const glow = document.createElement('span');
+        glow.className = 'battle-hero-effect' + (casting ? ' cast' : '');
+        glow.style.left = startX + 'px';
+        glow.style.top = startY + 'px';
+        glow.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(glow);
+        const effect = glow.animate([
+            {transform: 'scale(.65)', opacity: .7},
+            {transform: `translate(${dx}px, ${dy}px) scale(1)`, opacity: 1, offset: .75},
+            {transform: `translate(${dx}px, ${dy}px) scale(2)`, opacity: 0},
+        ], {duration});
+        effect.finished.then(() => glow.remove(), () => { motion.cancel(); glow.remove(); });
+        return effect;
+    }
+
     async function animateEvent(event, state, speed) {
         const entry = BattleEvents.logEvent(event);
         if (entry) showEvents([entry]);
-        const effect = BattleEvents.animate(event, stackEls, state,
+        const effect = heroEffect(event, speed) ?? BattleEvents.animate(event, stackEls, state,
             el.cells.firstElementChild.offsetWidth, speed);
         animation = effect;
         if (effect) await effect.finished.catch(() => {});
@@ -855,15 +1266,18 @@
     }
 
     async function animateLive(result) {
-        if (!view || !result.event_stream?.length) {
+        if (replay || view?.id !== result.id || result.version <= view.version) return;
+        if (!result.event_stream?.length) {
             applyView(result, result.events);
             return;
         }
         const state = structuredClone(view.state);
-        view = {...view, state, turn: null};
+        const animating = view = {...view, state, turn: null};
         for (const event of result.event_stream) {
             await animateEvent(event, state, 1);
+            if (view !== animating) return;
             BattleEvents.apply(state, event);
+            if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
             renderStacks();
         }
         applyView(result, []);
@@ -876,11 +1290,12 @@
         $('replay-play').textContent = 'Відтворити';
     }
 
-    function replayView(state) {
+    function replayView(state, cursor = 0) {
         return {
             id: replay.battle_id, my_side: replay.my_side, state, status: state.status,
-            winner_side: state.winner, reward: replay.reward, turn: null,
-            forecast: state.active_id ? [{id: state.active_id}] : [],
+            winner_side: state.winner, result: replay.result, turn: null,
+            creature_damage: replay.damage?.summary(),
+            forecast: BattleEvents.replayQueue(state, replay.turns, cursor),
         };
     }
 
@@ -890,18 +1305,23 @@
         const actor = entry.stack || entry.attacker;
         const description = {
             move: 'рухається', attack: `завдає ${entry.damage} шкоди`,
+            hero_attack: `стріляє, ${entry.damage} шкоди`,
             retaliation: `контратакує, ${entry.damage} шкоди`, defend: 'у захисті',
             wait: 'чекає', skip: 'пропускає хід', surrender: 'Сторона здалася',
+            summon: `викликає ${uv(entry.unit).name} ×${entry.count}`,
             battle_end: 'Бій завершено',
         };
         logLine(actor ? `${stackName(actor)} ${description[entry.type]}` : description[entry.type], 'sys');
     }
 
     function updateReplay(state, cursor) {
+        const reachedEnd = replay.cursor !== replay.events.length && cursor === replay.events.length;
         replay.cursor = cursor;
         $('replay-seek').value = cursor;
-        applyView(replayView(state), []);
-        if (cursor === replay.events.length && state.status === 'finished') showResult();
+        applyView(replayView(state, cursor), []);
+        if (reachedEnd && state.status === 'finished') {
+            resultModal.present(replay.battle_id, replay.result, replay.damage?.summary(), replay.my_side, {fromReplay: true});
+        }
         const result = state.status === 'finished' ?
             (state.winner === null ? 'Нічия' : state.winner === replay.my_side ? 'Перемога' : 'Поразка') : '';
         $('replay-position').textContent =
@@ -911,12 +1331,15 @@
     function seekReplay(cursor) {
         pauseReplay();
         const state = structuredClone(replay.initial_state);
+        replay.damage = BattleEvents.damageTracker(replay.partial, state.heroes);
         resetClientState();
         view = replayView(state);
         for (const stack of Object.values(state.stacks)) known[stack.id] = stack;
         for (const event of replay.events.slice(0, cursor)) {
             replayLog(event);
             BattleEvents.apply(state, event);
+            if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
+            replay.damage.apply(event);
         }
         updateReplay(state, cursor);
     }
@@ -933,35 +1356,41 @@
             await animateEvent(event, view.state, speed);
             if (generation !== playbackGeneration) return;
             BattleEvents.apply(view.state, event);
+            if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
+            replay.damage.apply(event);
             updateReplay(view.state, replay.cursor + 1);
             await new Promise(resolve => setTimeout(resolve, 100 / speed));
         }
         if (generation === playbackGeneration) pauseReplay();
     }
 
-    async function openReplay(id) {
+    async function openReplay(id, {autoplay = false} = {}) {
+        const requestId = ++replayRequest;
         try {
-            replay = await api('/' + id + '/replay');
+            const data = await api('/' + id + '/replay');
+            if (requestId !== replayRequest || String(data.battle_id) !== String(id)) return false;
+            if (data.schema_version !== 1) throw new Error('Ця версія повтору не підтримується.');
+            replay = data;
+            replay.turns = [];
+            replay.stackIndex = {...replay.initial_state.stacks};
+            replay.events.forEach((event, index) => {
+                if (event.type === 'TURN_STARTED' && event.actor_id && event.sequence !== 1) {
+                    replay.turns.push({index, id: event.actor_id});
+                }
+                Object.assign(replay.stackIndex, event.changes?.stacks);
+            });
             Object.assign(UNIT_VIEW, replay.units);
-            if (replay.schema_version !== 1) throw new Error('Ця версія повтору не підтримується.');
             $('replay-controls').classList.remove('hidden');
             $('replay-seek').max = replay.events.length;
             seekReplay(0);
+            if (autoplay) playReplay();
+            return true;
         } catch (error) {
-            replay = null;
-            toast(error.message);
+            if (requestId === replayRequest && !autoplay) toast(error.message);
+            return false;
         }
     }
 
-    $('btn-new').addEventListener('click', showMenu);
-    $('btn-replay').addEventListener('click', () => {
-        if (replay) {
-            seekReplay(0);
-            playReplay();
-        } else {
-            openReplay(view.id);
-        }
-    });
     $('replay-play').addEventListener('click', playReplay);
     $('replay-restart').addEventListener('click', () => seekReplay(0));
     $('replay-seek').addEventListener('input', event => seekReplay(Number(event.target.value)));
@@ -992,7 +1421,17 @@
             const r = await api('/active');   // є незавершений бій — продовжуємо його
             applyView(r, []);
         } catch (e) {
-            if (e.status === 401) { toast('Потрібна авторизація'); }
+            if (e.status === 401) toast('Потрібна авторизація');
+            const previous = trackedBattle();
+            if (e.status === 404 && /^\d+$/.test(previous || '')) {
+                try {
+                    const final = await api('/' + previous);
+                    if (String(final.id) === previous && final.status === 'finished') {
+                        applyView(final, []);
+                        return;
+                    }
+                } catch { /* the battle may no longer be available to this session */ }
+            }
             showMenu();
         }
     })();

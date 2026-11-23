@@ -11,10 +11,13 @@ from sqlalchemy.orm import Session
 
 from .. import models
 from ..services.activity_guilds import HUNTERS, award_point
+from ..services import castle_buildings
 from ..services.rewards import issue_system_resources
-from .battle_models import ArmySlot, Battle, BattleAction, BattleParticipant
+from .battle_damage import attributed_events, damage_summary
+from .battle_models import Battle, BattleAction, BattleParticipant
+from .battle_result import completion_data
 from ..engine import BattleState, IllegalAction, action_from_dict, create_battle, turn_info
-from ..engine.data import DEFAULT_ARMY, PVE_SCENARIOS, UNITS, UNIT_PRESENTATION
+from ..engine.data import PVE_SCENARIOS, SUMMONING, UNITS, UNIT_PRESENTATION, faction_key
 from ..engine.flow import NotYourTurn, Step, advance_ai, play_turn, surrender_turn
 from ..engine.rules import forecast
 from .actions import action_to_dict
@@ -23,6 +26,9 @@ from .deployment import place, slot_limit
 from .setup import ZONE_COLS
 from .rules import init_timeline
 from .events import SCHEMA_VERSION, initial_events
+from .hero import make_hero
+from .roster import saved_army
+from .summoning import available_elements, hp_pool, max_energy
 
 
 class BattleError(Exception):
@@ -46,18 +52,6 @@ def user_level(user) -> int:
     return int(getattr(user, "combat_level", None) or getattr(user, "level", None) or 1)
 
 
-# ---------- армія ----------
-
-def get_army(db: Session, user_id: int) -> List[tuple]:
-    slots = db.query(ArmySlot).filter(ArmySlot.user_id == user_id).order_by(ArmySlot.slot).all()
-    if not slots:  # новий персонаж отримує армію за замовчуванням
-        for i, (key, count) in enumerate(DEFAULT_ARMY):
-            db.add(ArmySlot(user_id=user_id, slot=i, unit_key=key, count=count))
-        db.flush()
-        return list(DEFAULT_ARMY)
-    return [(s.unit_key, s.count) for s in slots]
-
-
 # ---------- представлення для клієнта ----------
 
 DEPLOYMENT = "deployment"
@@ -65,8 +59,8 @@ PVE_VICTORY_GOLD = (32, 298)
 PVE_VICTORY_XP = 50
 
 
-def _view(battle_id: int, mode: str, status: str, version: int, winner_side, state: BattleState,
-          my_side: int, events: list, steps=(), level=None, reward=None) -> dict:
+def _view(db, battle_id: int, mode: str, status: str, version: int, winner_side, state: BattleState,
+          my_side: int, events: list, steps=(), level=None, completion=None) -> dict:
     active = state.active()
     return {
         "id": battle_id,
@@ -74,9 +68,10 @@ def _view(battle_id: int, mode: str, status: str, version: int, winner_side, sta
         "status": status,
         "version": version,
         "winner_side": winner_side,
-        "reward": reward,
+        **(completion or {"reward": None, "result": None}),
         "my_side": my_side,
         "state": state.to_dict(),
+        "creature_damage": damage_summary(db, battle_id, state.seq),
         "units": UNIT_PRESENTATION,
         "turn": turn_info(state) if active and active.owner == my_side else None,
         "forecast": forecast(state, 50),   # орієнтовна черга на 50 ходів уперед
@@ -115,9 +110,13 @@ def _settle(db: Session, battle_id: int, state: BattleState) -> None:
     for p in parts:
         xp = battle_experience(state, p.side)
         gold = random.randint(*PVE_VICTORY_GOLD) if state.winner == p.side else 0
+        rewarded_hunt = state.hunt_key and state.winner == p.side
+        entries = [{"type": "experience", "amount": xp}]
+        if rewarded_hunt:
+            entries.append({"type": "hunters", "amount": 1})
         issue_system_resources(db, p.user_id, "battle_v1", str(battle_id),
-                               gold=gold, wood=0, stone=0, experience=xp)
-        if state.hunt_key and state.winner == p.side:
+                               gold=gold, wood=0, stone=0, experience=xp, reward_entries=entries)
+        if rewarded_hunt:
             award_point(db, p.user_id, HUNTERS)
 
 
@@ -125,17 +124,6 @@ def battle_experience(state, side):
     if state.surrendered == side or (state.hunt_key and state.winner != side):
         return 0
     return PVE_VICTORY_XP if state.winner == side else 10
-
-
-def recorded_reward(db, battle_id, user_id, state, side):
-    if state.status != "finished":
-        return None
-    entry = db.query(models.RewardTransaction).filter_by(
-        source="battle_v1", source_key=str(battle_id), recipient_id=user_id,
-    ).one_or_none()
-    if entry is None:
-        return None
-    return {"gold": entry.gold, "experience": battle_experience(state, side)}
 
 
 def _finish_fields(state: BattleState) -> dict:
@@ -168,8 +156,9 @@ def _owned_battle(db: Session, user, battle_id: int):
 def get_battle_view(db: Session, user, battle_id: int) -> dict:
     battle, side = _owned_battle(db, user, battle_id)
     state = BattleState.from_dict(battle.state)
-    return _view(battle.id, battle.mode, battle.status, battle.version, battle.winner_side,
-                 state, side, [], level=battle.level, reward=recorded_reward(db, battle_id, user.id, state, side))
+    return _view(db, battle.id, battle.mode, battle.status, battle.version, battle.winner_side,
+                 state, side, [], level=battle.level,
+                 completion=completion_data(db, battle_id, state, user.id, battle_experience))
 
 
 def start_pve(db: Session, user, scenario_key: str, *, hunting=False) -> dict:
@@ -198,13 +187,28 @@ def start_pve(db: Session, user, scenario_key: str, *, hunting=False) -> dict:
     if level < scenario["min_level"]:
         raise Forbidden("рівень занадто низький для цього сценарію")
 
+    army = saved_army(db, user.id)
+    if not army:
+        raise BattleError("Спочатку набери військо в Замку.")
     try:
-        state = create_battle(get_army(db, user.id), scenario["army"],
+        state = create_battle(army, scenario["army"],
                               seed=secrets.randbits(31), level=level, mode="pve")
     except ValueError as e:
         raise BattleError(str(e))
     if hunting:
         state.hunt_key = scenario_key
+    hero = make_hero(db, user, 0, level)
+    state.heroes[hero.id] = hero
+    school = 0
+    if faction_key(user.fraction) == "elves":
+        entries, _ = castle_buildings.catalog()
+        school = castle_buildings.school_level(castle_buildings.built_ids(db, user, entries))
+    energy = max_energy(hero.knowledge)
+    state.summoning["0"] = {
+        "school_level": school, "energy": energy, "max_energy": energy,
+        "hp_pool": hp_pool(hero.spell_power), "cost": SUMMONING["energy_cost"],
+        "elements": available_elements(school),
+    }
     state.status = DEPLOYMENT
     state.active_id = None
     battle = Battle(mode="pve", level=level, status=DEPLOYMENT, state=state.to_dict(), version=0)
@@ -213,7 +217,7 @@ def start_pve(db: Session, user, scenario_key: str, *, hunting=False) -> dict:
     db.add_all([BattleParticipant(battle_id=battle.id, side=0, user_id=user.id),
                 BattleParticipant(battle_id=battle.id, side=1, user_id=None)])
     db.commit()
-    return _view(battle.id, battle.mode, DEPLOYMENT, 0, None, state, 0, [], level=level)
+    return _view(db, battle.id, battle.mode, DEPLOYMENT, 0, None, state, 0, [], level=level)
 
 
 def update_deployment(db, user, battle_id, version, placement=None):
@@ -248,9 +252,9 @@ def update_deployment(db, user, battle_id, version, placement=None):
     if state.status == "finished":
         _settle(db, battle_id, state)
     db.commit()
-    return _view(battle_id, battle.mode, state.status, version + 1,
+    return _view(db, battle_id, battle.mode, state.status, version + 1,
                  state.winner, state, side, _flat_events(steps), steps, level=battle.level,
-                 reward=recorded_reward(db, battle_id, user.id, state, side))
+                 completion=completion_data(db, battle_id, state, user.id, battle_experience))
 
 
 def _checkpoint(battle):
@@ -294,9 +298,9 @@ def submit_action(db: Session, user, battle_id: int, action_dict: dict, expected
     if new_state.status == "finished":
         _settle(db, battle_id, new_state)
     db.commit()
-    return _view(battle_id, battle.mode, new_state.status if new_state.status == "finished" else "active",
+    return _view(db, battle_id, battle.mode, new_state.status if new_state.status == "finished" else "active",
                  expected_version + 1, new_state.winner, new_state, mine.side, _flat_events(steps), steps,
-                 reward=recorded_reward(db, battle_id, user.id, new_state, mine.side))
+                 completion=completion_data(db, battle_id, new_state, user.id, battle_experience))
 
 
 def surrender_battle(db: Session, user, battle_id: int, expected_version: int) -> dict:
@@ -329,9 +333,9 @@ def surrender_battle(db: Session, user, battle_id: int, expected_version: int) -
     _log_steps(db, battle_id, old_state.seq, steps)
     _settle(db, battle_id, new_state)
     db.commit()
-    return _view(battle_id, battle.mode, "finished", expected_version + 1, new_state.winner,
+    return _view(db, battle_id, battle.mode, "finished", expected_version + 1, new_state.winner,
                  new_state, mine.side, _flat_events(steps), steps,
-                 reward=recorded_reward(db, battle_id, user.id, new_state, mine.side))
+                 completion=completion_data(db, battle_id, new_state, user.id, battle_experience))
 
 
 def submit_auto_action(db, user, battle_id, expected_version):
@@ -368,11 +372,13 @@ def battle_events(db, user, battle_id, *, finished_only=False):
     ).order_by(BattleAction.seq).all())
     for action in actions:
         events.extend(action.replay_events)
+    completion = completion_data(db, battle_id, BattleState.from_dict(battle.state), user.id, battle_experience)
+    if completion["result"] is None:
+        completion["result"] = {"status": battle.status, "winner_side": battle.winner_side}
     return {
         "battle_id": battle_id, "schema_version": battle.replay_schema_version, "partial": partial,
-        "initial_state": initial, "events": events, "final_state": battle.state,
-        "reward": recorded_reward(db, battle_id, user.id, BattleState.from_dict(battle.state), side),
-        "my_side": side, "units": UNIT_PRESENTATION, "result": {"status": battle.status, "winner_side": battle.winner_side},
+        "initial_state": initial, "events": list(attributed_events(initial, events)), "final_state": battle.state,
+        **completion, "my_side": side, "units": UNIT_PRESENTATION,
     }
 
 
@@ -382,13 +388,18 @@ def start_hunt(db, user, creature_key):
 
 def hunting_options(player, traveling):
     level = user_level(player)
+    targets = sorted(
+        (creature for creature in UNITS.values() if creature.hunting),
+        key=lambda creature: (creature.hunting.min_level > level, abs(level - creature.hunting.min_level)),
+    )
     return [
         {
             "key": creature.key, "name": creature.name, "icon": creature.icon,
+            "image_url": creature.image_url,
             "count": creature.hunting.count, "min_level": creature.hunting.min_level,
             "difficulty": creature.hunting.difficulty,
             "gold_min": PVE_VICTORY_GOLD[0], "gold_max": PVE_VICTORY_GOLD[1], "xp": PVE_VICTORY_XP,
             "available": not traveling and level >= creature.hunting.min_level,
         }
-        for creature in UNITS.values() if creature.hunting
+        for creature in targets[:2]
     ]
