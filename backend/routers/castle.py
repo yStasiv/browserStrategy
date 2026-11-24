@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -7,10 +9,11 @@ from sqlalchemy.orm import Session
 from .. import database
 from ..auth import session_player
 from ..engine.battle_service import get_active_battle_id, user_level
-from ..engine.data import ELEMENTALS, UNITS, faction_key
+from ..engine.data import CONTENT, ELEMENTALS, UNITS, faction_key
 from ..guild_models import ActivityGuildProgress
 from ..models import Item
 from ..services import activity_guilds, castle_buildings
+from ..services.resource_balances import resource_definitions, resource_owners, resource_quantity
 from ..services.hero_army import army_options, recruitment_cards, save_roster
 from ..services.world import require_presence
 from ..engine.setup import field_rules
@@ -122,8 +125,19 @@ def repairable_items(player):
         Item.owner_id == player.id,
         Item.item_type.in_(REPAIR_WORKSHOPS),
         Item.durability >= 0,
-        Item.durability < Item.max_durability,
+        Item.max_durability > 1,
+        Item.durability * 2 <= Item.max_durability,
     )
+
+
+def repair_prices():
+    rows = json.loads((CONTENT / "artifacts.json").read_text(encoding="utf-8"))
+    resources = resource_definitions()
+    prices = {(row["name"], row["item_type"]): row["repair_cost"] for row in rows if "repair_cost" in row}
+    if any(key not in resources or type(amount) is not int or amount <= 0
+           for price in prices.values() for key, amount in price.items()):
+        raise ValueError("Неправильна ціна ремонту в каталозі артефактів.")
+    return prices
 
 
 def metalworking_progress(db, player):
@@ -138,6 +152,15 @@ def metalworking_page(request: Request, db: Session = Depends(database.get_db)):
     progress = metalworking_progress(db, player)
     unlocked = activity_guilds.workshop_progress(db, player.id)
     items = db.scalars(repairable_items(player).order_by(Item.name, Item.id)).all()
+    prices = repair_prices()
+    owners = resource_owners(db, player, {resource for price in prices.values() for resource in price})
+    quotes = {}
+    for item in items:
+        price = prices.get((item.name, item.item_type))
+        specialization = unlocked.get(REPAIR_WORKSHOPS[item.item_type])
+        if price is not None and specialization:
+            quotes[item.id] = [(key, amount, resource_quantity(owners, key) < amount)
+                               for key, amount in price.items()]
     workshops = [
         (key, name, unlocked.get(key), [item for item in items if item.item_type in types])
         for key, (name, types) in WORKSHOPS.items()
@@ -147,6 +170,7 @@ def metalworking_page(request: Request, db: Session = Depends(database.get_db)):
         "workshops": workshops, "workshop_icons": activity_guilds.WORKSHOP_ICONS,
         "unlocked_count": len(unlocked),
         "repair_percent": activity_guilds.repair_percent,
+        "repair_quotes": quotes, "resource_catalog": resource_definitions(),
         "repaired": request.query_params.get("repaired") == "1",
     })
 
@@ -193,7 +217,17 @@ def repair_artifact(
         raise HTTPException(403, "Спочатку відкрий відповідну майстерню.")
 
     percent = activity_guilds.repair_percent(specialization["level"])
+    cost = repair_prices().get((item.name, item.item_type))
+    if cost is None:
+        raise HTTPException(409, "Для артефакту немає ціни ремонту.")
+    owners = resource_owners(db, player, cost)
+    if any(resource_quantity(owners, key) < amount for key, amount in cost.items()):
+        raise HTTPException(409, "Недостатньо ресурсів для ремонту.")
+    for key, amount in cost.items():
+        owner, field = owners[key]
+        setattr(owner, field, resource_quantity(owners, key) - amount)
     restored = max(1, item.max_durability * percent // 100)
+    item.max_durability -= 1
     item.durability = min(item.max_durability, item.durability + restored)
     if specialization["next_xp"] is not None:
         activity_guilds.award_point(db, player.id, activity_guilds.workshop_key(workshop))

@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
+{% from 'components/resource_price.html' import resource_price %}
 {% block title %}{{ item.name }} · Спорядження{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/artifact_shop.css') }}">
 {% endblock %}
 {% block body %}
 <main class="hero-dashboard">
@@ -20,8 +22,9 @@
                 {% if item.durability is not none and item.max_durability is not none %}
                 <div><dt>Міцність</dt><dd>{{ item.durability }} / {{ item.max_durability }}</dd></div>
                 {% endif %}
-                {% for listing in listings %}
-                <div><dt>У магазині</dt><dd>{{ listing.price }} золота · від рівня {{ listing.level_required }}</dd></div>
+                {% for offer in offers %}
+                <div><dt>У магазині · від рівня {{ offer.listing.level_required }}</dt>
+                    <dd>{{ resource_price(offer.prices, resource_catalog) }}</dd></div>
                 {% endfor %}
             </dl>
             {% if bonuses %}
@@ -35,7 +38,7 @@
             {% if player %}
             <nav class="artifact-links" aria-label="Переходи">
                 {% if item.owner_id == player.id %}<a class="hero-link" href="/inventory">До інвентарю</a>{% endif %}
-                {% if listings %}<a class="hero-link" href="/shop">До магазину</a>{% endif %}
+                {% if offers %}<a class="hero-link" href="/shop">До магазину</a>{% endif %}
                 <a class="hero-link" href="/player">До персонажа</a>
             </nav>
             {% endif %}

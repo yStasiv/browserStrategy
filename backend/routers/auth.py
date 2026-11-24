@@ -1,5 +1,6 @@
 # backend/routers/auth.py
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -139,6 +140,7 @@ class AuthRotes:
         username: str = Form(...),
         password: str = Form(...),
         fraction: str = Form(...),
+        gender: Literal["male", "female"] = Form("male"),
         db: Session = Depends(database.get_db),
     ):
         fraction = {"elves": "elfe", "underground_elves": "undergroundElves"}.get(faction_key(fraction))
@@ -159,7 +161,7 @@ class AuthRotes:
 
         # Створюємо нового користувача
         new_user = models.User(
-            username=username, password=hashed_password, fraction=fraction
+            username=username, password=hashed_password, fraction=fraction, gender=gender,
         )
         db.add(new_user)
         db.flush()

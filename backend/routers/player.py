@@ -8,6 +8,7 @@ from backend.auth import playable_users, session_player
 from backend import database, models
 from backend.auth import get_current_user
 from backend.services.character_profile import dashboard, hero_state
+from backend.routers.item import ITEM_TYPES
 from backend.services.hero_attributes import SPENDABLE_ATTRIBUTES
 from backend.services.hero_equipment import change_equipment, lock_hero
 from backend.services.hero_army import save_roster
@@ -81,6 +82,7 @@ async def player_info(
             "request": request,
             "player": player,
             "profile": profile,
+            "item_types": ITEM_TYPES,
             "read_only": True,
             "nav_player": session_player(request, db),
             "player_rating": player_rating
@@ -101,6 +103,7 @@ class PlayerRotes(PlayerHelper):
 
         return templates.TemplateResponse("player.html", {
             "request": request, "player": user, "profile": dashboard(db, user, next_level_exp),
+            "item_types": ITEM_TYPES,
         })
 
     @router.post("/update-attribute", response_class=RedirectResponse)

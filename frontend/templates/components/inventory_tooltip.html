@@ -1,0 +1,11 @@
+{% macro artifact_tooltip_content(item, types, bonuses) %}
+    <strong>{{ item.name }} · {{ types.get(item.item_type, 'Артефакт') }}</strong>
+    <span>{% for label, value in bonuses %}{{ label }} {{ '%+g'|format(value) }}{{ ' · ' if not loop.last }}{% else %}Без бонусів{% endfor %}</span>
+    {% if item.durability is not none and item.max_durability is not none %}
+    <span>Міцність {{ item.durability }}/{{ item.max_durability }}</span>
+    {% endif %}
+{% endmacro %}
+
+{% macro artifact_tooltip(item, types, bonuses) %}
+<template data-artifact-tooltip>{{ artifact_tooltip_content(item, types, bonuses) }}</template>
+{% endmacro %}

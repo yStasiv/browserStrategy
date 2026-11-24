@@ -552,6 +552,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert asyncio.run(asgi_request(app, "GET", "/art_info?id=-1", ""))[0] == 404
     assert 'value="1500" max="3000"' in html and "Бойовий рівень 2" in html
     assert "Знання" in html and "Витривалість" not in html and "Срібний шолом" in html
+    assert "Чоловік" in html and "elves_male_back_model.png.png" in html
     assert 'data-hero-stat="defense"' in html and "спорядження 3" in html
     assert html.count("data-hero-slot=") == 11
     assert html.count("data-resource-id=") == 7
@@ -661,6 +662,7 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     from backend.models import Item, PlayerResourceBalance
     from backend.routers import castle
     from backend.services import castle_buildings
+    monkeypatch.setattr(castle, "repair_prices", lambda: {("Перстень", "jewelry"): {"gold": 10}})
 
     buildings = json.loads(castle_buildings.CATALOG_FILE.read_text(encoding="utf-8"))
     entries = {building["id"]: building for building in buildings}
@@ -743,6 +745,11 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
 
     with sessions.begin() as db:
         db.get(ActivityGuildProgress, (10, activity_guilds.workshop_key("jewelry"))).points = 99
+        assert db.get(User, 10).gold == 0
+
+    assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 409
+    with sessions.begin() as db:
+        db.get(User, 10).gold = 20
 
     assert call("POST", endpoint, {"item_id": 102, "durability": 0})[0] == 409
     assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 303
@@ -755,7 +762,7 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
         player = db.get(User, 10)
         assert (player.gold, player.singing_resin, player.basalt_bone) == (0, 0, 0)
         assert db.get(PlayerResourceBalance, (10, "pulse_spark")).quantity == 0
-        assert db.get(Item, 101).durability == 15
+        assert (db.get(Item, 101).durability, db.get(Item, 101).max_durability) == (14, 98)
         assert db.get(Item, 102).durability == 0
         assert activity_guilds.progress(db, 10, activity_guilds.WORKERS)["xp"] == 1
         metalworking = activity_guilds.progress(db, 10, activity_guilds.METALWORKERS)
@@ -993,16 +1000,17 @@ def test_registration_grants_only_own_faction_starter_buildings(sessions):
             yield db
 
     app.dependency_overrides[database.get_db] = get_db
-    for username, fraction, group in (
-        ("new_elf", "elfe", "elves"),
-        ("new_underground", "undergroundElves", "underground_elves"),
+    for username, fraction, group, gender in (
+        ("new_elf", "elfe", "elves", "male"),
+        ("new_underground", "undergroundElves", "underground_elves", "female"),
     ):
         assert asyncio.run(asgi_request(app, "POST", "/register", "", {
-            "username": username, "password": "test-password", "fraction": fraction,
+            "username": username, "password": "test-password", "fraction": fraction, "gender": gender,
         }))[0] == 303
         with sessions() as db:
             user = db.scalar(select(User).where(User.username == username))
             assert user.fraction == fraction
+            assert user.gender == gender
             ids = db.scalars(select(CastleBuilding.building_id).where(CastleBuilding.player_id == user.id))
             assert set(ids) == {f"{group}_recruitment_tier_{tier}" for tier in (1, 2)}
             assert saved_army(db, user.id) == []

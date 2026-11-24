@@ -57,6 +57,7 @@ class HeroTurn:
     ready: int = 0
     portrait: str | None = None
     faction: str | None = None
+    equipment_ids: list[int] = field(default_factory=list)
 
 
 @dataclass
@@ -106,6 +107,8 @@ class BattleState:
                     del hero["portrait"]
                 if hero["faction"] is None:
                     del hero["faction"]
+                if not hero["equipment_ids"]:
+                    del hero["equipment_ids"]
         for stack in snapshot["stacks"].values():
             if not stack["summoned"]:
                 del stack["summoned"]

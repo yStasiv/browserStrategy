@@ -136,15 +136,14 @@
     height: clamp(23rem, 68vw, 29rem);
     margin: 0 auto;
     background: radial-gradient(ellipse at center, #fff6de66, transparent 70%);
-    --silhouette: #637456;
 }
-.hero-paper-doll.underground { --silhouette: #584862; }
-.hero-silhouette {
+.hero-equipment-model {
     position: absolute;
-    inset: 6% 19% 5% 28%;
-    background: linear-gradient(155deg, var(--silhouette), #725338);
-    opacity: .32;
-    clip-path: polygon(42% 7%, 48% 3%, 55% 4%, 60% 9%, 68% 7%, 61% 18%, 60% 23%, 72% 29%, 82% 47%, 88% 66%, 82% 70%, 71% 54%, 64% 46%, 66% 60%, 68% 90%, 75% 96%, 58% 98%, 53% 86%, 50% 63%, 46% 85%, 42% 97%, 24% 98%, 31% 88%, 34% 59%, 36% 45%, 29% 53%, 18% 70%, 12% 66%, 20% 46%, 28% 30%, 41% 23%, 40% 17%, 32% 7%, 40% 10%);
+    inset: 5% 0;
+    width: 100%;
+    height: 90%;
+    object-fit: contain;
+    pointer-events: none;
 }
 .hero-dashboard .hero-gear-slot {
     position: absolute;
@@ -157,7 +156,7 @@
     min-height: 0;
     padding: .25rem;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     place-items: center;
     background: radial-gradient(ellipse at 50% 35%, #fcf0d0, #e6cc9b);
     color: var(--hero-ink);
@@ -170,8 +169,40 @@
     box-shadow: inset 0 0 0 1px #e5b974, 0 2px 4px #5b442141;
 }
 .hero-dashboard a.hero-gear-slot:hover { border-color: #a97228; background: #fff4d9; }
-.hero-slot-item { max-width: 100%; max-height: 100%; overflow: hidden; overflow-wrap: anywhere; }
-.hero-slot-item img { width: 1.4rem; height: 1.4rem; object-fit: contain; margin: auto; display: block; }
+.hero-gear-slot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    object-fit: contain;
+    filter: contrast(1.08);
+    pointer-events: none;
+}
+.hero-gear-slot .hero-slot-placeholder { opacity: .72; }
+.hero-gear-slot:hover, .hero-gear-slot:focus-visible { z-index: 2; }
+.hero-gear-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    width: max-content;
+    max-width: 10rem;
+    padding: .4rem;
+    border-radius: .3rem;
+    background: #493521;
+    color: #fff5dc;
+    text-align: start;
+    pointer-events: none;
+    visibility: hidden;
+}
+.hero-gear-slot:is(:hover, :focus-visible) .hero-gear-tooltip { visibility: visible; }
+[data-hero-slot="back"] .hero-gear-tooltip,
+[data-hero-slot="off_hand"] .hero-gear-tooltip { left: auto; right: 0; }
+[data-hero-slot="legs"] .hero-gear-tooltip,
+[data-hero-slot="acc_4"] .hero-gear-tooltip { top: auto; bottom: 100%; }
 [data-hero-slot="head"] { --sx: 55%; --sy: 12%; }
 [data-hero-slot="chest"] { --sx: 55%; --sy: 34%; }
 [data-hero-slot="belt"] { --sx: 55%; --sy: 56%; }
@@ -186,8 +217,9 @@
 .hero-army-squads { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); gap: .45rem; }
 .hero-army-squads li { background: linear-gradient(#fbefd0, #e9d2a4); border: 1px solid #b89159; border-radius: .3rem; padding: .45rem; }
 .hero-army-squads li { display: grid; align-content: center; justify-items: center; min-height: 4rem; text-align: center; }
-.hero-army-squads .hero-army-filled { container-type: inline-size; padding: 0; align-self: start; align-content: stretch; justify-items: stretch; }
-.hero-army-filled .unit-info-link { display: block; position: relative; height: 4rem; }
+.hero-army-squads .hero-army-slot { box-sizing: border-box; min-height: calc(4.9rem + 2px); }
+.hero-army-squads .hero-army-filled { container-type: inline-size; padding: 0; align-content: stretch; justify-items: stretch; }
+.hero-army-filled .unit-info-link { display: block; position: relative; }
 .hero-army-filled .unit-portrait {
     position: absolute;
     inset: 0;

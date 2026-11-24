@@ -1,23 +1,45 @@
+{% from 'components/inventory_tooltip.html' import artifact_tooltip, artifact_tooltip_content %}
 <section class="hero-panel hero-equipment-panel" aria-label="Спорядження">
+    {% set empty_icons = {'head': 'helmet', 'chest': 'armor', 'belt': 'belt', 'legs': 'boots', 'back': 'cloak',
+                          'main_hand': 'sword', 'off_hand': 'shield_bow_dagger', 'acc_1': 'amulet',
+                          'acc_2': 'ring', 'acc_3': 'ring', 'acc_4': 'ring'} %}
     <div class="hero-doll-scroll" tabindex="0" role="region" aria-label="Розташування слотів спорядження">
-        <div class="hero-paper-doll{% if profile.faction_key == 'underground_elves' %} underground{% endif %}">
-            <div class="hero-silhouette" aria-hidden="true"></div>
+        <div class="hero-paper-doll">
+            <img class="hero-equipment-model" src="{{ profile.equipment_model_url }}" alt="">
             {% for key, slot in profile.equipment.items() %}
-            {% if slot.item %}
-            <a class="hero-gear-slot" data-hero-slot="{{ key }}" href="/art_info?id={{ slot.item.id }}" title="{{ slot.item.name }}">
-            {% elif not read_only %}
-            <a class="hero-gear-slot" data-hero-slot="{{ key }}" href="/inventory" aria-label="{{ slot.name }} · до інвентарю">
+            {% set icon_url = slot.item.image_url if slot.item else url_for('static', path='images/items/background_icons/' ~ empty_icons[key] ~ '.png') %}
+            {% if inventory_management and slot.item %}
+            <form id="inventory-unequip-{{ key }}" data-inventory-action
+                  method="post" action="/inventory/unequip/{{ slot.item.id }}">
+                <input type="hidden" name="return_to_inventory" value="true">
+                {{ artifact_tooltip(slot.item, item_types, artifact_bonuses[slot.item.id]) }}
+            </form>
+            <button class="hero-gear-slot inventory-equipped" data-hero-slot="{{ key }}"
+                    type="submit" form="inventory-unequip-{{ key }}" data-artifact-trigger
+                    aria-label="Зняти «{{ slot.item.name }}»">
+            {% elif slot.item %}
+            <a class="hero-gear-slot" data-hero-slot="{{ key }}" href="/art_info?id={{ slot.item.id }}"
+               aria-label="{{ slot.item.name }}" aria-describedby="gear-bonuses-{{ key }}">
+            {% elif not read_only and not inventory_management %}
+            <a class="hero-gear-slot" data-hero-slot="{{ key }}" href="/inventory"
+               title="{{ slot.name }}" aria-label="{{ slot.name }} · до інвентарю">
             {% else %}
-            <div class="hero-gear-slot" data-hero-slot="{{ key }}">
+            <div class="hero-gear-slot" data-hero-slot="{{ key }}" title="{{ slot.name }}">
             {% endif %}
-                <strong>{{ slot.name }}</strong>
-                <span class="hero-slot-item">
-                    {% if slot.item %}
-                    {% if slot.item.image_url %}<img src="{{ slot.item.image_url }}" alt="">{% endif %}
-                    {{ slot.item.name }}
-                    {% else %}Вільно{% endif %}
+                {% if icon_url %}
+                <img{% if not slot.item %} class="hero-slot-placeholder"{% endif %}
+                     src="{{ icon_url }}" alt="{{ '' if slot.item else slot.name ~ ' · вільно' }}">
+                {% else %}
+                <span aria-hidden="true">◆</span>
+                {% endif %}
+            {% if inventory_management and slot.item %}
+                </button>
+            {% elif slot.item %}
+                <span class="hero-gear-tooltip" id="gear-bonuses-{{ key }}" role="tooltip">
+                    {{ artifact_tooltip_content(slot.item, item_types, slot.item.bonuses) }}
                 </span>
-            {% if slot.item or not read_only %}</a>{% else %}</div>{% endif %}
+            </a>
+            {% elif not read_only and not inventory_management %}</a>{% else %}</div>{% endif %}
             {% endfor %}
         </div>
     </div>
