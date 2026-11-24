@@ -400,6 +400,7 @@
       "forms": [
         {
           "form": 1,
+          "abilities": [],
           "name": "Іскра соларіса",
           "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_8.png",
           "attack": 32,
@@ -412,6 +413,7 @@
         },
         {
           "form": 2,
+          "abilities": ["flying"],
           "name": "Соларіс-фенікс",
           "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_8_form_2.png",
           "attack": 38,
@@ -425,6 +427,7 @@
         },
         {
           "form": 3,
+          "abilities": ["flying"],
           "name": "Верховний соларіс-фенікс",
           "image_url": "/static/images/units_and_buildings/elves/units/elves_recruitment_tier_8_form_3.png",
           "attack": 44,
@@ -840,6 +843,7 @@
       "forms": [
         {
           "form": 1,
+          "abilities": [],
           "name": "Молодий обскуро-дракон",
           "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_8.png",
           "attack": 33,
@@ -852,6 +856,7 @@
         },
         {
           "form": 2,
+          "abilities": ["flying"],
           "name": "Обскуро-дракон",
           "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_8_form_2.png",
           "attack": 39,
@@ -865,6 +870,7 @@
         },
         {
           "form": 3,
+          "abilities": ["flying"],
           "name": "Владика обскуро-драконів",
           "image_url": "/static/images/units_and_buildings/underground_elves/units/underground_elves_recruitment_tier_8_form_3.png",
           "attack": 45,

@@ -7,7 +7,7 @@ from datetime import datetime
 from math import ceil
 from typing import List
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from .. import models
@@ -72,6 +72,18 @@ PVE_VICTORY_GOLD = (32, 298)
 def _view(db, battle_id: int, mode: str, status: str, version: int, winner_side, state: BattleState,
           my_side: int, events: list, steps=(), level=None, completion=None) -> dict:
     active = state.active()
+    snapshot = state.to_dict()
+    if status == DEPLOYMENT and mode == "pvp":
+        human_enemies = set(db.scalars(select(BattleParticipant.side).where(
+            BattleParticipant.battle_id == battle_id, BattleParticipant.side != my_side,
+            BattleParticipant.user_id.is_not(None),
+        )))
+        snapshot["stacks"] = {key: row for key, row in snapshot["stacks"].items()
+                              if row["owner"] not in human_enemies}
+        snapshot["heroes"] = {key: row for key, row in snapshot.get("heroes", {}).items()
+                              if row["owner"] not in human_enemies}
+        snapshot["placed_stack_ids"] = [key for key in state.placed_stack_ids if key in snapshot["stacks"]]
+        snapshot.pop("initial_ready_at", None)
     return {
         "id": battle_id,
         "mode": mode,
@@ -80,7 +92,7 @@ def _view(db, battle_id: int, mode: str, status: str, version: int, winner_side,
         "winner_side": winner_side,
         **(completion or {"reward": None, "result": None}),
         "my_side": my_side,
-        "state": state.to_dict(),
+        "state": snapshot,
         "creature_damage": damage_summary(db, battle_id, state.seq),
         "units": UNIT_PRESENTATION,
         "turn": turn_info(state) if active and active.owner == my_side else None,
@@ -272,6 +284,7 @@ def start_pve(db: Session, user, scenario_key: str, *, hunting=False, expected_d
     }
     state.status = DEPLOYMENT
     state.active_id = None
+    state.initial_ready_at.clear()
     battle = Battle(mode="pve", level=level, status=DEPLOYMENT, state=state.to_dict(), version=0)
     db.add(battle)
     db.flush()
@@ -295,6 +308,7 @@ def update_deployment(db, user, battle_id, version, placement=None):
             raise BattleError(str(exc)) from exc
     else:
         state.status = "active"
+        state.placed_stack_ids.clear()
         init_timeline(state)
         extra = {"initial_state": state.to_dict(), "replay_schema_version": SCHEMA_VERSION}
         ai_sides = {row.side for row in db.query(BattleParticipant).filter_by(battle_id=battle_id, user_id=None)}

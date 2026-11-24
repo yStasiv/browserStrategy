@@ -66,7 +66,10 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     assert call("GET", root + "/replay")[0] == 409
     assert call("GET", root + "/events", token="outsider-token")[0] == 403
     assert battle["status"] == "deployment"
-    assert call("GET", "/active")[1]["id"] == battle["id"]
+    obstacles = battle["state"]["obstacles"]
+    assert obstacles and battle["state"]["obstacle_kind"] == "rock"
+    active = call("GET", "/active")[1]
+    assert active["id"] == battle["id"] and active["state"]["obstacles"] == obstacles
     assert call("POST", root + "/auto", {"version": battle["version"]})[0] == 409
     placement = {"version": battle["version"], "stack_id": "s0_0", "x": 1, "y": 1, "split_count": 3}
     assert call("POST", root + "/deployment", dict(placement, x=7))[0] == 400
@@ -75,6 +78,8 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     assert status == 200
     assert battle["state"]["stacks"]["s0_0"]["count"] == 17
     assert battle["state"]["stacks"]["s0_3"]["count"] == 3
+    assert battle["state"]["placed_stack_ids"] == ["s0_3"]
+    assert "s1_0" in battle["state"]["stacks"]
     assert call("POST", root + "/deployment", placement)[0] == 409
     begin_payload = {"version": battle["version"]}
     status, battle = call("POST", root + "/begin", begin_payload)
@@ -83,6 +88,11 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     baseline = call("GET", root + "/events")[1]
     assert baseline["initial_state"]["stacks"]["s0_3"]["count"] == 3
     assert baseline["initial_state"]["seq"] == 0
+    assert baseline["initial_state"]["obstacles"] == battle["state"]["obstacles"] == obstacles
+    assert baseline["events"][0]["payload"]["obstacles"] == obstacles
+    assert baseline["events"][0]["payload"]["obstacle_kind"] == "rock"
+    assert baseline["initial_state"]["initial_ready_at"]["hero_0"] == baseline["initial_state"]["heroes"]["hero_0"]["ready"]
+    assert baseline["events"][0]["payload"]["initial_ready_at"] == baseline["initial_state"]["initial_ready_at"]
 
     auto_payload = {"version": battle["version"]}
     assert call("POST", root + "/auto", auto_payload, token="outsider-token")[0] == 403
@@ -273,3 +283,37 @@ def test_experience_depends_on_enemy_hp_survivors_and_outcome():
     assert earned_experience(initial, final, 0) == 18
     final.surrendered = 0
     assert earned_experience(initial, final, 0) == 0
+
+
+def test_pvp_deployment_hides_other_players_until_start(tmp_path, monkeypatch):
+    engine = create_engine(f"sqlite:///{tmp_path / 'pvp.db'}")
+    monkeypatch.setattr(db_base, "engine", engine)
+    command.upgrade(Config("alembic.ini"), "head")
+    sessions = sessionmaker(engine, autoflush=False)
+    with sessions.begin() as db:
+        db.add_all([User(id=10, username="left"), User(id=11, username="right")])
+        db.flush()
+        state = create_battle([("archer", 4)], [("swordsman", 7)], seed=43, mode="pvp")
+        state.status = "deployment"
+        state.active_id = None
+        battle = Battle(mode="pvp", level=1, status="deployment", state=state.to_dict(), version=0)
+        db.add(battle)
+        db.flush()
+        battle_id = battle.id
+        db.add_all([BattleParticipant(battle_id=battle_id, user_id=10, side=0),
+                    BattleParticipant(battle_id=battle_id, user_id=11, side=1)])
+
+    with sessions() as db:
+        left, right = db.get(User, 10), db.get(User, 11)
+        placed = battle_service.update_deployment(db, left, battle_id, 0, ("s0_0", 1, 2, None))
+        assert set(placed["state"]["stacks"]) == {"s0_0"}
+        assert placed["state"]["placed_stack_ids"] == ["s0_0"]
+        opponent = battle_service.get_battle_view(db, right, battle_id)
+        assert set(opponent["state"]["stacks"]) == {"s1_0"}
+        assert opponent["state"]["placed_stack_ids"] == []
+        assert "initial_ready_at" not in opponent["state"]
+
+        started = battle_service.update_deployment(db, right, battle_id, 1)
+        assert started["status"] == "active"
+        assert set(started["state"]["stacks"]) == {"s0_0", "s1_0"}
+        assert started["state"]["stacks"]["s0_0"]["x"] == 1

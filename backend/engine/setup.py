@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from .data import UNITS
+from .obstacles import generate_obstacles
 from .rules import init_timeline
 from .state import MAX_HEIGHT, MAX_SLOTS, MIN_HEIGHT, WIDTH, BattleState, Stack
 
@@ -101,5 +102,8 @@ def create_battle(
             stacks[sid] = stack
             occupied.update(cells)
     state = BattleState(width=rules.width, height=height, seed=seed, stacks=stacks)
+    state.obstacles = generate_obstacles(state, ZONE_COLS)
+    if state.obstacles:
+        state.obstacle_kind = "rock"
     init_timeline(state)
     return state

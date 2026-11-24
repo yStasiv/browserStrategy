@@ -55,6 +55,14 @@ class UnitType:
     skills: tuple[str, ...] = ()
 
 
+def resolved_abilities(unit, form=None):
+    override = form.get("abilities") if form is not None else None
+    if isinstance(override, list):
+        return override
+    inherited = unit.get("abilities")
+    return inherited if isinstance(inherited, list) else []
+
+
 def creature_rows():
     yield from json.loads((CONTENT / "creatures.json").read_text(encoding="utf-8"))
     for faction, roster in FACTION_ROSTERS.items():
@@ -75,7 +83,8 @@ def creature_rows():
                     **{key: value for key, value in form.items() if key != "building"},
                     "key": key, "tier": line["tier"], "faction": faction,
                     "line": f"{faction}_{line['key']}", "icon": line["icon"],
-                    "speed": line["speed"], "shots": line["shots"], "abilities": line["abilities"],
+                    "speed": line["speed"], "shots": form.get("shots", line["shots"]),
+                    "abilities": resolved_abilities(line, form),
                     "shooting_range": form.get("shooting_range", line.get("shooting_range", DEFAULT_SHOOTING_RANGE)),
                     "size": line.get("size", (1, 1)), "starter_count": 0,
                     "recruitment": recruitment,
@@ -95,7 +104,9 @@ def load_creatures():
         recruit = row.pop("recruitment")
         row.pop("army_points_cost", None)
         row["size"] = tuple(row["size"])
-        row["abilities"] = tuple(row["abilities"])
+        row["abilities"] = tuple(resolved_abilities(row))
+        if "ranged_attack" not in row["abilities"] and row["shots"] > 0:
+            row["shots"] = 0
         if "skills" in row:
             row["skills"] = tuple(row["skills"])
         unit = UnitType(**row, recruitment=Recruitment(**recruit) if recruit else None)
@@ -107,7 +118,8 @@ def load_creatures():
                 or (unit.recruitment and (
                     not unit.recruitment.building or min(unit.recruitment.min_level, unit.recruitment.max_count) < 1
                 ))
-                or set(unit.abilities) != ({"ranged_attack"} if unit.shots else set())):
+                or set(unit.abilities) - {"ranged_attack", "flying"}
+                or ("ranged_attack" in unit.abilities) != bool(unit.shots)):
             raise ValueError(f"Некоректні параметри істоти: {unit.key}")
         catalog[unit.key] = unit
     return catalog

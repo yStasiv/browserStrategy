@@ -116,20 +116,21 @@
     content: "💡 ";
 }
 
-.help-guilds table {
+.help-table-scroll { overflow-x: auto; }
+.help-content table {
     width: 100%;
     border-collapse: collapse;
     margin: 1rem 0 1.5rem;
     font-size: .9rem;
 }
-.help-guilds caption { font-weight: 600; text-align: left; padding-bottom: .4rem; }
-.help-guilds th, .help-guilds td {
+.help-content caption { font-weight: 600; text-align: left; padding-bottom: .4rem; }
+.help-content th, .help-content td {
     padding: .4rem .5rem;
     border: 1px solid #cbb691;
     overflow-wrap: anywhere;
     text-align: left;
 }
-.help-guilds thead { background: #f5ead6; }
+.help-content thead { background: #f5ead6; }
 
 .help-content .help-creatures {
     display: grid;
@@ -172,6 +173,7 @@
                 <li><a href="#basics" class="help-item" data-content="basics">Основи гри</a></li>
                 <li><a href="#interface" class="help-item" data-content="interface">Інтерфейс</a></li>
                 <li><a href="#resources" class="help-item" data-content="resources">Ресурси</a></li>
+                <li><a href="#battle-system" class="help-item" data-content="battle-system">Бойова система</a></li>
                 <li><a href="#creatures" class="help-item" data-content="creatures">Створіння</a></li>
             </ul>
         </div>
@@ -212,6 +214,10 @@
         <li><a href="/unit_info?key={{ creature.key }}">{{ portrait(creature) }} {{ creature.name }}</a></li>
         {% endfor %}
     </ul>
+</template>
+
+<template id="help-battle-system">
+    {% include 'help/battle_system.html' %}
 </template>
 
 <template id="help-guilds">
@@ -436,6 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
         item.addEventListener('click', function(e) {
             e.preventDefault();
             const contentKey = this.dataset.content;
+            window.history.replaceState(null, "", this.hash);
             loadContent(contentKey);
         });
     });

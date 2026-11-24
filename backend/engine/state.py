@@ -76,6 +76,15 @@ class BattleState:
     hunt_level: Optional[int] = None
     summoning: Dict[str, dict] = field(default_factory=dict)
     heroes: Dict[str, HeroTurn] = field(default_factory=dict)
+    initial_ready_at: Dict[str, int] = field(default_factory=dict)
+    placed_stack_ids: List[str] = field(default_factory=list)
+    obstacles: List[List[int]] = field(default_factory=list)
+    obstacle_kind: str | None = None
+
+    def blocked_cells(self, *, excluding: str | None = None) -> set[Tuple[int, int]]:
+        return {tuple(cell) for cell in self.obstacles} | {
+            cell for stack in self.stacks.values() if stack.id != excluding for cell in stack.cells()
+        }
 
     def actors(self):
         return chain(self.stacks.values(), self.heroes.values())
@@ -93,6 +102,14 @@ class BattleState:
 
     def to_dict(self) -> dict:
         snapshot = asdict(self)
+        if self.obstacle_kind is None:
+            del snapshot["obstacle_kind"]
+        if not self.obstacles:
+            del snapshot["obstacles"]
+        if not self.placed_stack_ids:
+            del snapshot["placed_stack_ids"]
+        if not self.initial_ready_at:
+            del snapshot["initial_ready_at"]
         if self.hunt_key is None:
             del snapshot["hunt_key"]
         if self.hunt_level is None:

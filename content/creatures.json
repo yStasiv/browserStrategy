@@ -188,7 +188,7 @@
       3
     ],
     "icon": "🐉",
-    "abilities": [],
+    "abilities": ["flying"],
     "starter_count": 0,
     "recruitment": null
   }
