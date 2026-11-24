@@ -876,8 +876,8 @@
 
     function deploymentOptions() {
         const actor = view.state.stacks[deploymentStack];
-        const positions = [];
-        if (!actor) return {actor, positions};
+        const destinations = new Map();
+        if (!actor) return {actor, destinations};
 
         const zone = view.deployment.zone_width;
         const left = view.my_side === 0 ? 0 : view.state.width - zone;
@@ -888,25 +888,39 @@
                 blocked.add(cell.dataset.x + ',' + cell.dataset.y);
             }
         }
+
+        const [ox, oy] = centerOffset(actor);
+        const distance = (cellX, cellY, [x, y]) => (cellX - x - ox) ** 2 + (cellY - y - oy) ** 2;
         for (let y = 0; y + actor.h <= view.state.height; y++) {
             for (let x = left; x + actor.w <= left + zone; x++) {
                 const cells = footprint(x, y, actor.w, actor.h);
-                if (cells.every(cell => !blocked.has(cell.dataset.x + ',' + cell.dataset.y))) {
-                    positions.push([x, y]);
+                if (cells.some(cell => blocked.has(cell.dataset.x + ',' + cell.dataset.y))) continue;
+                const position = [x, y];
+                for (const cell of cells) {
+                    const cellX = Number(cell.dataset.x), cellY = Number(cell.dataset.y);
+                    const key = cellX + ',' + cellY;
+                    const previous = destinations.get(key);
+                    if (!previous || distance(cellX, cellY, position) < distance(cellX, cellY, previous)) {
+                        destinations.set(key, position);
+                    }
                 }
             }
         }
-        return {actor, positions};
+        return {actor, destinations};
     }
 
     function renderHighlights() {
         clearHover();
-        const {actor, positions} = view.deployment ? deploymentOptions() :
-            {actor: activeStack(), positions: view.turn?.move ?? []};
-        const mv = new Set();
-        if (actor) {
-            const [ox, oy] = centerOffset(actor);
-            for (const [x, y] of positions) mv.add((x + ox) + ',' + (y + oy));
+        let mv;
+        if (view.deployment) {
+            mv = deploymentOptions().destinations;
+        } else {
+            const actor = activeStack();
+            mv = new Set();
+            if (actor) {
+                const [ox, oy] = centerOffset(actor);
+                for (const [x, y] of view.turn?.move ?? []) mv.add((x + ox) + ',' + (y + oy));
+            }
         }
         const obstacles = new Set((view.state.obstacles ?? []).map(cell => cell.join(',')));
         el.cells.querySelectorAll('.cell').forEach(cell => {
@@ -1202,15 +1216,16 @@
     }
 
     function boardDestination(x, y) {
-        const deployment = view.deployment ? deploymentOptions() : null;
-        const actor = deployment ? deployment.actor : activeStack();
+        if (view.deployment) {
+            const {actor, destinations} = deploymentOptions();
+            const destination = destinations.get(x + ',' + y);
+            return destination ? {actor, destination} : null;
+        }
+        const actor = activeStack();
         if (!actor) return null;
         const [ox, oy] = centerOffset(actor);
         const destination = [x - ox, y - oy];
-        const valid = deployment ?
-            deployment.positions.some(([px, py]) => px === destination[0] && py === destination[1]) :
-            view.turn?.move_paths?.[destination.join(',')];
-        return valid ? {actor, destination} : null;
+        return view.turn?.move_paths?.[destination.join(',')] ? {actor, destination} : null;
     }
 
     function onCellHover(x, y) {
