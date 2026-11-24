@@ -81,7 +81,7 @@
 
         #stacks, #popups { position: absolute; inset: 0; pointer-events: none; }
         .stack { position: absolute; display: flex; align-items: center; justify-content: center;
-                 transition: opacity 0.4s ease; pointer-events: auto; user-select: none; }
+                 transition: opacity 0.4s ease; pointer-events: auto; cursor: pointer; user-select: none; }
         .stack .icon {
             width: 78%; height: 78%; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
@@ -124,8 +124,7 @@
             background-repeat: no-repeat;
             background-size: 400% 600%;
         }
-        #squad-details dl { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem .5rem; margin: .5rem 0; }
-        #squad-details dd { text-align: right; }
+        .stack[role="button"]:focus-visible .icon { outline: 2px solid #fff2b5; outline-offset: 2px; }
         @keyframes pop { 0% { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px); } }
 
         #initiative { display: flex; flex: 1 1 0; min-width: 0; gap: .3rem; overflow-x: auto; padding: .25rem .15rem; }
@@ -206,11 +205,6 @@
                     <div id="active-info" class="text-sm text-slate-300 min-h-[2.5rem]"></div>
                     <output id="attack-preview" class="text-sm text-amber-200" hidden></output>
                 </div>
-                <section class="bg-slate-800 rounded-lg p-3" aria-label="Огляд загону">
-                    <label for="squad-inspector">Огляд загону</label>
-                    <select id="squad-inspector" class="block w-full bg-slate-900"></select>
-                    <div id="squad-details" class="text-sm text-slate-300" hidden></div>
-                </section>
                 <div id="deployment-actions" class="hidden space-y-2">
                     <div id="deployment-army" class="flex flex-wrap gap-2" aria-label="Загони для розстановки"></div>
                     <label class="block" id="deployment-split-label">Відокремити істот
@@ -230,17 +224,8 @@
                     <button id="confirm-spell" type="button" class="btn">Застосувати</button>
                     <button id="cancel-spell" type="button" class="btn alt">Скасувати</button>
                 </section>
-                <section id="summon-actions" class="hidden bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Виклик елементалів">
-                    <p id="summon-energy"></p>
-                    <p id="summon-status" aria-live="polite"></p>
-                    <button id="legacy-spellbook" type="button" class="btn">Книга заклять</button>
-                </section>
+                <button id="legacy-spellbook" type="button" class="btn" hidden>Книга заклять</button>
                 <div id="log" class="bg-slate-800 rounded-lg p-2"></div>
-                <section class="bg-slate-800 rounded-lg p-3" aria-labelledby="creature-damage-title">
-                    <h2 id="creature-damage-title" class="font-bold">Шкода створінь</h2>
-                    <div id="creature-damage" class="text-sm space-y-2"></div>
-                    <p id="creature-damage-partial" class="text-xs text-slate-400 mt-2" hidden>Показано шкоду за доступну частину запису.</p>
-                </section>
             </aside>
         </div>
     </section>
@@ -267,6 +252,18 @@
     </div>
 
     {% include 'components/battle_result.html' %}
+    <dialog id="squad-inspector" class="battle-result squad-dialog" aria-labelledby="squad-title">
+        <div class="battle-result-frame">
+            <header class="battle-result-header">
+                <h2 id="squad-title" tabindex="-1">Огляд загону</h2>
+            </header>
+            <div id="squad-details" class="squad-dialog-content"></div>
+            <footer class="battle-result-footer">
+                <button type="button" data-squad-action hidden></button>
+                <form method="dialog"><button type="submit">Закрити</button></form>
+            </footer>
+        </div>
+    </dialog>
 
     <div id="toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black/85 text-white text-sm px-4 py-2 rounded"></div>
 </div>
@@ -290,6 +287,7 @@
     let busy = false;
     let auto = false;
     let deploymentStack = null;
+    let inspectedSquad = null;
     let hoveredStackId = null;
     let hoveredAttack = null;
     let completedActor = null;
@@ -340,7 +338,6 @@
         fallbackFocus: () => replay ? $('replay-play') : $('battle-return'),
         unitName: key => uv(key).name,
     });
-    const damageNumber = new Intl.NumberFormat('en-US');
     $('battle-return').addEventListener('click', () => {
         if (view?.status === 'finished' || replay) trackBattle(null);
     });
@@ -495,12 +492,11 @@
         buildCells();
         if (events && events.length) showEvents(events);
         renderPanel();
-        renderCreatureDamage(v.creature_damage);
         renderStacks();
         renderInitiative();
         renderHighlights();
         renderSpellSelection();
-        $('battle-result-toggle').hidden = !(v.status === 'finished' && v.result);
+        $('battle-result-toggle').hidden = v.result?.status !== 'finished';
 
         for (const s of Object.values(v.state.stacks)) lastPos[s.id] = { x: s.x, y: s.y, w: s.w, h: s.h };
 
@@ -521,12 +517,30 @@
             if (!d) {
                 d = document.createElement('div');
                 d.innerHTML = '<div class="icon"></div><span class="flag"></span><span class="badge"></span>';
-                d.addEventListener('click', (event) => onStackClick(s.id, event));
+                d.setAttribute('role', 'button');
+                d.setAttribute('aria-haspopup', 'dialog');
+                d.tabIndex = 0;
+                let inspectGesture = false;
+                d.addEventListener('mousedown', event => {
+                    inspectGesture = event.button === 1 || (event.buttons & 3) === 3;
+                    if (!inspectGesture) return;
+                    event.preventDefault();
+                    openSquadInspector(s.id, squadAction(s.id, event, event.shiftKey));
+                });
+                d.addEventListener('click', event => {
+                    if (!inspectGesture) onStackClick(s.id, event);
+                });
+                d.addEventListener('keydown', event => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openSquadInspector(s.id, squadAction(s.id, null, event.shiftKey));
+                });
                 d.addEventListener('contextmenu', event => {
                     event.preventDefault();
-                    $('squad-inspector').value = s.id;
-                    renderSquadInspector();
+                    if (!$('squad-inspector').open) openSquadInspector(s.id);
                 });
+                d.addEventListener('auxclick', event => event.preventDefault());
                 d.addEventListener('mousemove', (event) => onStackHover(s.id, event));
                 d.addEventListener('mouseenter', (event) => onStackHover(s.id, event));
                 d.addEventListener('mouseleave', () => {
@@ -541,8 +555,7 @@
             d.className = 'stack' + (s.w > 1 || s.h > 1 ? ' big' : '') + (isAlly(s.id) ? '' : ' enemy') +
                           (s.id === activeId ? ' active' : '') + (targetIds.has(s.id) ? ' target' : '');
             d.classList.toggle('hl', s.id === hoveredStackId);
-            const movingStack = view.deployment ? deploymentStack : view.turn?.active;
-            d.style.pointerEvents = s.id === movingStack ? 'none' : '';
+            d.setAttribute('aria-label', `${u.name}, ${s.count} · Огляд загону`);
             d.style.left = 'calc(var(--cell) * ' + s.x + ')';
             d.style.top = 'calc(var(--cell) * ' + s.y + ')';
             d.style.width = 'calc(var(--cell) * ' + s.w + ')';
@@ -568,21 +581,15 @@
     }
 
     function renderSquadInspector() {
-        const select = $('squad-inspector');
+        const dialog = $('squad-inspector');
+        if (!dialog.open || !inspectedSquad) return;
+        const stack = view.state.stacks[inspectedSquad.id];
+        if (!stack) { dialog.close(); return; }
         const panel = $('squad-details');
-        const squads = Object.values(view.state.stacks);
-        const labels = squads.map(stack => `${uv(stack.unit).name} · ${stack.owner === view.my_side ? 'Союзний' : 'Ворожий'} · ×${stack.count}`);
-        const selected = select.value;
-        if (select.options.length !== squads.length + 1 ||
-            squads.some((stack, index) => select.options[index + 1].value !== stack.id ||
-                select.options[index + 1].text !== labels[index])) {
-            select.replaceChildren(new Option('Обери загін', ''), ...squads.map((stack, index) =>
-                new Option(labels[index], stack.id)));
-            select.value = view.state.stacks[selected] ? selected : '';
-        }
-        const stack = view.state.stacks[select.value];
-        panel.hidden = !stack;
-        if (!stack) return;
+        const action = dialog.querySelector('[data-squad-action]');
+        const command = inspectedSquad.version === view.version ? inspectedSquad.command : null;
+        action.hidden = !command;
+        action.textContent = command?.label ?? '';
 
         const unit = uv(stack.unit);
         const hero = Object.values(view.state.heroes ?? {}).find(hero => hero.owner === stack.owner);
@@ -599,59 +606,66 @@
         ];
         const hp = (stack.count - 1) * unit.hp + stack.top_hp;
         const attributes = [
-            ['Істоти', `${stack.count} / ${initial}`],
-            ['Загальне здоров’я', hp], ['HP пораненої істоти', stack.top_hp],
-            ['HP однієї істоти', unit.hp], ['Атака', unit.attack], ['Захист', unit.defense],
-            ['Постріли', `${stack.shots_left} / ${unit.shots}`],
-            ['Дальність подвійного пострілу', unit.shots ? unit.shooting_range : '—'],
-            ['Шкода', `${unit.dmg_min}–${unit.dmg_max}`], ['Швидкість', unit.speed],
-            ['Ініціатива', unit.initiative], ['Удача й шанс', chance(luck, stack.luck_streak)],
-            ['Мораль і шанс', chance(morale, stack.morale_streak)],
-            ['Здібності', abilities.join(', ') || '—'], ['Активні ефекти', effects.join(', ') || '—'],
+            ['Істоти', `${stack.count} / ${initial}`, '👥'],
+            ['Загальне здоров’я', hp, '♥'],
+            ['HP пораненої істоти', stack.top_hp, '♥'],
+            ['HP однієї істоти', unit.hp, '♥'],
+            ['Атака', unit.attack, 'attack.png'],
+            ['Захист', unit.defense, 'defense.png'],
+            ['Постріли', `${stack.shots_left} / ${unit.shots}`, '🏹'],
+            ['Дальність подвійного пострілу', unit.shots ? unit.shooting_range : '—', '🎯'],
+            ['Шкода', `${unit.dmg_min}–${unit.dmg_max}`, 'attack.png'],
+            ['Швидкість', unit.speed, '➜'],
+            ['Ініціатива', unit.initiative, 'initiative.png'],
+            ['Удача й шанс', chance(luck, stack.luck_streak), luck < 0 ? 'negative_luck.png' : 'luck.png'],
+            ['Мораль і шанс', chance(morale, stack.morale_streak), morale < 0 ? 'negative_morale.png' : 'morale.png'],
+            ['Здібності', abilities.join(', ') || '—', '✦'],
+            ['Активні ефекти', effects.join(', ') || '—', '◈'],
         ];
-        const heading = document.createElement('h3');
-        heading.textContent = unit.name;
+        $('squad-title').textContent = unit.name;
+        const portrait = document.createElement('div');
+        portrait.className = 'squad-dialog-portrait';
+        renderUnitPortrait(portrait, unit);
         const list = document.createElement('dl');
-        for (const [label, value] of attributes) {
+        for (const [label, value, icon] of attributes) {
             const term = document.createElement('dt');
             const detail = document.createElement('dd');
-            term.textContent = label;
-            detail.textContent = value;
-            list.append(term, detail);
-        }
-        panel.replaceChildren(heading, list);
-    }
-
-    $('squad-inspector').addEventListener('change', renderSquadInspector);
-
-    function renderCreatureDamage(summary) {
-        const sides = summary?.sides ?? [];
-        const ordered = [...sides].sort((a, b) => Number(b.side === view.my_side) - Number(a.side === view.my_side));
-        $('creature-damage-partial').hidden = !summary?.partial;
-        $('creature-damage').replaceChildren(...ordered.map(side => {
-            const group = document.createElement('div');
-            const heading = document.createElement('h3');
-            const allied = side.side === view.my_side;
-            heading.className = allied ? 'font-bold text-sky-300' : 'font-bold text-red-300';
-            heading.textContent = `${allied ? 'Союзники' : 'Вороги'} · ${damageNumber.format(side.total)}`;
-            group.append(heading);
-            if (side.creatures.length) {
-                const list = document.createElement('ul');
-                for (const creature of side.creatures) {
-                    const row = document.createElement('li');
-                    row.className = 'flex justify-between gap-2';
-                    const name = document.createElement('span');
-                    name.textContent = uv(creature.unit).name;
-                    const damage = document.createElement('strong');
-                    damage.textContent = damageNumber.format(creature.amount);
-                    row.append(name, damage);
-                    list.append(row);
-                }
-                group.append(list);
+            const isImage = icon.endsWith('.png');
+            const mark = document.createElement(isImage ? 'img' : 'span');
+            mark.className = 'squad-stat-icon';
+            if (isImage) {
+                mark.src = '/static/images/hero_stats/' + icon;
+                mark.alt = '';
+            } else {
+                mark.textContent = icon;
+                mark.setAttribute('aria-hidden', 'true');
             }
-            return group;
-        }));
+            term.append(mark, document.createTextNode(label));
+            detail.textContent = value;
+            const row = document.createElement('div');
+            row.append(term, detail);
+            list.append(row);
+        }
+        panel.replaceChildren(portrait, list);
     }
+
+    function openSquadInspector(id, command = null) {
+        if (!view?.state.stacks[id]) return;
+        if (replay && playing) pauseReplay();
+        const dialog = $('squad-inspector');
+        inspectedSquad = {id, command, version: view.version};
+        if (!dialog.open) dialog.showModal();
+        renderSquadInspector();
+        $('squad-title').focus();
+    }
+
+    $('squad-inspector').addEventListener('close', schedulePoll);
+    $('squad-inspector').querySelector('[data-squad-action]').addEventListener('click', () => {
+        if (!inspectedSquad || inspectedSquad.version !== view?.version) return;
+        const command = inspectedSquad.command;
+        $('squad-inspector').close();
+        command?.run();
+    });
 
     function highlightInitiative(id) {
         if (hoveredStackId === id) return;
@@ -871,8 +885,13 @@
         const field = $('field-heroes');
         const heroes = Object.values(st.heroes ?? {});
         field.hidden = heroes.length === 0;
+        const bySide = [0, 1].map(side => heroes.filter(hero => hero.owner === side));
         field.replaceChildren(...heroes.map(hero => {
             const card = document.createElement('div');
+            const sideHeroes = bySide[hero.owner];
+            if (sideHeroes.length > 1) {
+                card.style.bottom = `${12 + sideHeroes.indexOf(hero) * 65 / sideHeroes.length}%`;
+            }
             card.id = 'field-' + hero.id;
             card.dataset.side = hero.owner;
             card.className = 'field-hero' + (st.active_id === hero.id ? ' active' : '');
@@ -916,24 +935,6 @@
         }));
     }
 
-    function renderSummoning(canCast) {
-        const st = view.state;
-        const magic = st.summoning?.[view.my_side];
-        const legacy = Boolean(magic && !st.heroes && !view.deployment);
-        const visible = Boolean(magic?.elements.length && !view.deployment);
-        $('summon-actions').classList.toggle('hidden', !visible);
-        $('summon-energy').hidden = !legacy;
-        $('legacy-spellbook').hidden = !legacy || Boolean(replay) || view.status !== 'active';
-        $('legacy-spellbook').disabled = !canCast;
-        if ($('spellbook').open && !canCast) $('spellbook').close();
-        if (!visible) return;
-        $('summon-energy').textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
-        const summon = Object.values(st.stacks).find(stack => stack.owner === view.my_side && stack.summoned);
-        $('summon-status').textContent = summon
-            ? `${uv(summon.unit).name} ×${summon.count} · HP верхнього ${summon.top_hp}/${uv(summon.unit).hp}`
-            : 'Активного елементаля немає';
-    }
-
     function renderPanel() {
         const st = view.state;
         const a = activeStack();
@@ -944,7 +945,11 @@
         const can = myTurn && !busy && !auto;
         const canCast = can && !replay && (view.turn?.hero || !st.heroes);
         renderHeroes(canCast);
-        renderSummoning(canCast);
+        const legacySpellbook = $('legacy-spellbook');
+        legacySpellbook.hidden = Boolean(st.heroes || replay || deploying)
+            || view.status !== 'active' || !st.summoning?.[view.my_side]?.elements.length;
+        legacySpellbook.disabled = !canCast;
+        if ($('spellbook').open && !canCast) $('spellbook').close();
 
         if (deploying) {
             const owned = Object.values(st.stacks).filter(stack => stack.owner === view.my_side);
@@ -1165,6 +1170,10 @@
         const stack = view?.state.stacks[id];
         highlightInitiative(stack ? id : null);
         if (!stack) return;
+        if (id === (view.deployment ? deploymentStack : view.turn?.active) && !spellSelection) {
+            onCellHover(...stackCell(stack, event));
+            return;
+        }
         const aim = attackAim(stack, event);
         hoveredAttack = {id, aim};
         showAttackHover(id, aim, event.shiftKey);
@@ -1354,22 +1363,43 @@
         }
     }
 
+    function stackCell(stack, event) {
+        const box = event.currentTarget.getBoundingClientRect();
+        const column = Math.floor((event.clientX - box.left) * stack.w / box.width);
+        const row = Math.floor((event.clientY - box.top) * stack.h / box.height);
+        return [stack.x + Math.min(stack.w - 1, Math.max(0, column)),
+                stack.y + Math.min(stack.h - 1, Math.max(0, row))];
+    }
+
+    function squadAction(id, event, shift) {
+        if (!view || busy || auto || replay || spellSelection) return null;
+        const stack = view.state.stacks[id];
+        if (!stack) return null;
+        if (view.deployment && stack.owner === view.my_side && id !== deploymentStack) {
+            return {label: 'Вибрати для розстановки', run: () => selectDeploymentStack(id)};
+        }
+        if (event && id === (view.deployment ? deploymentStack : view.turn?.active)) {
+            const cell = stackCell(stack, event);
+            if (boardDestination(...cell)) {
+                return {label: view.deployment ? 'Поставити сюди' : 'Перемістити сюди', run: () => onCellClick(...cell)};
+            }
+        }
+        const target = view.turn?.targets.find(candidate => candidate.id === id);
+        if (!target) return null;
+        const choice = attackChoice(target, event ? attackAim(stack, event) : null, shift);
+        if (!choice) return null;
+        return {
+            label: choice.from ? 'Атакувати врукопашну' : 'Атакувати',
+            run: () => send({type: 'attack', target_id: id, from_pos: choice.from, force_melee: choice.forceMelee}),
+        };
+    }
+
     function onStackClick(id, event) {
         if (spellSelection) {
-            const stack = view.state.stacks[id];
-            const box = event.currentTarget.getBoundingClientRect();
-            const x = stack.x + Math.floor((event.clientX - box.left) * stack.w / box.width);
-            const y = stack.y + Math.floor((event.clientY - box.top) * stack.h / box.height);
-            confirmSpellAt(x, y);
+            confirmSpellAt(...stackCell(view.state.stacks[id], event));
             return;
         }
-        if (view?.deployment) { selectDeploymentStack(id); return; }
-        if (!view || !view.turn) return;
-        const t = view.turn.targets.find((q) => q.id === id);
-        if (!t) return;
-        const target = view.state.stacks[id];
-        const choice = attackChoice(t, attackAim(target, event), event.shiftKey);
-        if (choice) send({ type: 'attack', target_id: id, from_pos: choice.from, force_melee: choice.forceMelee });
+        squadAction(id, event, event.shiftKey)?.run();
     }
 
     el.btnWait.addEventListener('click', () => send({ type: 'wait' }));
@@ -1377,9 +1407,9 @@
         el.btnWait.addEventListener(type, renderInitiative);
     }
     $('battle-result-toggle').addEventListener('click', () => {
-        if (view?.status === 'finished') {
-            resultModal.present(view.id, view.result, view.creature_damage, view.my_side, {reopen: true});
-        }
+        if (view?.result?.status !== 'finished') return;
+        if (replay && playing) pauseReplay();
+        resultModal.present(view.id, view.result, view.creature_damage, view.my_side, {reopen: true});
     });
     $('legacy-spellbook').addEventListener('click', openSpellbook);
     function cancelSpellSelection() {
@@ -1398,7 +1428,7 @@
     document.addEventListener('keydown', (ev) => {
         if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
         const k = ev.key.toLowerCase();
-        if ($('spellbook').open) return;
+        if (document.querySelector('dialog[open]')) return;
         if (ev.key === 'Escape' && spellSelection) {
             cancelSpellSelection();
             return;
@@ -1425,7 +1455,7 @@
 
     // Якщо зараз не наш хід (наприклад, у майбутньому PvP) — опитуємо сервер.
     async function autoTurn() {
-        if (!auto || busy || !view?.turn || view.status !== 'active') return;
+        if (!auto || busy || !view?.turn || view.status !== 'active' || $('squad-inspector').open) return;
         setBusy(true);
         try {
             await animateLive(await api('/' + view.id + '/auto', 'POST', {version: view.version}));
@@ -1450,7 +1480,7 @@
     function schedulePoll() {
         clearTimeout(pollTimer);
         if (replay || busy || !view || view.status !== 'active') return;
-        if (view.turn && auto) pollTimer = setTimeout(autoTurn, 250);
+        if (view.turn && auto && !$('squad-inspector').open) pollTimer = setTimeout(autoTurn, 250);
         else if (!view.turn) pollTimer = setTimeout(async () => {
             await refresh();
             schedulePoll();
@@ -1459,6 +1489,8 @@
 
     // ---------- Старт ----------
     function resetClientState() {
+        if ($('squad-inspector').open) $('squad-inspector').close();
+        inspectedSquad = null;
         if ($('spellbook').open) $('spellbook').close();
         resultModal.close();
         Object.keys(known).forEach(id => delete known[id]);
@@ -1677,7 +1709,7 @@
         return {
             id: replay.battle_id, my_side: replay.my_side, state, status: state.status,
             winner_side: state.winner, result: replay.result, turn: null,
-            creature_damage: replay.damage?.summary(),
+            creature_damage: replay.fullDamage,
             forecast: BattleEvents.replayQueue(state, replay.turns, cursor),
         };
     }
@@ -1705,7 +1737,7 @@
         $('replay-seek').value = cursor;
         applyView(replayView(state, cursor), []);
         if (reachedEnd && state.status === 'finished') {
-            resultModal.present(replay.battle_id, replay.result, replay.damage?.summary(), replay.my_side, {fromReplay: true});
+            resultModal.present(replay.battle_id, replay.result, replay.fullDamage, replay.my_side, {fromReplay: true});
         }
         const result = state.status === 'finished' ?
             (state.winner === null ? 'Нічия' : state.winner === replay.my_side ? 'Перемога' : 'Поразка') : '';
@@ -1716,7 +1748,6 @@
     function seekReplay(cursor) {
         pauseReplay();
         const state = structuredClone(replay.initial_state);
-        replay.damage = BattleEvents.damageTracker(replay.partial, state.heroes);
         resetClientState();
         view = replayView(state);
         for (const stack of Object.values(state.stacks)) known[stack.id] = stack;
@@ -1724,7 +1755,6 @@
             replayLog(event);
             BattleEvents.apply(state, event);
             if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
-            replay.damage.apply(event);
         }
         updateReplay(state, cursor);
     }
@@ -1742,7 +1772,6 @@
             if (generation !== playbackGeneration) return;
             BattleEvents.apply(view.state, event);
             if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
-            replay.damage.apply(event);
             updateReplay(view.state, replay.cursor + 1);
             await new Promise(resolve => setTimeout(resolve, 100 / speed));
         }
@@ -1758,12 +1787,15 @@
             replay = data;
             replay.turns = [];
             replay.stackIndex = {...replay.initial_state.stacks};
+            const damage = BattleEvents.damageTracker(replay.partial, replay.initial_state.heroes);
             replay.events.forEach((event, index) => {
+                damage.apply(event);
                 if (event.type === 'TURN_STARTED' && event.actor_id && event.sequence !== 1) {
                     replay.turns.push({index, id: event.actor_id});
                 }
                 Object.assign(replay.stackIndex, event.changes?.stacks);
             });
+            replay.fullDamage = damage.summary();
             Object.assign(UNIT_VIEW, replay.units);
             $('replay-controls').classList.remove('hidden');
             $('replay-seek').max = replay.events.length;

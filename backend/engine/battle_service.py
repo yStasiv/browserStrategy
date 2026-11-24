@@ -262,16 +262,15 @@ def start_pve(db: Session, user, scenario_key: str, *, hunting=False, expected_d
     army = saved_army(db, user.id)
     if not army:
         raise ArmyRequired("Спочатку набери військо в Замку.")
+    hero = make_hero(db, user, 0, level)
     try:
         state = create_battle(army, scenario["army"],
-                              seed=secrets.randbits(31), level=level, mode="pve")
+                              seed=secrets.randbits(31), level=level, mode="pve", heroes=[hero])
     except ValueError as e:
         raise BattleError(str(e))
     if hunting:
         state.hunt_key = scenario_key
         state.hunt_level = hunt_level
-    hero = make_hero(db, user, 0, level)
-    state.heroes[hero.id] = hero
     school = 0
     if faction_key(user.fraction) == "elves":
         entries, _ = castle_buildings.catalog()

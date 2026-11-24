@@ -9,9 +9,8 @@ from dataclasses import asdict, dataclass, field, fields
 from itertools import chain
 from typing import Dict, List, Optional, Tuple
 
-WIDTH = 12          # ширина поля (великі бої)
-MIN_HEIGHT = 5      # мінімальна висота адаптивного поля
-MAX_HEIGHT = 12     # максимальна висота адаптивного поля
+WIDTH = 12
+HEIGHT_PER_HERO = 10
 MAX_SLOTS = 8       # абсолютний максимум слотів армії на сторону
 MAX_ACTIONS = 600   # після такої кількості дій бій завершується нічиєю (захист від вічного бою)
 ATB_SCALE = 100_000 # період загону = ATB_SCALE // ініціатива

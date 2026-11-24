@@ -1,13 +1,14 @@
 """Створення бою з двох армій."""
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 from .data import UNITS
 from .obstacles import generate_obstacles
 from .rules import init_timeline
-from .state import MAX_HEIGHT, MAX_SLOTS, MIN_HEIGHT, WIDTH, BattleState, Stack
+from .state import HEIGHT_PER_HERO, MAX_SLOTS, WIDTH, BattleState, HeroTurn, Stack
 
 Army = List[Tuple[str, int]]  # [(ключ_істоти, кількість), ...]
 
@@ -18,21 +19,16 @@ ZONE_COLS = 3      # скільки колонок від краю займає 
 @dataclass(frozen=True)
 class FieldRules:
     width: int
-    height: Optional[int]   # None = адаптивна: від MIN_HEIGHT до MAX_HEIGHT за висотою армій
+    height: int
     max_slots: int          # максимум загонів в одній армії
 
 
-def field_rules(level: int, mode: str) -> FieldRules:
-    """Параметри поля й армії залежно від бойового рівня та режиму.
-
-    - PvE, рівні 1-3: поле 8x8, до 5 загонів;
-    - PvP (будь-який рівень) і всі бої з 4 рівня: поле 12 в ширину, висота адаптивна, до 8 загонів.
-    """
+def field_rules(level: int, mode: str, *, heroes_per_side: int = 1) -> FieldRules:
+    """Правила поля. Висоту визначає сторона з найбільшою кількістю героїв."""
     if mode not in ("pve", "pvp"):
         raise ValueError(f"невідомий режим: {mode!r}")
-    if mode == "pve" and level <= LOW_LEVEL_MAX:
-        return FieldRules(width=8, height=8, max_slots=5)
-    return FieldRules(width=WIDTH, height=None, max_slots=MAX_SLOTS)
+    slots = 5 if mode == "pve" and level <= LOW_LEVEL_MAX else MAX_SLOTS
+    return FieldRules(width=WIDTH, height=HEIGHT_PER_HERO * max(1, heroes_per_side), max_slots=slots)
 
 
 def _layout(sizes: List[Tuple[int, int]], owner: int, width: int, height: int) -> List[Tuple[int, int]]:
@@ -49,11 +45,12 @@ def _layout(sizes: List[Tuple[int, int]], owner: int, width: int, height: int) -
 
     occupied = set()
     out = []
+    left, right = (0, ZONE_COLS) if owner == 0 else (width - ZONE_COLS, width)
     edge_cols = list(range(ZONE_COLS)) if owner == 0 else [width - 1 - i for i in range(ZONE_COLS)]
     for w, h in sizes:
         for col in edge_cols:
             x = col if owner == 0 else col - w + 1
-            if x < 0 or x + w > width:
+            if x < left or x + w > right:
                 continue
             spot = next(((x, y) for y in range(height - h + 1)
                          if not {(x + i, y + j) for i in range(w) for j in range(h)} & occupied), None)
@@ -68,13 +65,13 @@ def _layout(sizes: List[Tuple[int, int]], owner: int, width: int, height: int) -
 
 def create_battle(
     army_a: Army, army_b: Army, seed: int, level: int = 1, mode: str = "pve",
-    *, configuration: Optional[FieldRules] = None,
+    *, configuration: Optional[FieldRules] = None, heroes: Iterable[HeroTurn] = (),
 ) -> BattleState:
-    """Сторона 0 стає біля лівого краю, сторона 1 — біля правого.
-    Висота адаптивного поля = за сумою висот загонів більшої армії (від MIN_HEIGHT до MAX_HEIGHT)."""
-    defaults = field_rules(level, mode)
-    rules = configuration or defaults
-    if rules.width < 1 or (rules.height is not None and rules.height < 1):
+    """Сторона 0 стає біля лівого краю, сторона 1 — біля правого."""
+    heroes = {hero.id: hero for hero in heroes}
+    side_counts = Counter(hero.owner for hero in heroes.values())
+    rules = configuration or field_rules(level, mode, heroes_per_side=max(side_counts.values(), default=1))
+    if rules.width < 1 or rules.height < 1:
         raise ValueError("некоректні розміри поля")
     for army in (army_a, army_b):
         if not army or len(army) > rules.max_slots:
@@ -83,10 +80,7 @@ def create_battle(
             if key not in UNITS or count < 1:
                 raise ValueError(f"некоректний загін: {key} x{count}")
 
-    def need(army: Army) -> int:
-        return sum(UNITS[k].size[1] for k, _ in army)
-
-    height = rules.height or min(MAX_HEIGHT, max(MIN_HEIGHT, need(army_a), need(army_b)))
+    height = rules.height
     stacks = {}
     occupied = set()
     for owner, army in ((0, army_a), (1, army_b)):
@@ -101,7 +95,7 @@ def create_battle(
                 raise ValueError("загони не можна розмістити на цьому полі")
             stacks[sid] = stack
             occupied.update(cells)
-    state = BattleState(width=rules.width, height=height, seed=seed, stacks=stacks)
+    state = BattleState(width=rules.width, height=height, seed=seed, stacks=stacks, heroes=heroes)
     state.obstacles = generate_obstacles(state, ZONE_COLS)
     if state.obstacles:
         state.obstacle_kind = "rock"

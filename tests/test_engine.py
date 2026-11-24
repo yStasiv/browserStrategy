@@ -19,20 +19,20 @@ def put_adjacent(st):
 
 # ---------- поле і розстановка ----------
 
-def test_height_adapts_to_army_size():
+def test_field_size_is_independent_of_army_size():
     small = create_battle([("peasant", 5)], [("goblin", 5)], 1, level=4, mode="pve")
-    assert (small.width, small.height) == (12, 5)
+    assert (small.width, small.height) == (12, 10)
     big = create_battle([("peasant", 1)] * 7, [("goblin", 1)], 1, level=4, mode="pve")
-    assert big.height == 7
+    assert big.height == 10
     cells = [c for s in big.stacks.values() for c in s.cells()]
     assert len(cells) == len(set(cells))
 
 
-def test_low_level_pve_is_8x8_with_5_slots():
+def test_low_level_pve_is_12x10_with_5_slots():
     army = [("peasant", 1)] * 5
     st = create_battle(army, army, 1, level=3, mode="pve")
-    assert (st.width, st.height) == (8, 8)
-    assert {s.x for s in st.stacks.values()} == {0, 7}
+    assert (st.width, st.height) == (12, 10)
+    assert {s.x for s in st.stacks.values()} == {0, 11}
     with pytest.raises(ValueError):
         create_battle([("peasant", 1)] * 6, army, 1, level=3, mode="pve")
 
@@ -40,9 +40,9 @@ def test_low_level_pve_is_8x8_with_5_slots():
 def test_pvp_and_level4_allow_8_slots():
     army = [("peasant", 1)] * 8
     pvp = create_battle(army, army, 1, level=1, mode="pvp")
-    assert (pvp.width, pvp.height) == (12, 8)
+    assert (pvp.width, pvp.height) == (12, 10)
     pve4 = create_battle(army, army, 1, level=4, mode="pve")
-    assert (pve4.width, pve4.height) == (12, 8)
+    assert (pve4.width, pve4.height) == (12, 10)
     with pytest.raises(ValueError):
         create_battle([("peasant", 1)] * 9, army, 1, level=4, mode="pvp")
 
@@ -63,13 +63,13 @@ def test_big_units_footprints_and_deploy():
 
 
 def test_tall_army_falls_back_to_multi_column_layout():
-    army = [("dragon", 1), ("dragon", 1), ("ogre", 1), ("peasant", 1), ("peasant", 1)]  # висота 10 > 8
+    army = [("dragon", 1), ("dragon", 1), ("dragon", 1), ("peasant", 1), ("peasant", 1)]  # висота 11 > 10
     st = create_battle(army, [("goblin", 3)], 1, level=3, mode="pve")
     all_cells_ok(st)
 
 
 def test_army_too_big_for_field_rejected():
-    army = [("dragon", 1)] * 5   # 5 драконів по 6 клітинок > зони розстановки 8x8
+    army = [("dragon", 1)] * 5   # У 3 колонках не поміщаються п’ять загонів 2×3.
     with pytest.raises(ValueError):
         create_battle(army, [("goblin", 3)], 1, level=3, mode="pve")
 
@@ -272,7 +272,7 @@ def test_from_dict_ignores_legacy_keys():
     d = two_stacks().to_dict()
     d["round"] = 3
     d["queue"] = ["x"]
-    assert BattleState.from_dict(d).width == 8
+    assert BattleState.from_dict(d).width == d["width"]
 
 
 def test_turn_info_lists_targets():
