@@ -14,20 +14,25 @@ TYPES = {
 
 
 def initial_events(state, partial):
+    payload = {"initial_ready_at": state.get("initial_ready_at", {})}
+    for key in ("obstacles", "obstacle_kind"):
+        if key in state:
+            payload[key] = state[key]
     return [
         {"sequence": 0, "type": "REPLAY_CHECKPOINT" if partial else "BATTLE_STARTED",
-         "payload": {}},
+         "payload": payload},
         {"sequence": 1, "type": "TURN_STARTED", "actor_id": state["active_id"], "payload": {}},
     ]
 
 
-def action_events(before, after, legacy):
+def action_events(before, after, legacy, action=None):
     result = []
 
     def emit(kind, payload, actor=None, target=None):
         event = {
             "sequence": after.seq * EVENTS_PER_ACTION + len(result), "action_sequence": after.seq,
-            "type": kind, "payload": payload,
+            "type": kind, "payload": payload, "seq": after.seq,
+            **({"action": action} if action is not None else {}),
         }
         if actor is not None:
             event["actor_id"] = actor
@@ -47,6 +52,12 @@ def action_events(before, after, legacy):
         if kind == "move":
             stack = before.stacks[actor]
             payload.update({"from": [stack.x, stack.y], "to": payload["path"][-1], "path": payload["path"][1:]})
+        if kind in {"attack", "retaliation", "hero_attack"}:
+            payload.update(
+                distance=payload.get("distance"), double_damage=payload.get("double_damage", False),
+                damage_dealt=payload["hp_before"] - payload["hp_after"],
+                target_hp_pool_after=payload["hp_after"], target_count_after=payload["target_left"],
+            )
         emit(TYPES[kind], payload, actor, target)
         if kind in {"attack", "retaliation", "hero_attack"}:
             emit("DAMAGE_APPLIED", {
@@ -59,15 +70,18 @@ def action_events(before, after, legacy):
         if kind == "defend":
             emit("STATUS_APPLIED", {"effect": "defend", "expires": "next_own_turn"}, actor, actor)
 
-    emit("TURN_ENDED", {}, None if after.surrendered is not None else before.active_id)
+    ended_actor = None if after.surrendered is not None else before.active_id
+    next_actor = after.stacks.get(ended_actor) or after.heroes.get(ended_actor)
+    emit("TURN_ENDED", {"next_ready_at": next_actor.ready if next_actor else None}, ended_actor)
     if finished is not None:
-        emit("BATTLE_FINISHED", finished)
+        emit("BATTLE_FINISHED", {**finished, "outcome": {"winner_side": after.winner,
+                                                         "surrendered_side": after.surrendered}})
     else:
         previous = before.stacks.get(after.active_id)
         current = after.stacks.get(after.active_id)
         if previous and current and previous.defending and not current.defending:
             emit("STATUS_EXPIRED", {"effect": "defend"}, after.active_id, after.active_id)
-        emit("TURN_STARTED", {}, after.active_id)
+        emit("TURN_STARTED", {"ready_at": after.active().ready}, after.active_id)
 
     old, new = before.to_dict(), after.to_dict()
     result[-1]["changes"] = {

@@ -174,3 +174,293 @@ def test_pvp_and_level4_allow_8_slots():
     assert (pve4.width, pve4.height) == (12, 8)
     with pytest.raises(ValueError):
         create_battle([("peasant", 1)] * 9, army, 1, level=4, mode="pvp")
+
+
+def test_initial_readiness_varies_within_ten_percent_and_is_snapshotted():
+    from engine.rules import period
+
+    offsets = set()
+    for seed in range(20):
+        state = two_stacks(seed=seed)
+        hero = HeroTurn("hero_0", 0, "Герой", 1, 10, 0, 0, 0, 0, 5, 8)
+        state.heroes[hero.id] = hero
+        init_timeline(state)
+        assert set(state.initial_ready_at) == {actor.id for actor in state.actors()}
+        for actor in state.actors():
+            assert state.initial_ready_at[actor.id] == actor.ready
+            offset = actor.ready - period(actor)
+            assert abs(offset) <= period(actor) // 10
+            offsets.add(offset)
+        snapshot = state.to_dict()
+        init_timeline(state)
+        assert state.to_dict() == snapshot == BattleState.from_dict(snapshot).to_dict()
+    assert min(offsets) < 0 < max(offsets)
+
+
+def test_attack_previews_match_defended_shot_and_forced_melee():
+    from math import floor
+
+    from engine.actions import action_from_dict
+    from engine.flow import play_turn
+
+    state = two_stacks("archer", "swordsman", ca=15, cb=10)
+    actor, target = state.stacks["s0_0"], state.stacks["s1_0"]
+    actor.x, actor.y, target.x, target.y = 0, 0, 6, 0
+    state.active_id = actor.id
+    target.defending = True
+    preview = turn_info(state)["targets"][0]["preview"]
+    unit, enemy = UNITS[actor.unit], UNITS[target.unit]
+    multiplier = 1 + .025 * (unit.attack - enemy.defense * 1.3)
+    assert preview["eff_def"] == enemy.defense * 1.3
+    assert preview["mult"] == pytest.approx(multiplier)
+    assert (preview["base_dmg_min"], preview["base_dmg_max"]) == (15 * unit.dmg_min, 15 * unit.dmg_max)
+    assert (preview["roll_count"], preview["roll_scale"]) == (10, 1.5)
+    assert preview["average_damage"] == 2 * floor(15 * (unit.dmg_min + unit.dmg_max) / 2 * multiplier)
+    assert preview["final_dmg_max"] == 2 * floor(15 * unit.dmg_max * multiplier)
+    assert preview["unit_dmg_min"] == max(1, floor(unit.dmg_min * multiplier * 2))
+    assert preview["estimated_kills"] == min(target.count, preview["final_dmg_max"] // enemy.hp)
+    assert preview["is_double_shot"] and not preview["will_counterattack"]
+    _, shot = apply(state, Attack(target.id))
+    assert preview["final_dmg_min"] <= shot[0]["damage"] <= preview["final_dmg_max"]
+
+    target.x = 7
+    distant = turn_info(state)["targets"][0]["preview"]
+    assert not distant["is_double_shot"] and distant["final_dmg_max"] * 2 == preview["final_dmg_max"]
+    with pytest.raises(IllegalAction):
+        apply(state, Attack(target.id, (6, 0), force_melee=True))
+
+    target.x = 2
+    choices = turn_info(state)["targets"][0]
+    assert [1, 0] in choices["melee_from"] and choices["melee_preview"]["will_counterattack"]
+    action = {"type": "attack", "target_id": target.id, "from_pos": [1, 0], "force_melee": True}
+    after, steps = play_turn(state, 0, action_from_dict(action))
+    assert after.stacks[actor.id].shots_left == actor.shots_left
+    assert [event["type"] for event in steps[0].events] == ["move", "attack", "retaliation"]
+    hit = next(event for event in steps[0].replay_events if event["type"] == "DAMAGE_APPLIED")
+    assert (hit["seq"], hit["actor_id"], hit["target_id"], hit["action"]) == (1, actor.id, target.id, action)
+    assert hit["payload"]["distance"] == 1 and not hit["payload"]["double_damage"]
+    assert hit["payload"]["target_hp_pool_after"] == hit["payload"]["hp_after"]
+    assert hit["payload"]["damage_dealt"] == hit["payload"]["hp_before"] - hit["payload"]["hp_after"]
+    assert hit["payload"]["target_count_after"] == hit["payload"]["creatures_after"]
+    ended = next(event for event in steps[0].replay_events if event["type"] == "TURN_ENDED")
+    assert ended["payload"]["next_ready_at"] == after.stacks[actor.id].ready
+    assert reconstruct(state.to_dict(), steps[0].replay_events) == after.to_dict()
+
+    target.x = 1
+    info = turn_info(state)
+    assert info["shooting_blocked"] and not info["can_shoot"]
+    assert not info["targets"][0]["preview"]["can_shoot"]
+
+    from engine.rules import attack_preview
+    knight = Stack("knight", "knight", 0, 1, UNITS["knight"].hp, 0, 0)
+    assert attack_preview(knight, target, ranged=False)["mult"] == pytest.approx(1.02)
+
+
+def test_elf_summon_with_full_slots_replaces_and_replays_until_battle_end():
+    from copy import deepcopy
+
+    from engine.actions import Summon
+    from engine.flow import play_turn, surrender_turn
+    from engine.rules import period
+    from engine.summoning import available_elements, hp_pool, max_energy
+
+    state = create_battle([("peasant", 2)] * 8, [("goblin", 20)], seed=37, level=4)
+    hero = HeroTurn("hero_0", 0, "Ельф", 4, 10, 0, 0, 1, 2, 5, 8, faction="elves")
+    state.heroes[hero.id] = hero
+    state.summoning["0"] = {"elements": available_elements(2), "school_level": 2,
+                            "energy": max_energy(hero.knowledge), "hp_pool": hp_pool(hero.spell_power), "cost": 10}
+    init_timeline(state)
+    state.active_id = hero.id
+    blocked = deepcopy(state)
+    for y in range(blocked.height):
+        for x in range(blocked.width // 2):
+            key = f"block_{x}_{y}"
+            blocked.stacks[key] = Stack(key, "peasant", 0, 1, UNITS["peasant"].hp, x, y)
+    with pytest.raises(IllegalAction, match="немає місця"):
+        apply(blocked, Summon("earth"))
+    assert blocked.summoning["0"]["energy"] == 20
+
+    first, steps = play_turn(state, 0, Summon("earth"))
+    summon = next(stack for stack in first.stacks.values() if stack.summoned)
+    assert len([stack for stack in first.stacks.values() if stack.owner == 0]) == 9
+    assert summon.ready == hero.ready + period(summon) and summon.x < first.width // 2
+    event = next(event for event in steps[0].replay_events if event["type"] == "ELEMENTAL_SUMMONED")
+    assert event["payload"]["summon_ready_at"] == summon.ready
+    assert event["payload"]["spawn_pos"] == (summon.x, summon.y)
+    assert event["payload"]["spell"] == "earth" and event["payload"]["summon_id"] == summon.id
+    assert reconstruct(state.to_dict(), steps[0].replay_events) == first.to_dict()
+
+    first.active_id = hero.id
+    second, steps = play_turn(first, 0, Summon("water"))
+    assert summon.id not in second.stacks
+    assert all(entry["id"] != summon.id for entry in forecast(second))
+    assert second.summoning["0"]["energy"] == 0
+    assert reconstruct(first.to_dict(), steps[0].replay_events) == second.to_dict()
+    final, steps = surrender_turn(second, 0)
+    assert not any(stack.summoned for stack in final.stacks.values())
+    assert steps[0].replay_events[-1]["payload"]["outcome"] == {"winner_side": 1, "surrendered_side": 0}
+    assert reconstruct(second.to_dict(), steps[0].replay_events) == final.to_dict()
+
+
+def test_weighted_movement_uses_speed_times_ten():
+    state = two_stacks()
+    actor, target = state.stacks["s0_0"], state.stacks["s1_0"]
+    state.active_id = actor.id
+    actor.x, actor.y, target.x, target.y = 0, 0, 7, 4
+    costs = reachable(state, actor)
+    assert UNITS[actor.unit].speed == 4
+    assert costs[4, 0] == costs[3, 2] == 40
+    assert (3, 3) not in costs and (5, 0) not in costs
+    assert turn_info(state)["move_points"] == 40
+    with pytest.raises(IllegalAction, match="недосяжна"):
+        apply(state, Move(3, 3))
+
+
+def test_ground_route_avoids_obstacles_and_blocked_corners():
+    state = two_stacks("swordsman", "peasant")
+    actor, blocker = state.stacks["s0_0"], state.stacks["s1_0"]
+    state.active_id = actor.id
+    actor.x, actor.y, blocker.x, blocker.y = 0, 0, 0, 1
+    state.obstacles = [[1, 0]]
+    assert reachable(state, actor) == {(0, 0): 0}
+
+    blocker.x, blocker.y = 7, 4
+    routes = turn_info(state)["move_paths"]
+    assert routes["1,1"]["cost"] == 15
+    assert routes["2,0"] == {"cost": 30, "path": [[0, 0], [1, 1], [2, 0]]}
+    after, events = apply(state, Move(2, 0))
+    assert events[0]["path"] == routes["2,0"]["path"]
+    assert events[0]["move_points"] == 30 and not events[0]["flying"]
+    assert reconstruct(state.to_dict(), action_events(state, after, events)) == after.to_dict()
+
+
+def test_corner_cutting_checks_the_entire_ground_footprint():
+    state = two_stacks("ogre", "peasant")
+    actor, target = state.stacks["s0_0"], state.stacks["s1_0"]
+    actor.x, actor.y, target.x, target.y = 0, 0, 7, 4
+    state.obstacles = [[2, 0], [0, 2]]
+    assert (1, 1) not in reachable(state, actor)
+    state.obstacles.pop()
+    assert reachable(state, actor)[1, 1] == 15
+
+
+def test_dragon_flies_over_units_and_obstacles_but_needs_a_free_landing():
+    state = two_stacks("dragon", "peasant")
+    actor, blocker = state.stacks["s0_0"], state.stacks["s1_0"]
+    state.active_id = actor.id
+    actor.x, actor.y, blocker.x, blocker.y = 0, 0, 3, 2
+    state.obstacles = [[2, y] for y in range(state.height)]
+    costs = reachable(state, actor)
+    assert costs[4, 2] == 50  # Two diagonal steps plus two straight steps.
+    assert (3, 2) not in costs  # Blocked by the squad.
+    assert (2, 2) not in costs  # Blocked by the wall.
+    assert (5, 1) not in costs  # 55 move points.
+    assert (7, 0) not in costs  # The landing footprint extends off the board.
+    after, events = apply(state, Move(4, 2))
+    assert events[0] == {
+        "type": "move", "stack": actor.id, "path": [[0, 0], [4, 2]], "move_points": 50, "flying": True,
+    }
+    assert reconstruct(state.to_dict(), action_events(state, after, events)) == after.to_dict()
+
+
+def test_melee_approach_uses_weighted_routes_and_logs_the_chosen_path():
+    state = two_stacks()
+    actor, target = state.stacks["s0_0"], state.stacks["s1_0"]
+    state.active_id = actor.id
+    actor.x, actor.y, target.x, target.y = 0, 0, 4, 4
+    assert turn_info(state)["targets"] == []
+    with pytest.raises(IllegalAction, match="недосяжна"):
+        apply(state, Attack(target.id, (3, 3)))
+
+    target.y = 3
+    info = turn_info(state)
+    assert info["targets"][0]["melee_from"] == [[3, 2]]
+    route = info["move_paths"]["3,2"]
+    after, events = apply(state, Attack(target.id, (3, 2)))
+    assert events[0]["path"] == route["path"]
+    assert events[0]["move_points"] == route["cost"] == 40
+    replay_events = action_events(state, after, events)
+    assert replay_events[0]["payload"]["to"] == [3, 2]
+    assert replay_events[0]["payload"]["path"] == route["path"][1:]
+    assert reconstruct(state.to_dict(), replay_events) == after.to_dict()
+
+
+@pytest.mark.parametrize("line", ["elves_solaris", "underground_elves_obscuro"])
+@pytest.mark.parametrize("form", [1, 2, 3])
+def test_form_abilities_control_movement(line, form):
+    key = f"{line}_{form}"
+    state = two_stacks(key, "peasant")
+    actor, target = state.stacks["s0_0"], state.stacks["s1_0"]
+    state.active_id = actor.id
+    actor.x, actor.y, target.x, target.y = 0, 0, 7, 4
+    state.obstacles = [[2, 0], [0, 2], [2, 2]]
+    info = turn_info(state)
+    if form == 1:
+        assert UNITS[key].abilities == ()
+        assert not info["flying"] and info["move"] == []
+        return
+
+    assert UNITS[key].abilities == ("flying",)
+    assert info["flying"] and info["move_paths"]["3,2"] == {"cost": 40, "path": [[0, 0], [3, 2]]}
+    assert [2, 2] not in info["move"]
+    after, events = apply(state, Move(3, 2))
+    assert events[0]["flying"] and events[0]["move_points"] == 40
+    assert reconstruct(state.to_dict(), action_events(state, after, events)) == after.to_dict()
+
+
+def test_form_abilities_fall_back_to_parent_unless_given_a_list(monkeypatch):
+    from copy import deepcopy
+
+    from engine import data
+
+    rosters = deepcopy(data.FACTION_ROSTERS)
+    lineage = next(line for line in rosters["elves"] if line["key"] == "solaris")
+    lineage["abilities"] = ["flying"]
+    lineage["forms"][1].pop("abilities")
+    lineage["forms"][2]["abilities"] = "flying"
+    monkeypatch.setattr(data, "FACTION_ROSTERS", rosters)
+    units = data.load_creatures()
+    assert units["elves_solaris_1"].abilities == ()
+    assert units["elves_solaris_2"].abilities == units["elves_solaris_3"].abilities == ("flying",)
+    assert units["dragon"].abilities == ("flying",)
+    assert data.resolved_abilities({}, {"abilities": None}) == []
+
+
+@pytest.mark.parametrize("level", [1, 4])
+def test_obstacle_generation_varies_with_seed_and_preserves_clear_deployment(level):
+    from engine.obstacles import _connected
+    from engine.setup import ZONE_COLS
+
+    layouts = set()
+    for seed in range(12):
+        state = create_battle([("swordsman", 10)], [("dragon", 1), ("ogre", 2)], seed, level=level)
+        obstacles = {tuple(cell) for cell in state.obstacles}
+        assert obstacles and state.obstacle_kind == "rock"
+        assert len(obstacles) <= state.width * state.height // 20
+        assert all(ZONE_COLS <= x < state.width - ZONE_COLS and 0 <= y < state.height for x, y in obstacles)
+        assert not obstacles.intersection(cell for stack in state.stacks.values() for cell in stack.cells())
+        assert _connected(state.width, state.height, (2, 3), obstacles)
+        snapshot = state.to_dict()
+        assert BattleState.from_dict(snapshot).to_dict() == snapshot
+        assert create_battle([("swordsman", 10)], [("dragon", 1), ("ogre", 2)], seed, level=level).to_dict() == snapshot
+        layouts.add(frozenset(obstacles))
+    assert len(layouts) > 1
+
+
+def test_generated_rocks_change_ground_routes_and_only_block_flight_landings():
+    state = two_stacks("swordsman", "dragon", seed=2)
+    ground, flyer = state.stacks["s0_0"], state.stacks["s1_0"]
+    assert [3, 2] in state.obstacles
+    ground.x, ground.y = 2, 2
+    state.active_id = ground.id
+    routes = turn_info(state)["move_paths"]
+    assert "3,2" not in routes
+    assert routes["4,2"] == {"cost": 30, "path": [[2, 2], [3, 1], [4, 2]]}
+
+    ground.x, ground.y, flyer.x, flyer.y = 7, 4, 0, 1
+    state.active_id = flyer.id
+    routes = turn_info(state)["move_paths"]
+    assert "3,1" not in routes
+    assert routes["4,1"] == {"cost": 40, "path": [[0, 1], [4, 1]]}
+    after, events = apply(state, Move(4, 1))
+    assert reconstruct(state.to_dict(), action_events(state, after, events)) == after.to_dict()

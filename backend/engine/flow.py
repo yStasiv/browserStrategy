@@ -33,7 +33,8 @@ def advance_ai(state: BattleState, ai_sides: Iterable[int], max_actions: int = 5
             break
         action = choose_action(state)
         previous, (state, events) = state, apply(state, action)
-        steps.append(Step(actor.owner, action_to_dict(action), events, action_events(previous, state, events)))
+        command = action_to_dict(action)
+        steps.append(Step(actor.owner, command, events, action_events(previous, state, events, command)))
     return state, steps
 
 
@@ -45,7 +46,8 @@ def play_turn(state: BattleState, side: int, action, ai_sides: Iterable[int] = (
     if actor.owner != side:
         raise NotYourTurn("зараз не ваш хід")
     previous, (state, events) = state, apply(state, action)
-    steps = [Step(side, action_to_dict(action), events, action_events(previous, state, events))]
+    command = action_to_dict(action)
+    steps = [Step(side, command, events, action_events(previous, state, events, command))]
     state, ai_steps = advance_ai(state, ai_sides)
     return state, steps + ai_steps
 
@@ -53,4 +55,5 @@ def play_turn(state: BattleState, side: int, action, ai_sides: Iterable[int] = (
 def surrender_turn(state: BattleState, side: int) -> Tuple[BattleState, List[Step]]:
     """Здача: бій одразу завершується, переможцем стає суперник."""
     previous, (state, events) = state, surrender(state, side)
-    return state, [Step(side, {"type": "surrender"}, events, action_events(previous, state, events))]
+    command = {"type": "surrender"}
+    return state, [Step(side, command, events, action_events(previous, state, events, command))]

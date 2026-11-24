@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend import database, utils
 from backend.auth import session_player
+from backend.config import AVATAR_DIR
 from backend.models import RepairJob
 from backend.services.world import utc_now
 from backend.tasks import check_workers
@@ -38,9 +39,8 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
-app.mount(
-    "/avatars", StaticFiles(directory="frontend/user_resourses/avatars"), name="avatars"
-)
+AVATAR_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/avatars", StaticFiles(directory=AVATAR_DIR), name="avatars")
 
 db = database.init_db()
 

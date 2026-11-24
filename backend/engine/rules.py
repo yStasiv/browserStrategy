@@ -11,15 +11,17 @@ from __future__ import annotations
 import copy
 import math
 import random
-from collections import deque
+from heapq import heappop, heappush
 from typing import Dict, List, Optional, Tuple
 
 from .actions import Attack, Defend, Move, Skip, Summon, Wait
-from .data import UNITS
+from .data import DEFAULT_SHOOTING_RANGE, UNITS
 from .state import ATB_SCALE, MAX_ACTIONS, BattleState, HeroTurn, Stack
 from .summoning import spell_options, summon_plan
 
 Cell = Tuple[int, int]
+ORTHOGONAL_COST = 10
+DIAGONAL_COST = 15
 
 # Рух і суміжність у 8 напрямках (з діагоналями). Для 4 напрямків залиште лише осі.
 DIRS = [(dx, dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx, dy) != (0, 0)]
@@ -48,46 +50,67 @@ def dist_stacks(a: Stack, b: Stack) -> int:
 
 # ---------- пересування ----------
 
-def _bfs(state: BattleState, stack: Stack):
-    speed = UNITS[stack.unit].speed
-    blocked = {c for s in state.stacks.values() if s.id != stack.id for c in s.cells()}
+def _movement(state: BattleState, stack: Stack):
+    unit = UNITS[stack.unit]
+    budget = unit.speed * ORTHOGONAL_COST
+    blocked = state.blocked_cells(excluding=stack.id)
     w, h = stack.w, stack.h
 
     def fits(x: int, y: int) -> bool:
-        if x < 0 or y < 0 or x + w > state.width or y + h > state.height:
-            return False
-        return all((x + i, y + j) not in blocked for i in range(w) for j in range(h))
+        return (0 <= x <= state.width - w and 0 <= y <= state.height - h
+                and all((x + i, y + j) not in blocked for i in range(w) for j in range(h)))
 
     start = (stack.x, stack.y)
-    dist: Dict[Cell, int] = {start: 0}
-    parent: Dict[Cell, Cell] = {}
-    q = deque([start])
-    while q:
-        cur = q.popleft()
-        d = dist[cur]
-        if d == speed:
+    costs: Dict[Cell, int] = {start: 0}
+    parents: Dict[Cell, Cell] = {}
+    if "flying" in unit.abilities:
+        for y in range(state.height - h + 1):
+            for x in range(state.width - w + 1):
+                dx, dy = abs(x - start[0]), abs(y - start[1])
+                cost = DIAGONAL_COST * min(dx, dy) + ORTHOGONAL_COST * abs(dx - dy)
+                if 0 < cost <= budget and fits(x, y):
+                    costs[x, y] = cost
+                    parents[x, y] = start
+        return costs, parents
+
+    queue = [(0, start)]
+    while queue:
+        cost, current = heappop(queue)
+        if cost != costs[current]:
             continue
+        x, y = current
         for dx, dy in DIRS:
-            nxt = (cur[0] + dx, cur[1] + dy)
-            if nxt in dist or not fits(*nxt):
+            diagonal = dx != 0 and dy != 0
+            next_cost = cost + (DIAGONAL_COST if diagonal else ORTHOGONAL_COST)
+            destination = (x + dx, y + dy)
+            if next_cost > budget or next_cost >= costs.get(destination, budget + 1) or not fits(*destination):
                 continue
-            dist[nxt] = d + 1
-            parent[nxt] = cur
-            q.append(nxt)
-    return dist, parent
+            if diagonal and not (fits(x + dx, y) or fits(x, y + dy)):
+                continue
+            costs[destination] = next_cost
+            parents[destination] = current
+            heappush(queue, (next_cost, destination))
+    return costs, parents
 
 
 def reachable(state: BattleState, stack: Stack) -> Dict[Cell, int]:
-    """Позиції (лівий верхній кут), куди може стати загін, з відстанню в кроках (включно з поточною)."""
-    return _bfs(state, stack)[0]
+    """Доступні позиції лівого верхнього кута загону та їхня найменша вартість руху."""
+    return _movement(state, stack)[0]
 
 
-def _path(state: BattleState, stack: Stack, dest: Cell) -> List[List[int]]:
-    _, parent = _bfs(state, stack)
-    path = [dest]
-    while path[-1] in parent:
-        path.append(parent[path[-1]])
-    return [list(c) for c in reversed(path)]
+def _path(parents: Dict[Cell, Cell], destination: Cell) -> List[List[int]]:
+    path = [destination]
+    while path[-1] in parents:
+        path.append(parents[path[-1]])
+    return [list(cell) for cell in reversed(path)]
+
+
+def _move_stack(stack, destination, path, cost, events):
+    events.append({
+        "type": "move", "stack": stack.id, "path": path,
+        "move_points": cost, "flying": "flying" in UNITS[stack.unit].abilities,
+    })
+    stack.x, stack.y = destination
 
 
 # ---------- стрільба ----------
@@ -99,24 +122,49 @@ def has_adjacent_enemy(state: BattleState, stack: Stack) -> bool:
 def is_ranged(state: BattleState, stack: Stack) -> bool:
     """Стрілець стріляє лише якщо поруч (у сусідній клітинці) немає ворога.
     Інакше він б'ється врукопашну: може йти й атакувати, отримує контратаку, постріли не витрачає."""
-    return stack.shots_left > 0 and not has_adjacent_enemy(state, stack)
+    return ("ranged_attack" in UNITS[stack.unit].abilities
+            and stack.shots_left > 0 and not has_adjacent_enemy(state, stack))
 
 
 # ---------- шкода ----------
 
 def _multiplier(att_stack: Stack, def_stack: Stack) -> float:
-    a = UNITS[att_stack.unit].attack
-    d = UNITS[def_stack.unit].defense
-    if def_stack.defending:
-        d *= 1.3
-    diff = a - d
-    if diff > 0:
-        return 1 + min(0.05 * diff, 3.0)
-    return 1 - min(0.025 * -diff, 0.7)
+    diff = UNITS[att_stack.unit].attack - effective_defense(def_stack)
+    return min(4.0, 1.0 + 0.05 * diff) if diff >= 0 else max(0.3, 1.0 + 0.025 * diff)
+
+
+def effective_defense(target: Stack) -> float:
+    defense = UNITS[target.unit].defense
+    return defense * 1.3 if target.defending else defense
+
+
+def scaled_damage(base, multiplier):
+    return max(1, math.floor(base * multiplier))
+
+
+def attack_preview(att: Stack, target: Stack, *, ranged: bool) -> dict:
+    unit = UNITS[att.unit]
+    mult = _multiplier(att, target)
+    shot = shot_multiplier(att, target) if ranged else 1
+    base_min, base_max = att.count * unit.dmg_min, att.count * unit.dmg_max
+    final_min = scaled_damage(base_min, mult) * shot
+    final_max = scaled_damage(base_max, mult) * shot
+    return {
+        "base_dmg_min": base_min, "base_dmg_max": base_max,
+        "roll_count": min(att.count, 10), "roll_scale": att.count / min(att.count, 10),
+        "eff_def": effective_defense(target), "mult": mult,
+        "can_shoot": ranged, "is_double_shot": shot == 2,
+        "final_dmg_min": final_min, "final_dmg_max": final_max,
+        "average_damage": scaled_damage((base_min + base_max) / 2, mult) * shot,
+        "unit_dmg_min": scaled_damage(unit.dmg_min, mult * shot),
+        "unit_dmg_max": scaled_damage(unit.dmg_max, mult * shot),
+        "estimated_kills": min(target.count, final_max // UNITS[target.unit].hp),
+        "will_counterattack": not ranged and not target.retaliated and final_min < total_hp(target),
+    }
 
 
 def shot_multiplier(att: Stack, target: Stack) -> int:
-    return 2 if dist_stacks(att, target) <= UNITS[att.unit].shooting_range else 1
+    return 2 if dist_stacks(att, target) <= DEFAULT_SHOOTING_RANGE else 1
 
 
 def expected_damage(att: Stack, target: Stack, *, ranged=False) -> float:
@@ -130,7 +178,7 @@ def _roll_damage(att: Stack, target: Stack, rng: random.Random) -> int:
     n = min(att.count, 10)  # для великих загонів кидаємо до 10 кубиків і масштабуємо
     total = sum(rng.randint(u.dmg_min, u.dmg_max) for _ in range(n))
     base = total * att.count / n
-    return max(1, int(base * _multiplier(att, target)))
+    return scaled_damage(base, _multiplier(att, target))
 
 
 def total_hp(stack: Stack) -> int:
@@ -171,12 +219,18 @@ def _pick_active(state: BattleState) -> str:
 
 
 def init_timeline(state: BattleState) -> None:
+    state.initial_ready_at = {}
     for s in state.actors():
-        s.ready = period(s)
+        interval = period(s)
+        rng = random.Random(f"{state.seed}:initiative:{s.id}")
+        variance = interval // 10
+        s.ready = interval + rng.randint(-variance, variance)
+        state.initial_ready_at[s.id] = s.ready
     state.active_id = _pick_active(state)
 
 
 def _finish(state: BattleState, events: list, winner: Optional[int], reason: Optional[str] = None) -> None:
+    state.stacks = {key: stack for key, stack in state.stacks.items() if not stack.summoned}
     state.status = "finished"
     state.winner = winner
     state.active_id = None
@@ -212,10 +266,10 @@ def _end_turn(state: BattleState, actor: Stack | HeroTurn, events: list) -> None
 
 def _do_move(st: BattleState, actor: Stack, a: Move, events: list) -> None:
     dest = (a.x, a.y)
-    if dest == (actor.x, actor.y) or dest not in reachable(st, actor):
+    costs, parents = _movement(st, actor)
+    if dest == (actor.x, actor.y) or dest not in costs:
         raise IllegalAction("клітинка недосяжна")
-    events.append({"type": "move", "stack": actor.id, "path": _path(st, actor, dest)})
-    actor.x, actor.y = dest
+    _move_stack(actor, dest, _path(parents, dest), costs[dest], events)
     _end_turn(st, actor, events)
 
 
@@ -224,29 +278,30 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
     if target is None or target.owner == actor.owner:
         raise IllegalAction("некоректна ціль")
 
-    ranged = is_ranged(st, actor)
+    ranged = is_ranged(st, actor) and not a.force_melee
     if ranged:
         if a.from_pos and tuple(a.from_pos) != (actor.x, actor.y):
             raise IllegalAction("стрілець не може рухатись і стріляти в один хід")
     else:
         pos = tuple(a.from_pos) if a.from_pos else (actor.x, actor.y)
-        if pos not in reachable(st, actor):
+        costs, parents = _movement(st, actor)
+        if pos not in costs:
             raise IllegalAction("клітинка недосяжна")
         if rect_dist(pos[0], pos[1], actor.w, actor.h, target.x, target.y, target.w, target.h) != 1:
             raise IllegalAction("ціль не поруч")
         if pos != (actor.x, actor.y):
-            events.append({"type": "move", "stack": actor.id, "path": _path(st, actor, pos)})
-            actor.x, actor.y = pos
+            _move_stack(actor, pos, _path(parents, pos), costs[pos], events)
 
     hp_before = total_hp(target)
     dmg = _roll_damage(actor, target, rng)
-    if ranged:
-        dmg *= shot_multiplier(actor, target)
+    shot = shot_multiplier(actor, target) if ranged else 1
+    dmg *= shot
     killed = _hurt(target, dmg)
     if ranged:
         actor.shots_left -= 1
     events.append({"type": "attack", "attacker": actor.id, "target": target.id,
                    "damage": dmg, "killed": killed, "ranged": ranged,
+                   "distance": dist_stacks(actor, target), "double_damage": shot == 2,
                    "target_left": target.count, "top_hp": target.top_hp,
                    "hp_before": hp_before, "hp_after": total_hp(target)})
 
@@ -258,7 +313,8 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
         rdmg = _roll_damage(target, actor, rng)
         rkilled = _hurt(actor, rdmg)
         events.append({"type": "retaliation", "attacker": target.id, "target": actor.id,
-                       "damage": rdmg, "killed": rkilled, "target_left": actor.count, "top_hp": actor.top_hp,
+                       "damage": rdmg, "killed": rkilled, "target_left": actor.count,
+                       "distance": 1, "double_damage": False, "top_hp": actor.top_hp,
                        "hp_before": hp_before, "hp_after": total_hp(actor)})
         if actor.count <= 0:
             del st.stacks[actor.id]
@@ -288,7 +344,8 @@ def _do_summon(state, actor, action, events):
         "type": "summon", "stack": actor.id, "target": stack.id, "unit": unit.key,
         "count": count, "top_hp": top_hp, "unit_hp": unit.hp,
         "replaced": previous.id if previous else None, "energy": magic["energy"],
-        "position": position,
+        "position": position, "spell": action.element, "summon_id": stack.id,
+        "spawn_pos": position, "summon_ready_at": stack.ready,
     })
     _end_turn(state, actor, events)
 
@@ -299,7 +356,7 @@ def _hero_action(state, hero, action, rng, events):
         return
     if isinstance(action, Attack):
         target = state.stacks.get(action.target_id)
-        if target is None or target.owner == hero.owner or action.from_pos is not None:
+        if target is None or target.owner == hero.owner or action.from_pos is not None or action.force_melee:
             raise IllegalAction("Некоректна ціль героя.")
         hp_before = total_hp(target)
         damage = rng.randint(hero.damage_min, hero.damage_max)
@@ -380,25 +437,33 @@ def turn_info(state: BattleState) -> Optional[dict]:
             "can_wait": False, "ranged": True,
             "spells": spell_options(state, actor.owner),
         }
-    dist = reachable(state, actor)
+    dist, parents = _movement(state, actor)
     ranged = is_ranged(state, actor)
     targets = []
     for e in state.stacks.values():
         if e.owner == actor.owner:
             continue
-        if ranged:
-            targets.append({"id": e.id, "from": [[actor.x, actor.y]]})
-        else:
-            cells = [list(p) for p in dist
-                     if rect_dist(p[0], p[1], actor.w, actor.h, e.x, e.y, e.w, e.h) == 1]
-            if cells:
-                targets.append({"id": e.id, "from": cells})
+        cells = [list(p) for p in dist
+                 if rect_dist(p[0], p[1], actor.w, actor.h, e.x, e.y, e.w, e.h) == 1]
+        if ranged or cells:
+            targets.append({
+                "id": e.id, "from": [[actor.x, actor.y]] if ranged else cells,
+                "melee_from": cells,
+                "preview": attack_preview(actor, e, ranged=ranged),
+                "melee_preview": attack_preview(actor, e, ranged=False) if ranged and cells else None,
+            })
     return {
         "active": actor.id,
         "owner": actor.owner,
-        "move": [list(c) for c in dist if c != (actor.x, actor.y)],
+        "move": [list(cell) for cell in parents],
+        "move_points": UNITS[actor.unit].speed * ORTHOGONAL_COST,
+        "flying": "flying" in UNITS[actor.unit].abilities,
+        "move_paths": {f"{x},{y}": {"cost": dist[x, y], "path": _path(parents, (x, y))}
+                       for x, y in parents},
         "targets": targets,
         "can_wait": True,
+        "can_shoot": ranged,
+        "shooting_blocked": "ranged_attack" in UNITS[actor.unit].abilities and actor.shots_left > 0 and not ranged,
         "ranged": ranged,   # False у стрільця з ворогом поруч — він б'ється врукопашну
         **({"spells": spell_options(state, actor.owner)} if not state.heroes and state.summoning else {}),
     }

@@ -1,5 +1,3 @@
-import os
-
 from fastapi import (APIRouter, Depends, File, HTTPException, Request,
                      UploadFile)
 from fastapi.responses import RedirectResponse
@@ -7,16 +5,12 @@ from PIL import Image
 from sqlalchemy.orm import Session
 
 from backend.auth import session_player
+from backend.config import AVATAR_DIR
 from backend import database, models, utils
 
 logger = utils.setup_logger(__name__)
 
 router = APIRouter()
-
-UPLOAD_DIR = os.path.join(
-    os.path.dirname(__file__), "../../frontend/user_resourses/avatars"
-)
-
 
 @router.post("/upload-avatar", response_class=RedirectResponse)
 async def upload_avatar(
@@ -33,12 +27,11 @@ async def upload_avatar(
         raise HTTPException(status_code=404, detail="User not found")
 
     try:
-        if not os.path.exists(UPLOAD_DIR):
-            os.makedirs(UPLOAD_DIR)
+        AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 
         image = Image.open(avatar.file)
         image = image.resize((150, 150))
-        avatar_path = os.path.join(UPLOAD_DIR, f"{user.id}.png")
+        avatar_path = AVATAR_DIR / f"{user.id}.png"
         image.save(avatar_path)
 
         # Оновлення URL аватарки користувача

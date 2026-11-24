@@ -22,12 +22,12 @@ def place(state, side, stack_id, x, y, split_count, limit):
     if not (left <= x and x + stack.w <= right and 0 <= y and y + stack.h <= state.height):
         raise ValueError("Загін має повністю поміститися у своїй зоні розстановки.")
     placed = replace(stack, x=x, y=y)
-    cells = set(placed.cells())
-    if any(cells.intersection(other.cells()) for other in state.stacks.values()
-           if splitting or other.id != stack.id):
+    if state.blocked_cells(excluding=None if splitting else stack.id).intersection(placed.cells()):
         raise ValueError("Ці клітинки зайняті.")
     if splitting:
         index = next(i for i in range(limit) if f"s{side}_{i}" not in state.stacks)
         placed = replace(placed, id=f"s{side}_{index}", count=split_count)
         stack.count -= split_count
     state.stacks[placed.id] = placed
+    if placed.id not in state.placed_stack_ids:
+        state.placed_stack_ids.append(placed.id)

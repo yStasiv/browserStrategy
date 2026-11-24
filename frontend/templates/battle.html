@@ -46,6 +46,32 @@
         .cell.alt { background: #ddd4ad14; }
         .cell.mv { background: #e0c56680; border-color: #f6e397aa; cursor: pointer; }
         .cell.mv:hover { background: #f5da8799; outline: 1px solid #fff1b5; outline-offset: -2px; }
+        .cell.obstacle { position: relative; background: #303b37; cursor: default; }
+        .cell.obstacle::after {
+            content: "";
+            position: absolute;
+            inset: 15% 12%;
+            background: linear-gradient(140deg, #b7beb1 12%, #737d75 52%, #4b5550 53%);
+            clip-path: polygon(19% 28%, 45% 4%, 76% 15%, 96% 61%, 77% 90%, 12% 88%, 2% 61%);
+            pointer-events: none;
+        }
+        .cell.route { box-shadow: inset 0 0 0 3px #6ddbea; }
+        .cell.deployment-zone { border-color: #e0c56688; }
+        #route-preview, #landing-preview { position: absolute; z-index: 3; pointer-events: none; }
+        #route-preview { inset: 0; }
+        .route-segment {
+            position: absolute;
+            height: 0;
+            border-top: 2px solid #a5f3fc;
+            transform-origin: left center;
+        }
+        .route-segment.flight { border-top-style: dashed; }
+        #landing-preview {
+            box-sizing: border-box;
+            border: 2px solid #a5f3fc;
+            background: #64b6c729;
+        }
+        #landing-preview[data-kind="from"] { border-color: #ffc086; background: #d68b5229; }
         .cell.ghost { background: #64b6c785; }
         .cell.hit { background: #ad3f3f9c; border-color: #ff9c8b; }
         .cell.from { background: #d68b5299; }
@@ -73,6 +99,10 @@
         .stack.enemy .icon { border-color: #d98f75; background: radial-gradient(ellipse at 45% 28%, #684b38, #302225 70%); }
         .stack.active .icon { box-shadow: 0 0 0 3px #facc15, 0 0 14px 4px rgba(250, 204, 21, 0.7); }
         .stack.target { cursor: crosshair; }
+        .stack.melee-target { cursor: crosshair; }
+        .stack.unreachable-target { cursor: not-allowed; }
+        .deployment-unit[aria-pressed="true"] { outline: 2px solid #e0c566; }
+        .deployment-unit.unplaced { opacity: .6; filter: grayscale(1); }
         .stack.target .icon { box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.85); }
         .stack.enemy:hover .icon { background: rgba(127, 29, 29, 0.7); box-shadow: 0 0 0 3px #ef4444, 0 0 16px 5px rgba(239, 68, 68, 0.9); }
         .stack.hl .icon { box-shadow: 0 0 0 3px #fff, 0 0 12px 3px rgba(255, 255, 255, 0.6); }
@@ -91,6 +121,7 @@
                 background: #1e293b; border: 2px solid #3b82f6; border-radius: 0.4rem; }
         #initiative .chip.enemy { border-color: #ef4444; }
         #initiative .chip.first { box-shadow: 0 0 0 2px #facc15; }
+        #initiative .chip.wait-destination { border-style: dashed; border-color: #facc15; }
         #initiative .chip.hl { border-color: #fff; background: #475569; }
         #battle-result-toggle { position: absolute; inset: .4rem calc(var(--hero-gutter, 0px) + .4rem) auto auto; z-index: 3; }
         body:has(#result[open]) #battle-result-toggle { visibility: hidden; }
@@ -150,6 +181,8 @@
                     <div id="board">
                         <div id="cells"></div>
                         <div id="stacks"></div>
+                        <div id="route-preview" aria-hidden="true"></div>
+                        <div id="landing-preview" hidden aria-hidden="true"></div>
                         <div id="popups"></div>
                     </div>
                 </div>
@@ -159,9 +192,10 @@
                 <div class="bg-slate-800 rounded-lg p-3">
                     <div id="turn-text" class="font-bold mb-1"></div>
                     <div id="active-info" class="text-sm text-slate-300 min-h-[2.5rem]"></div>
+                    <output id="attack-preview" class="text-sm text-amber-200" hidden></output>
                 </div>
                 <div id="deployment-actions" class="hidden space-y-2">
-                    <label class="block">Загін <select id="deployment-stack" class="bg-slate-800"></select></label>
+                    <div id="deployment-army" class="flex flex-wrap gap-2" aria-label="Загони для розстановки"></div>
                     <label class="block" id="deployment-split-label">Відокремити істот
                         <input id="deployment-split" class="bg-slate-800 w-16" type="number" min="0" value="0">
                     </label>
@@ -240,6 +274,7 @@
     let auto = false;
     let deploymentStack = null;
     let hoveredStackId = null;
+    let hoveredAttack = null;
     let completedActor = null;
     let spellSelection = null;
     let replay = null;
@@ -315,7 +350,6 @@
     }
 
     // ---------- Допоміжне ----------
-    const cheb = (a, b) => Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]));
     const uv = (unit) => UNIT_VIEW[unit] || { emoji: '❓', name: unit };
     const unitTitle = (key) => {
         const unit = uv(key);
@@ -400,7 +434,10 @@
                 c.dataset.y = y;
                 c.addEventListener('click', () => onCellClick(x, y));
                 c.addEventListener('mouseenter', () => onCellHover(x, y));
-                c.addEventListener('mouseleave', clearHover);
+                c.addEventListener('mouseleave', () => {
+                    clearHover();
+                    highlightInitiative(null);
+                });
                 el.cells.appendChild(c);
             }
         }
@@ -471,6 +508,7 @@
                 d.addEventListener('mousemove', (event) => onStackHover(s.id, event));
                 d.addEventListener('mouseenter', (event) => onStackHover(s.id, event));
                 d.addEventListener('mouseleave', () => {
+                    hoveredAttack = null;
                     highlightInitiative(null);
                     clearHover();
                 });
@@ -480,7 +518,9 @@
             const u = uv(s.unit);
             d.className = 'stack' + (s.w > 1 || s.h > 1 ? ' big' : '') + (isAlly(s.id) ? '' : ' enemy') +
                           (s.id === activeId ? ' active' : '') + (targetIds.has(s.id) ? ' target' : '');
-            d.style.pointerEvents = view.deployment && s.id === deploymentStack ? 'none' : '';
+            d.classList.toggle('hl', s.id === hoveredStackId);
+            const movingStack = view.deployment ? deploymentStack : view.turn?.active;
+            d.style.pointerEvents = s.id === movingStack ? 'none' : '';
             d.style.left = 'calc(var(--cell) * ' + s.x + ')';
             d.style.top = 'calc(var(--cell) * ' + s.y + ')';
             d.style.width = 'calc(var(--cell) * ' + s.w + ')';
@@ -534,7 +574,9 @@
 
     function highlightInitiative(id) {
         if (hoveredStackId === id) return;
+        for (const element of [stackEls[hoveredStackId], $('field-' + hoveredStackId)]) element?.classList.remove('hl');
         hoveredStackId = id;
+        for (const element of [stackEls[id], $('field-' + id)]) element?.classList.add('hl');
         for (const chip of el.initiative.children) {
             chip.classList.toggle('hl', chip.dataset.stackId === id);
         }
@@ -549,6 +591,7 @@
             ? view.forecast : (st.active_id ? [{ id: st.active_id }] : []));
         const list = completedActor ? [{id: completedActor, completed: true}, ...upcoming] : upcoming;
         let first = true;
+        let waitDestination = Boolean(preview);
         for (const f of list) {
             const hero = st.heroes?.[f.id];
             const currentStack = st.stacks[f.id];
@@ -575,33 +618,72 @@
             c.title = hero ? `Герой ${hero.name} · ініціатива ${hero.initiative}`
                 : uv(s.unit).name + (currentStack ? ' ×' + s.count : '');
             if (f.completed) c.title = 'Хід завершено · ' + c.title;
+            if (waitDestination && !f.completed && f.id === st.active_id) {
+                c.classList.add('wait-destination');
+                c.title = 'Позиція після очікування · ' + c.title;
+                waitDestination = false;
+            }
             if (currentStack) {
                 const b = document.createElement('span');
                 b.className = 'badge';
                 b.textContent = s.count;
                 c.appendChild(b);
             }
-            const actorElement = () => hero ? $('field-' + hero.id) : stackEls[f.id];
-            c.addEventListener('mouseenter', () => actorElement()?.classList.add('hl'));
-            c.addEventListener('mouseleave', () => actorElement()?.classList.remove('hl'));
+            c.addEventListener('mouseenter', () => highlightInitiative(f.id));
+            c.addEventListener('mouseleave', () => highlightInitiative(null));
             el.initiative.appendChild(c);
         }
         el.initiative.scrollLeft = 0;
     }
 
+    function deploymentOptions() {
+        const actor = view.state.stacks[deploymentStack];
+        const positions = [];
+        if (!actor) return {actor, positions, count: null};
+        const split = $('deployment-split');
+        const count = Number(split.value) || null;
+        if (!split.validity.valid || (count && split.disabled)) return {actor, positions, count};
+
+        const zone = view.deployment.zone_width;
+        const left = view.my_side === 0 ? 0 : view.state.width - zone;
+        const blocked = new Set((view.state.obstacles ?? []).map(cell => cell.join(',')));
+        for (const stack of Object.values(view.state.stacks)) {
+            if (stack.id === actor.id && !count) continue;
+            for (const cell of footprint(stack.x, stack.y, stack.w, stack.h)) {
+                blocked.add(cell.dataset.x + ',' + cell.dataset.y);
+            }
+        }
+        for (let y = 0; y + actor.h <= view.state.height; y++) {
+            for (let x = left; x + actor.w <= left + zone; x++) {
+                const cells = footprint(x, y, actor.w, actor.h);
+                if (cells.every(cell => !blocked.has(cell.dataset.x + ',' + cell.dataset.y))) {
+                    positions.push([x, y]);
+                }
+            }
+        }
+        return {actor, positions, count};
+    }
+
     function renderHighlights() {
         clearHover();
-        const a = activeStack();
+        const {actor, positions} = view.deployment ? deploymentOptions() :
+            {actor: activeStack(), positions: view.turn?.move ?? []};
         const mv = new Set();
-        if (view.turn && a) {
-            const [ox, oy] = centerOffset(a);
-            for (const p of view.turn.move) mv.add((p[0] + ox) + ',' + (p[1] + oy));
+        if (actor) {
+            const [ox, oy] = centerOffset(actor);
+            for (const [x, y] of positions) mv.add((x + ox) + ',' + (y + oy));
         }
-        el.cells.querySelectorAll('.cell').forEach((c) => {
-            const x = Number(c.dataset.x);
+        const obstacles = new Set((view.state.obstacles ?? []).map(cell => cell.join(',')));
+        el.cells.querySelectorAll('.cell').forEach(cell => {
+            const x = Number(cell.dataset.x);
             const width = view.deployment?.zone_width;
             const inZone = width && (view.my_side === 0 ? x < width : x >= view.state.width - width);
-            c.classList.toggle('mv', Boolean(inZone) || mv.has(c.dataset.x + ',' + c.dataset.y));
+            const key = cell.dataset.x + ',' + cell.dataset.y;
+            const blocked = obstacles.has(key);
+            cell.classList.toggle('obstacle', blocked);
+            cell.title = blocked ? (view.state.obstacle_kind === 'rock' ? 'Каміння' : 'Перешкода') : '';
+            cell.classList.toggle('deployment-zone', Boolean(inZone));
+            cell.classList.toggle('mv', mv.has(key));
         });
     }
 
@@ -780,11 +862,18 @@
         if (deploying) {
             const owned = Object.values(st.stacks).filter(stack => stack.owner === view.my_side);
             if (!owned.some(stack => stack.id === deploymentStack)) deploymentStack = owned[0]?.id;
-            const select = $('deployment-stack');
-            select.replaceChildren(...owned.map(stack =>
-                new Option(unitTitle(stack.unit) + ' ×' + stack.count, stack.id)));
-            select.value = deploymentStack;
-            select.disabled = busy;
+            const placed = new Set(st.placed_stack_ids ?? []);
+            $('deployment-army').replaceChildren(...owned.map(stack => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'btn alt deployment-unit' + (placed.has(stack.id) ? '' : ' unplaced');
+                chip.textContent = `${uv(stack.unit).name} ×${stack.count}`;
+                chip.setAttribute('aria-pressed', String(stack.id === deploymentStack));
+                chip.title = placed.has(stack.id) ? 'Позицію підтверджено' : 'Початкова позиція';
+                chip.disabled = busy;
+                chip.addEventListener('click', () => selectDeploymentStack(stack.id));
+                return chip;
+            }));
             const split = $('deployment-split');
             const max = owned.length < view.deployment.max_slots ? st.stacks[deploymentStack].count - 1 : 0;
             split.max = max;
@@ -809,7 +898,7 @@
             el.activeInfo.textContent = u.emoji + ' ' + unitTitle(a.unit) + ' ×' + a.count + ' (HP верхнього: ' + a.top_hp + ')' +
                 (a.shots_left > 0
                     ? (view.turn && !view.turn.ranged
-                        ? ', ворог поруч — ближній бій (постріли: ' + a.shots_left + ')'
+                        ? ', ворог поруч — атакуйте врукопашну або відійдіть (постріли: ' + a.shots_left + ')'
                         : ', постріли: ' + a.shots_left)
                     : '');
         }
@@ -823,19 +912,84 @@
 
     // ---------- Наведення ----------
     function clearHover() {
-        el.cells.querySelectorAll('.hit, .from, .ghost').forEach((c) => c.classList.remove('hit', 'from', 'ghost'));
+        $('attack-preview').hidden = true;
+        el.stacks.querySelectorAll('.melee-target, .unreachable-target').forEach(
+            node => node.classList.remove('melee-target', 'unreachable-target'));
+        $('route-preview').replaceChildren();
+        $('landing-preview').hidden = true;
+        el.cells.querySelectorAll('.hit, .from, .ghost, .route').forEach(
+            cell => cell.classList.remove('hit', 'from', 'ghost', 'route'));
+    }
+
+    function drawLanding(actor, destination, kind) {
+        const [x, y] = destination;
+        footprint(x, y, actor.w, actor.h).forEach(cell => cell.classList.add(kind));
+        const outline = $('landing-preview');
+        outline.dataset.kind = kind;
+        Object.assign(outline.style, {
+            left: `calc(var(--cell) * ${x})`,
+            top: `calc(var(--cell) * ${y})`,
+            width: `calc(var(--cell) * ${actor.w})`,
+            height: `calc(var(--cell) * ${actor.h})`,
+        });
+        outline.hidden = false;
+    }
+
+    function drawApproach(actor, destination, kind) {
+        drawLanding(actor, destination, kind);
+        const movement = view.turn.move_paths?.[destination.join(',')];
+        if (!movement) return 0;
+        const route = $('route-preview');
+        for (let i = 1; i < movement.path.length; i++) {
+            const [x, y] = movement.path[i - 1];
+            const [nextX, nextY] = movement.path[i];
+            const dx = nextX - x;
+            const dy = nextY - y;
+            const segment = document.createElement('div');
+            segment.className = 'route-segment' + (view.turn.flying ? ' flight' : '');
+            Object.assign(segment.style, {
+                left: `calc(var(--cell) * ${x + actor.w / 2})`,
+                top: `calc(var(--cell) * ${y + actor.h / 2})`,
+                width: `calc(var(--cell) * ${Math.hypot(dx, dy)})`,
+                transform: `rotate(${Math.atan2(dy, dx)}rad)`,
+            });
+            route.appendChild(segment);
+            if (!view.turn.flying && i < movement.path.length - 1) {
+                footprint(nextX, nextY, actor.w, actor.h).forEach(cell => cell.classList.add('route'));
+            }
+        }
+        return movement.cost;
+    }
+
+    function boardDestination(x, y) {
+        const deployment = view.deployment ? deploymentOptions() : null;
+        const actor = deployment ? deployment.actor : activeStack();
+        if (!actor) return null;
+        const [ox, oy] = centerOffset(actor);
+        const destination = [x - ox, y - oy];
+        const valid = deployment ?
+            deployment.positions.some(([px, py]) => px === destination[0] && py === destination[1]) :
+            view.turn?.move_paths?.[destination.join(',')];
+        return valid ? {actor, destination, count: deployment?.count} : null;
     }
 
     function onCellHover(x, y) {
         clearHover();
-        if (!view || !view.turn) return;
-        const a = activeStack();
-        if (!a) return;
-        const [ox, oy] = centerOffset(a);
-        const ax = x - ox, ay = y - oy;
-        if (view.turn.move.some((p) => p[0] === ax && p[1] === ay)) {
-            footprint(ax, ay, a.w, a.h).forEach((c) => c.classList.add('ghost'));   // де загін опиниться
+        if (!view || spellSelection || busy || auto || replay) return;
+        const actor = view.deployment ? view.state.stacks[deploymentStack] : activeStack();
+        if (actor && x >= actor.x && x < actor.x + actor.w && y >= actor.y && y < actor.y + actor.h) {
+            highlightInitiative(actor.id);
         }
+        const choice = boardDestination(x, y);
+        if (!choice) return;
+        if (view.deployment) {
+            drawLanding(choice.actor, choice.destination, 'ghost');
+            return;
+        }
+        const cost = drawApproach(choice.actor, choice.destination, 'ghost');
+        const output = $('attack-preview');
+        output.textContent = `Рух ${cost} / ${view.turn.move_points} очок`;
+        output.hidden = false;
     }
 
     function attackAim(target, event) {
@@ -859,6 +1013,8 @@
 
     function attackOrigin(positions, actor, aim) {
         const current = [actor.x, actor.y];
+        const moveCost = position => view.turn.move_paths?.[position.join(',')]?.cost ??
+            (position[0] === current[0] && position[1] === current[1] ? 0 : Infinity);
         function distance([x, y]) {
             if (!aim) return 0;
             const dx = Math.max(x + 0.5 - aim[0], 0, aim[0] - (x + actor.w - 0.5));
@@ -868,30 +1024,71 @@
         return positions.reduce((best, position) => {
             if (!best) return position;
             const difference = distance(position) - distance(best);
-            return difference < 0 || (difference === 0 && cheb(position, current) < cheb(best, current))
+            return difference < 0 || (difference === 0 && moveCost(position) < moveCost(best))
                 ? position : best;
         }, null);
     }
 
-    function pickFrom(target, options, event) {
-        if (view.turn.ranged) return null;
-        return attackOrigin(options.from, activeStack(), attackAim(target, event));
+    function attackChoice(options, aim, shift) {
+        const forceMelee = shift && Boolean(view.turn.can_shoot);
+        const positions = forceMelee ? options.melee_from : options.from;
+        if ((forceMelee || !view.turn.ranged) && !positions?.length) return null;
+        return {
+            from: !view.turn.ranged || forceMelee ? attackOrigin(positions, activeStack(), aim) : null,
+            forceMelee,
+            preview: forceMelee ? options.melee_preview : options.preview,
+        };
+    }
+
+    function showAttackHover(id, aim, shift) {
+        clearHover();
+        if (!view || spellSelection || busy || auto || replay) return;
+        const target = view.state.stacks[id];
+        if (!target || isAlly(id)) return;
+        const options = view.turn?.targets.find(entry => entry.id === id);
+        if (!options) return;
+        const choice = attackChoice(options, aim, shift);
+        const output = $('attack-preview');
+        if (!choice) {
+            stackEls[id]?.classList.add('unreachable-target');
+            output.textContent = 'Немає досяжної позиції для ближньої атаки.';
+            output.hidden = false;
+            return;
+        }
+        footprint(target.x, target.y, target.w, target.h).forEach(cell => cell.classList.add('hit'));
+        let moveCost = 0;
+        if (choice.from) {
+            moveCost = drawApproach(activeStack(), choice.from, 'from');
+            stackEls[id]?.classList.add('melee-target');
+        }
+        const preview = choice.preview;
+        if (!preview) return;
+        const modifier = new Intl.NumberFormat('uk-UA', {maximumFractionDigits: 3});
+        const roll = preview.roll_scale > 1 ? ` · ${preview.roll_count} кидків × ${modifier.format(preview.roll_scale)}` : '';
+        output.textContent = `Шкода загону ${preview.final_dmg_min}–${preview.final_dmg_max} (оцінка ${preview.average_damage}) · `
+            + `За істоту ${preview.unit_dmg_min}–${preview.unit_dmg_max} · Орієнтовні втрати до ${preview.estimated_kills}${roll}`
+            + (moveCost ? ` · Рух ${moveCost} / ${view.turn.move_points} очок` : '')
+            + (preview.is_double_shot ? ' · Подвійний постріл' : '')
+            + (preview.will_counterattack ? ' · Можлива контратака' : '')
+            + (preview.can_shoot && options.melee_preview ? ' · Shift для ближньої атаки' : '');
+        output.hidden = false;
     }
 
     function onStackHover(id, event) {
-        clearHover();
-        if (!view) return;
-        const s = view.state.stacks[id];
-        highlightInitiative(s ? id : null);
-        if (spellSelection) return;
-        if (!s || isAlly(id)) return;
-        footprint(s.x, s.y, s.w, s.h).forEach((c) => c.classList.add('hit'));
-        if (!view.turn) return;
-        const t = view.turn.targets.find((q) => q.id === id);
-        if (!t) return;
-        const a = activeStack();
-        const pos = pickFrom(s, t, event);
-        if (pos) footprint(pos[0], pos[1], a.w, a.h).forEach((c) => c.classList.add('from'));  // звідси загін вдарить
+        const stack = view?.state.stacks[id];
+        highlightInitiative(stack ? id : null);
+        if (!stack) return;
+        const aim = attackAim(stack, event);
+        hoveredAttack = {id, aim};
+        showAttackHover(id, aim, event.shiftKey);
+    }
+
+    for (const eventType of ['keydown', 'keyup']) {
+        document.addEventListener(eventType, event => {
+            if (event.key === 'Shift' && hoveredAttack) {
+                showAttackHover(hoveredAttack.id, hoveredAttack.aim, event.shiftKey);
+            }
+        });
     }
 
     // ---------- Події: лог і спливаючі числа ----------
@@ -969,7 +1166,13 @@
     // ---------- Дії гравця ----------
     function setBusy(b) {
         busy = b;
-        if (view) { renderPanel(); renderSpellSelection(); renderInitiative(); }
+        if (view) {
+            renderPanel();
+            if (view.deployment) renderHighlights();
+            else if (busy) clearHover();
+            renderSpellSelection();
+            renderInitiative();
+        }
     }
 
     async function send(action) {
@@ -1025,30 +1228,25 @@
         $('deployment-split').value = 0;
         renderPanel();
         renderStacks();
+        renderHighlights();
     }
 
-    $('deployment-stack').addEventListener('change', event => selectDeploymentStack(event.target.value));
+    $('deployment-split').addEventListener('input', renderHighlights);
     $('deployment-begin').addEventListener('click', () => deploymentCommand('/begin'));
 
     function onCellClick(x, y) {
         if (spellSelection) { confirmSpellAt(x, y); return; }
-        if (view?.deployment && deploymentStack) {
-            const split = $('deployment-split');
-            if (!split.disabled && !split.reportValidity()) return;
-            const count = !split.disabled && Number(split.value) > 0 ? Number(split.value) : null;
-            const stack = view.state.stacks[deploymentStack];
-            if (count === null && stack.x === x && stack.y === y) return;
-            deploymentCommand('/deployment', {
-                stack_id: deploymentStack, x, y, split_count: count,
-            });
-            return;
+        if (!view || busy || auto || replay) return;
+        if (view.deployment && !$('deployment-split').reportValidity()) return;
+        const choice = boardDestination(x, y);
+        if (!choice) return;
+        const {actor, destination: [ax, ay], count} = choice;
+        if (view.deployment) {
+            if (!count && actor.x === ax && actor.y === ay && view.state.placed_stack_ids?.includes(actor.id)) return;
+            deploymentCommand('/deployment', {stack_id: actor.id, x: ax, y: ay, split_count: count});
+        } else {
+            send({type: 'move', x: ax, y: ay});
         }
-        if (!view || !view.turn) return;
-        const a = activeStack();
-        if (!a) return;
-        const [ox, oy] = centerOffset(a);
-        const ax = x - ox, ay = y - oy;
-        if (view.turn.move.some((p) => p[0] === ax && p[1] === ay)) send({ type: 'move', x: ax, y: ay });
     }
 
     function onStackClick(id, event) {
@@ -1064,7 +1262,9 @@
         if (!view || !view.turn) return;
         const t = view.turn.targets.find((q) => q.id === id);
         if (!t) return;
-        send({ type: 'attack', target_id: id, from_pos: pickFrom(view.state.stacks[id], t, event) });
+        const target = view.state.stacks[id];
+        const choice = attackChoice(t, attackAim(target, event), event.shiftKey);
+        if (choice) send({ type: 'attack', target_id: id, from_pos: choice.from, force_melee: choice.forceMelee });
     }
 
     el.btnWait.addEventListener('click', () => send({ type: 'wait' }));
@@ -1166,6 +1366,7 @@
         auto = false;
         deploymentStack = null;
         hoveredStackId = null;
+        hoveredAttack = null;
         completedActor = null;
         spellSelection = null;
     }

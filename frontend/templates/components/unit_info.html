@@ -19,7 +19,7 @@
         {{ portrait(unit) }}
         <section class="unit-info-abilities" aria-label="Здібності">
             <strong>Здібності</strong>
-            <p>{% if unit.skills %}{{ unit.skills | join(', ') }}{% elif 'ranged_attack' in unit.abilities %}Дальня атака{% else %}—{% endif %}</p>
+            <p>{% if unit.skills %}{{ unit.skills | join(', ') }}{% elif 'ranged_attack' in unit.abilities %}Дальня атака{% endif %}{% if 'flying' in unit.abilities %}{% if unit.skills or 'ranged_attack' in unit.abilities %}, {% endif %}Політ{% elif not unit.skills and 'ranged_attack' not in unit.abilities %}—{% endif %}</p>
         </section>
     </div>
     {% if unit.form %}<p>Ранг {{ unit.tier }} · Форма {{ unit.form }}/3</p>{% endif %}

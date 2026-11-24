@@ -14,6 +14,7 @@ class Attack:
     target_id: str
     # Ближній бій: клітинка, з якої б'ємо (загін спершу йде туди). None = б'ємо з місця.
     from_pos: Optional[Tuple[int, int]] = None
+    force_melee: bool = False
 
 
 @dataclass(frozen=True)
@@ -52,7 +53,10 @@ def action_from_dict(d: dict):
         return Move(*_coordinates((d["x"], d["y"])))
     if t == "attack":
         fp = d.get("from_pos")
-        return Attack(str(d["target_id"]), _coordinates(fp) if fp is not None else None)
+        force = d.get("force_melee", False)
+        if type(force) is not bool:
+            raise ValueError("force_melee must be a boolean")
+        return Attack(str(d["target_id"]), _coordinates(fp) if fp is not None else None, force)
     if t == "wait":
         return Wait()
     if t == "defend":
@@ -70,7 +74,8 @@ def action_to_dict(a) -> dict:
         return {"type": "move", "x": a.x, "y": a.y}
     if isinstance(a, Attack):
         return {"type": "attack", "target_id": a.target_id,
-                "from_pos": list(a.from_pos) if a.from_pos else None}
+                "from_pos": list(a.from_pos) if a.from_pos else None,
+                **({"force_melee": True} if a.force_melee else {})}
     if isinstance(a, Summon):
         return {"type": "summon", "element": a.element}
     for cls, name in ((Wait, "wait"), (Defend, "defend"), (Skip, "skip")):

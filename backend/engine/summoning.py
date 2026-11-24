@@ -21,13 +21,13 @@ def available_elements(school_level):
     return [key for key, row in ELEMENTALS.items() if row["school_level"] <= school_level]
 
 
-def spawn_position(state, unit, previous):
-    occupied = {
-        cell for stack in state.stacks.values() if stack is not previous for cell in stack.cells()
-    }
+def spawn_position(state, side, unit, previous):
+    occupied = state.blocked_cells(excluding=previous.id if previous else None)
     width, height = unit.size
+    midpoint = state.width // 2
+    left, right = (0, midpoint) if side == 0 else (midpoint, state.width)
     for y in range(state.height - height + 1):
-        for x in range(state.width - width + 1):
+        for x in range(left, right - width + 1):
             if all((x + dx, y + dy) not in occupied for dx in range(width) for dy in range(height)):
                 return x, y
     return None
@@ -35,13 +35,17 @@ def spawn_position(state, unit, previous):
 
 def summon_plan(state, side, element):
     magic = state.summoning.get(str(side))
-    if not magic or element not in magic["elements"]:
+    hero = next((hero for hero in state.heroes.values() if hero.owner == side), None)
+    if hero and hero.faction != "elves":
+        raise ValueError("Цей виклик доступний лише ельфам.")
+    if (not magic or element not in ELEMENTALS or element not in magic["elements"]
+            or (hero and ELEMENTALS[element]["school_level"] > magic.get("school_level", 0))):
         raise ValueError("Цей виклик недоступний.")
     if magic["energy"] < magic["cost"]:
         raise ValueError("Недостатньо енергії для виклику.")
     previous = next((stack for stack in state.stacks.values() if stack.owner == side and stack.summoned), None)
     unit = UNITS[f"elemental_{element}"]
-    position = spawn_position(state, unit, previous)
+    position = spawn_position(state, side, unit, previous)
     if position is None:
         raise ValueError("На полі немає місця для елементаля.")
     count, top_hp = squad_health(magic["hp_pool"], unit.hp)
