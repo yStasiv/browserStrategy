@@ -25,25 +25,43 @@ WORKSHOP_ICONS = {
 }
 
 
+def level_limits(guild):
+    if guild.startswith("metalworking:"):
+        return 0, MAX_METALWORKING_LEVEL
+    return 1, MAX_COLLEGE_LEVEL if guild == METALWORKERS else None
+
+
+def spent_points(guild, level):
+    starting_level, _ = level_limits(guild)
+    return sum(xp_threshold(previous, guild) for previous in range(starting_level, level))
+
+
 def award_point(db, player_id, guild, points=1):
-    if not points:
+    if points <= 0:
         return
-    if not insert_once(db, ActivityGuildProgress, player_id=player_id, guild=guild, points=points):
+    starting_level, max_level = level_limits(guild)
+    if not insert_once(db, ActivityGuildProgress, player_id=player_id, guild=guild,
+                       points=points, level=starting_level):
         db.execute(
             update(ActivityGuildProgress)
             .where(ActivityGuildProgress.player_id == player_id, ActivityGuildProgress.guild == guild)
             .values(points=ActivityGuildProgress.points + points)
         )
+    row = db.get(ActivityGuildProgress, (player_id, guild), populate_existing=True)
+    level = row.level if row.level is not None else starting_level
+    if level != max_level and row.points >= spent_points(guild, level) + xp_threshold(level, guild):
+        row.level = level + 1
+        db.flush([row])
 
 
 def progress(db, player_id, guild):
     row = db.get(ActivityGuildProgress, (player_id, guild))
-    return level_progress(row.points if row else 0, 1, MAX_COLLEGE_LEVEL if guild == METALWORKERS else None, guild)
+    return level_progress(row, guild)
 
 
 def workshop_progress(db, player_id):
     return {
-        key: level_progress(row.points, 0, MAX_METALWORKING_LEVEL, workshop_key(key))
+        key: level_progress(row, workshop_key(key))
         for key in WORKSHOPS
         if (row := db.get(ActivityGuildProgress, (player_id, workshop_key(key)))) is not None
     }
@@ -58,15 +76,12 @@ def display_points(points):
     return int(rounded) if rounded == int(rounded) else rounded
 
 
-def level_progress(points, level, max_level, guild):
-    threshold = xp_threshold(level, guild)
-    while points >= threshold and level != max_level:
-        points -= threshold
-        level += 1
-        threshold = xp_threshold(level, guild)
-    if level == max_level:
-        return {"level": level, "xp": display_points(points), "next_xp": None, "remaining_xp": None}
-    return {"level": level, "xp": display_points(points), "next_xp": threshold, "remaining_xp": display_points(threshold - points)}
+def level_progress(row, guild):
+    starting_level, max_level = level_limits(guild)
+    level = row.level if row is not None and row.level is not None else starting_level
+    points = max(0, row.points - spent_points(guild, level)) if row is not None else 0
+    threshold = None if level == max_level else xp_threshold(level, guild)
+    return {"level": level, "xp": display_points(points), "next_xp": threshold}
 
 
 def repair_percent(level):

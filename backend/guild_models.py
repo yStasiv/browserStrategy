@@ -97,3 +97,4 @@ class ActivityGuildProgress(Base):
     player_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     guild = Column(String(32), primary_key=True)
     points = Column(Numeric(16, 3), nullable=False)
+    level = Column(Integer)

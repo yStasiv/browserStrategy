@@ -142,7 +142,7 @@ def claim(db, player_id, quest_id):
     )
     progress.xp += quest.xp
     progress.next_xp = xp_threshold(progress.level)
-    while progress.xp >= progress.next_xp:
+    if quest.xp > 0 and progress.xp >= progress.next_xp:
         progress.xp -= progress.next_xp
         progress.level += 1
         progress.next_xp = xp_threshold(progress.level)

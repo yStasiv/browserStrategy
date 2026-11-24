@@ -62,13 +62,17 @@ def test_progress_rewards_and_snapshots(sessions):
         assert all(q["status"] == "completed" for q in completed)
         with pytest.raises(guild.GuildError, match="Завершений"):
             guild.replace(db, 10, completed[0]["id"], True)
+        claimed_xp = sum(q["xp"] for q in completed[:-1])
+        opening_xp = max(0, guild.xp_threshold(1) - claimed_xp)
+        db.get(GuildProgress, 10).xp = opening_xp
+        db.flush()
         for quest in completed[:-1]:
             guild.claim(db, 10, quest["id"])
             db.flush()
         after = guild.board(db, 10)
         assert after["level"] == 2
         assert after["next_xp"] == guild.xp_threshold(2)
-        assert after["xp"] == sum(q["xp"] for q in completed[:-1]) - guild.xp_threshold(1)
+        assert after["xp"] == opening_xp + claimed_xp - guild.xp_threshold(1)
         assert after["claimed_count"] == 4
         assert db.get(User, 10).gold == 100 + sum(q["gold"] for q in completed[:-1])
         assert db.get(User, 10).singing_resin == sum(q["singing_resin"] for q in completed[:-1])
@@ -397,6 +401,7 @@ def test_hunts_and_faction_recruitment(sessions, monkeypatch):
     with sessions.begin() as db:
         player = db.get(User, 10)
         player.level, player.fraction = 4, "elfe"
+        player.experience, player.pending_attribute_points = 28_000, 1
         assert "knight" not in {unit["key"] for unit in army_options(db, player)}
         db.add(CastleBuilding(player_id=10, building_id="knight_stables"))
         db.flush()
@@ -442,6 +447,7 @@ def test_hunts_and_faction_recruitment(sessions, monkeypatch):
                    for entry in battle["result"]["sides"][0]["participants"][0]["rewards"])
         db.refresh(player)
         assert 132 <= player.gold <= 398
+        assert player.level == 5 and player.pending_attribute_points == 2
         before = player.gold
         replay = battle_service.battle_events(db, player, battle["id"], finished_only=True)
         assert replay["initial_state"]["hunt_key"] == "goblin"
@@ -493,7 +499,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
 
     with sessions.begin() as db:
         hero = db.get(User, 10)
-        hero.level, hero.experience, hero.stamina = 2, 1500, 9
+        hero.level, hero.experience, hero.stamina = 2, 3500, 9
         hero.gold, hero.singing_resin, hero.basalt_bone = 1200, 17, 19
         db.add(ArmySlot(user_id=10, slot=0, unit_key="archer", count=7))
         db.add(PlayerResourceBalance(player_id=10, resource_id="whisper_dust", quantity=31))
@@ -550,7 +556,8 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert status == 200 and "Срібний шолом" in detail.decode()
     assert b'class="hero-panel artifact-card"' in detail
     assert asyncio.run(asgi_request(app, "GET", "/art_info?id=-1", ""))[0] == 404
-    assert 'value="1500" max="3000"' in html and "Бойовий рівень 2" in html
+    assert 'value="3500" max="3000"' in html and "Бойовий рівень 2" in html
+    assert "3000 +-500" in html
     assert "Знання" in html and "Витривалість" not in html and "Срібний шолом" in html
     assert "Чоловік" in html and "elves_male_back_model.png.png" in html
     assert 'data-hero-stat="defense"' in html and "спорядження 3" in html
@@ -576,9 +583,9 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
         assert 'id="unit-info-archer"' in profile_html
         assert 'href="/guild"' not in profile_html and "Доступна в Замку." not in profile_html
         assert '<strong class="hero-guild-level" aria-label="Рівень 2">2</strong>' in profile_html
-        assert 'title="Поточні очки гільдії">138<' in profile_html
-        assert 'title="Очки до наступного рівня">+12<' in profile_html
-        assert '<progress value="138" max="150" aria-label="Прогрес до наступного рівня · Гільдія авантюристів">' in profile_html
+        threshold = guild.xp_threshold(2)
+        assert f'title="Досвід гільдії">138 / {threshold}<' in profile_html
+        assert f'<progress value="138" max="{threshold}" aria-label="Прогрес до наступного рівня · Гільдія авантюристів">' in profile_html
         assert "Братство ловців" in profile_html and "Спілка трудівників" in profile_html
         assert "Колегія металознавців" in profile_html
         assert '<details class="hero-guild-workshops">' in profile_html
@@ -703,7 +710,8 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
         player.gold, player.singing_resin, player.basalt_bone = 1250, 10, 20
         db.add_all([
             PlayerResourceBalance(player_id=10, resource_id="pulse_spark", quantity=10),
-            Item(id=101, name="Перстень", item_type="jewelry", owner_id=10, durability=0, max_durability=100),
+            Item(id=101, name="Перстень", item_type="jewelry", owner_id=10, durability=0, max_durability=100,
+                 image_url="/static/images/items/ring.png"),
             Item(id=102, name="Лук", item_type="bow", owner_id=2, durability=0, max_durability=100),
             ActivityGuildProgress(player_id=10, guild=activity_guilds.METALWORKERS, points=Decimal("99.9")),
         ])
@@ -748,6 +756,7 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     assert call("POST", unlock, {"workshop": "forge"})[0] == 409
     status, body = call("GET", "/castle/metalworking")
     assert status == 200 and "Перстень" in body.decode() and "Зачарувальня" in body.decode()
+    assert b'class="forge-item-tile"' in body and b'src="/static/images/items/ring.png"' in body
     assert all(icon.encode() in body for icon in activity_guilds.WORKSHOP_ICONS.values())
 
     with sessions.begin() as db:
@@ -823,11 +832,18 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
         assert activity_guilds.workshop_progress(db, 10)["forge"]["xp"] == Decimal("0.3")
 
     with sessions.begin() as db:
-        db.get(ActivityGuildProgress, (10, activity_guilds.METALWORKERS)).points = 250
+        db.get(ActivityGuildProgress, (10, activity_guilds.METALWORKERS)).points = 260
+        assert activity_guilds.progress(db, 10, activity_guilds.METALWORKERS)["level"] == 2
+    assert call("POST", unlock, {"workshop": "armor"})[0] == 409
+    assert "150 +-10" in call("GET", "/castle/metalworking")[1].decode()
+    with sessions.begin() as db:
+        activity_guilds.award_point(db, 10, activity_guilds.METALWORKERS)
     assert call("POST", unlock, {"workshop": "armor"})[0] == 303
     assert call("POST", unlock, {"workshop": "enchanting"})[0] == 409
     with sessions.begin() as db:
         db.get(ActivityGuildProgress, (10, activity_guilds.METALWORKERS)).points = 450
+        db.flush()
+        activity_guilds.award_point(db, 10, activity_guilds.METALWORKERS)
     assert call("POST", unlock, {"workshop": "enchanting"})[0] == 303
     with sessions() as db:
         assert set(activity_guilds.workshop_progress(db, 10)) == set(activity_guilds.WORKSHOPS)

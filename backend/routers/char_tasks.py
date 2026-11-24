@@ -4,10 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from backend.auth import playable_users, session_player
-from backend import database, models, utils
-from backend.routers.player import PlayerHelper
-
-logger = utils.setup_logger(__name__)
+from backend import database, models
 
 
 router = APIRouter()
@@ -104,16 +101,7 @@ class TaskHelper:
             # Give reward for task
             task = db.query(models.Task).filter(models.Task.id == task_id).first()
             if task and is_completed:
-                reward_exp = TaskHelper.give_reward(db, user_id, task)
-                if reward_exp:
-                    logger.info(
-                        f"Task retun some exp {reward_exp}, let up user lvl if needed"
-                    )
-                    user = (
-                        db.query(models.User).filter(models.User.id == user_id).first()
-                    )
-                    if user:
-                        PlayerHelper.update_user_level(user, db)
+                TaskHelper.give_reward(db, user_id, task)
 
             return user_task
         else:

@@ -1,3 +1,4 @@
+{% from 'character/xp.html' import xp_amount %}
 <section class="hero-identity" aria-labelledby="hero-name">
     <div class="hero-portrait-frame">
         <img class="hero-portrait{% if profile.faction_key == 'underground_elves' %} hero-portrait-underground{% endif %}" src="/static/images/simple-elfe.png" alt="Портрет персонажа">
@@ -7,7 +8,7 @@
         <p>{% if player.is_system %} · Системний персонаж{% endif %}</p>
         <p><strong>Бойовий рівень {{ player.level }}</strong>{% if profile.faction %} · {{ profile.faction }}{% endif %}{% if profile.gender %} · {{ profile.gender }}{% endif %}</p>
         {% if profile.next_level_exp %}
-        <label for="hero-xp">Досвід {{ player.experience }} / {{ profile.next_level_exp }}</label>
+        <label for="hero-xp">Досвід {{ xp_amount(player.experience, profile.next_level_exp) }}</label>
         <progress id="hero-xp" value="{{ player.experience }}" max="{{ profile.next_level_exp }}"></progress>
         {% else %}
         <p>Максимальний рівень · {{ player.experience }} досвіду</p>

@@ -1,3 +1,4 @@
+{% from 'character/xp.html' import xp_amount %}
 {% macro progression(title, entries, empty) %}
 <section class="hero-panel">
     <h2>{{ title }}</h2>
@@ -8,7 +9,7 @@
         {% if entry.description %}<p>{{ entry.description }}</p>{% endif %}
         {% if entry.level is defined and entry.level is not none %}<p>Рівень {{ entry.level }}</p>{% endif %}
         {% if entry.next_xp and entry.xp is defined and entry.xp is not none %}
-        <label for="progress-{{ entry.id }}">Досвід {{ entry.xp }} / {{ entry.next_xp }}</label>
+        <label for="progress-{{ entry.id }}">Досвід {{ xp_amount(entry.xp, entry.next_xp) }}</label>
         <progress id="progress-{{ entry.id }}" value="{{ entry.xp }}" max="{{ entry.next_xp }}"></progress>
         {% endif %}
         {% if not entry.available and entry.requirements %}<p>{{ entry.requirements }}</p>{% endif %}

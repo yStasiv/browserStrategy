@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from .. import models
 from ..services.activity_guilds import HUNTERS, award_point
 from ..services import castle_buildings
+from ..services.guild_experience import hero_xp_threshold
 from ..services.hero_equipment import wear_battle_equipment
 from ..services.rewards import issue_system_resources
 from .battle_damage import attributed_events, damage_summary
@@ -130,6 +131,12 @@ def _settle(db: Session, battle_id: int, state: BattleState) -> None:
             entries.append({"type": "hunters", "amount": 1})
         issue_system_resources(db, p.user_id, "battle_v1", str(battle_id),
                                gold=gold, wood=0, stone=0, experience=xp, reward_entries=entries)
+        if xp > 0:
+            hero = db.get(models.User, p.user_id, populate_existing=True)
+            threshold = hero_xp_threshold(hero.level)
+            if threshold is not None and hero.experience >= threshold:
+                hero.level += 1
+                hero.pending_attribute_points = (hero.pending_attribute_points or 0) + 1
         if rewarded_hunt:
             award_point(db, p.user_id, HUNTERS)
 

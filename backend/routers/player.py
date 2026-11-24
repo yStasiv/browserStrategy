@@ -25,21 +25,6 @@ class PlayerHelper:
     def experience_needed_for_next_level(level: int) -> int | None:
         return hero_xp_threshold(level)
 
-    @staticmethod
-    def update_user_level(user: models.User, db: Session) -> None:
-        threshold = PlayerHelper.experience_needed_for_next_level(user.level)
-        if threshold is None or user.experience < threshold:
-            return
-
-        lock_hero(db, user)
-        starting_level = user.level
-        threshold = PlayerHelper.experience_needed_for_next_level(user.level)
-        while threshold is not None and user.experience >= threshold:
-            user.level += 1
-            threshold = PlayerHelper.experience_needed_for_next_level(user.level)
-        user.pending_attribute_points = (user.pending_attribute_points or 0) + user.level - starting_level
-        db.commit()
-
 
 @router.get("/player_info")
 async def player_info(
@@ -85,7 +70,6 @@ class PlayerRotes(PlayerHelper):
         if not user:
             raise HTTPException(status_code=401, detail="Увійди до гри.")
 
-        PlayerHelper().update_user_level(user, db)
         next_level_exp = PlayerHelper().experience_needed_for_next_level(user.level)
 
         return templates.TemplateResponse("player.html", {

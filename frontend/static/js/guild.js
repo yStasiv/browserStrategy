@@ -18,7 +18,10 @@
 
     function render(board) {
         document.querySelector('#guild-rank').textContent = `${board.rank} · рівень ${board.level}`;
-        document.querySelector('#guild-xp-label').textContent = `Досвід гільдії · ${board.xp} / ${board.next_xp} XP`;
+        const xpLabel = board.xp > board.next_xp
+            ? `${board.next_xp} +-${board.xp - board.next_xp}`
+            : `${board.xp} / ${board.next_xp}`;
+        document.querySelector('#guild-xp-label').textContent = `Досвід гільдії · ${xpLabel} XP`;
         const xp = document.querySelector('#guild-xp');
         xp.max = board.next_xp;
         xp.value = board.xp;

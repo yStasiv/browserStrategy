@@ -23,7 +23,12 @@
   },
   "per_level_after_table": 50,
   "guilds": {
-    "adventurers": {},
+    "adventurers": {
+      "0": 1,
+      "1": 300,
+      "2": 1500,
+      "3": 200
+    },
     "hunters": {},
     "workers": {},
     "metalworkers": {},
