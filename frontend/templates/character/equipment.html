@@ -1,4 +1,4 @@
-{% from 'components/inventory_tooltip.html' import artifact_tooltip %}
+{% from 'components/inventory_tooltip.html' import artifact_tooltip, artifact_tooltip_content %}
 <section class="hero-panel hero-equipment-panel" aria-label="Спорядження">
     {% set empty_icons = {'head': 'helmet', 'chest': 'armor', 'belt': 'belt', 'legs': 'boots', 'back': 'cloak',
                           'main_hand': 'sword', 'off_hand': 'shield_bow_dagger', 'acc_1': 'amulet',
@@ -19,7 +19,7 @@
                     aria-label="Зняти «{{ slot.item.name }}»">
             {% elif slot.item %}
             <a class="hero-gear-slot" data-hero-slot="{{ key }}" href="/art_info?id={{ slot.item.id }}"
-               title="{{ slot.item.name }}" aria-label="{{ slot.item.name }}">
+               aria-label="{{ slot.item.name }}" aria-describedby="gear-bonuses-{{ key }}">
             {% elif not read_only and not inventory_management %}
             <a class="hero-gear-slot" data-hero-slot="{{ key }}" href="/inventory"
                title="{{ slot.name }}" aria-label="{{ slot.name }} · до інвентарю">
@@ -34,7 +34,12 @@
                 {% endif %}
             {% if inventory_management and slot.item %}
                 </button>
-            {% elif slot.item or (not read_only and not inventory_management) %}</a>{% else %}</div>{% endif %}
+            {% elif slot.item %}
+                <span class="hero-gear-tooltip" id="gear-bonuses-{{ key }}" role="tooltip">
+                    {{ artifact_tooltip_content(slot.item, item_types, slot.item.bonuses) }}
+                </span>
+            </a>
+            {% elif not read_only and not inventory_management %}</a>{% else %}</div>{% endif %}
             {% endfor %}
         </div>
     </div>

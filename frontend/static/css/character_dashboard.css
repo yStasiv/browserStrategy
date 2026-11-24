@@ -180,6 +180,29 @@
     pointer-events: none;
 }
 .hero-gear-slot .hero-slot-placeholder { opacity: .72; }
+.hero-gear-slot:hover, .hero-gear-slot:focus-visible { z-index: 2; }
+.hero-gear-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    width: max-content;
+    max-width: 10rem;
+    padding: .4rem;
+    border-radius: .3rem;
+    background: #493521;
+    color: #fff5dc;
+    text-align: start;
+    pointer-events: none;
+    visibility: hidden;
+}
+.hero-gear-slot:is(:hover, :focus-visible) .hero-gear-tooltip { visibility: visible; }
+[data-hero-slot="back"] .hero-gear-tooltip,
+[data-hero-slot="off_hand"] .hero-gear-tooltip { left: auto; right: 0; }
+[data-hero-slot="legs"] .hero-gear-tooltip,
+[data-hero-slot="acc_4"] .hero-gear-tooltip { top: auto; bottom: 100%; }
 [data-hero-slot="head"] { --sx: 55%; --sy: 12%; }
 [data-hero-slot="chest"] { --sx: 55%; --sy: 34%; }
 [data-hero-slot="belt"] { --sx: 55%; --sy: 56%; }
