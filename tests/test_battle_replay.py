@@ -88,6 +88,8 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     baseline = call("GET", root + "/events")[1]
     assert baseline["initial_state"]["stacks"]["s0_3"]["count"] == 3
     assert baseline["initial_state"]["seq"] == 0
+    assert baseline["initial_state"]["stacks"]["s0_0"]["initial_count"] == 17
+    assert baseline["initial_state"]["stacks"]["s0_3"]["initial_count"] == 3
     assert baseline["initial_state"]["obstacles"] == battle["state"]["obstacles"] == obstacles
     assert baseline["events"][0]["payload"]["obstacles"] == obstacles
     assert baseline["events"][0]["payload"]["obstacle_kind"] == "rock"

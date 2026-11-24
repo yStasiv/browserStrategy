@@ -114,6 +114,18 @@
         .popup { position: absolute; transform: translateX(-50%); font-weight: 800; font-size: 1.05rem; color: #fff;
                  text-shadow: 0 0 4px #000, 0 0 2px #000; opacity: 0; animation: pop 1.3s ease-out forwards; white-space: nowrap; }
         .popup.ret { color: #fbbf24; }
+        .battle-proc {
+            position: absolute;
+            z-index: 5;
+            pointer-events: none;
+            width: calc(var(--cell) * 2.5);
+            aspect-ratio: 1;
+            transform: translate(-50%, -50%);
+            background-repeat: no-repeat;
+            background-size: 400% 600%;
+        }
+        #squad-details dl { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem .5rem; margin: .5rem 0; }
+        #squad-details dd { text-align: right; }
         @keyframes pop { 0% { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px); } }
 
         #initiative { display: flex; flex: 1 1 0; min-width: 0; gap: .3rem; overflow-x: auto; padding: .25rem .15rem; }
@@ -194,6 +206,11 @@
                     <div id="active-info" class="text-sm text-slate-300 min-h-[2.5rem]"></div>
                     <output id="attack-preview" class="text-sm text-amber-200" hidden></output>
                 </div>
+                <section class="bg-slate-800 rounded-lg p-3" aria-label="Огляд загону">
+                    <label for="squad-inspector">Огляд загону</label>
+                    <select id="squad-inspector" class="block w-full bg-slate-900"></select>
+                    <div id="squad-details" class="text-sm text-slate-300" hidden></div>
+                </section>
                 <div id="deployment-actions" class="hidden space-y-2">
                     <div id="deployment-army" class="flex flex-wrap gap-2" aria-label="Загони для розстановки"></div>
                     <label class="block" id="deployment-split-label">Відокремити істот
@@ -505,6 +522,11 @@
                 d = document.createElement('div');
                 d.innerHTML = '<div class="icon"></div><span class="flag"></span><span class="badge"></span>';
                 d.addEventListener('click', (event) => onStackClick(s.id, event));
+                d.addEventListener('contextmenu', event => {
+                    event.preventDefault();
+                    $('squad-inspector').value = s.id;
+                    renderSquadInspector();
+                });
                 d.addEventListener('mousemove', (event) => onStackHover(s.id, event));
                 d.addEventListener('mouseenter', (event) => onStackHover(s.id, event));
                 d.addEventListener('mouseleave', () => {
@@ -541,7 +563,66 @@
                 delete stackEls[id];
             }
         }
+        renderSquadInspector();
+        preloadProcSprites();
     }
+
+    function renderSquadInspector() {
+        const select = $('squad-inspector');
+        const panel = $('squad-details');
+        const squads = Object.values(view.state.stacks);
+        const labels = squads.map(stack => `${uv(stack.unit).name} · ${stack.owner === view.my_side ? 'Союзний' : 'Ворожий'} · ×${stack.count}`);
+        const selected = select.value;
+        if (select.options.length !== squads.length + 1 ||
+            squads.some((stack, index) => select.options[index + 1].value !== stack.id ||
+                select.options[index + 1].text !== labels[index])) {
+            select.replaceChildren(new Option('Обери загін', ''), ...squads.map((stack, index) =>
+                new Option(labels[index], stack.id)));
+            select.value = view.state.stacks[selected] ? selected : '';
+        }
+        const stack = view.state.stacks[select.value];
+        panel.hidden = !stack;
+        if (!stack) return;
+
+        const unit = uv(stack.unit);
+        const hero = Object.values(view.state.heroes ?? {}).find(hero => hero.owner === stack.owner);
+        const luck = stack.luck ?? ((unit.luck ?? 0) + (hero?.luck ?? 0));
+        const morale = stack.morale ?? ((unit.morale ?? 0) + (hero?.morale ?? 0));
+        const initial = stack.initial_count ?? replay?.initial_state?.stacks[stack.id]?.count ?? '—';
+        const chance = (value, streak) => `${value} · ${Math.min(100, Math.abs(value) * 5 * (streak ?? 1))}%`;
+        const abilities = (unit.abilities ?? []).map(ability =>
+            ({flying: 'Політ', ranged_attack: 'Дальня атака'}[ability] ?? ability));
+        const effects = [
+            ...(stack.defending ? ['Захист ×1,3'] : []),
+            ...(stack.retaliated ? ['Контратака витрачена'] : []),
+            ...(stack.summoned ? ['Викликаний загін'] : []),
+        ];
+        const hp = (stack.count - 1) * unit.hp + stack.top_hp;
+        const attributes = [
+            ['Істоти', `${stack.count} / ${initial}`],
+            ['Загальне здоров’я', hp], ['HP пораненої істоти', stack.top_hp],
+            ['HP однієї істоти', unit.hp], ['Атака', unit.attack], ['Захист', unit.defense],
+            ['Постріли', `${stack.shots_left} / ${unit.shots}`],
+            ['Дальність подвійного пострілу', unit.shots ? unit.shooting_range : '—'],
+            ['Шкода', `${unit.dmg_min}–${unit.dmg_max}`], ['Швидкість', unit.speed],
+            ['Ініціатива', unit.initiative], ['Удача й шанс', chance(luck, stack.luck_streak)],
+            ['Мораль і шанс', chance(morale, stack.morale_streak)],
+            ['Здібності', abilities.join(', ') || '—'], ['Активні ефекти', effects.join(', ') || '—'],
+        ];
+        const heading = document.createElement('h3');
+        heading.textContent = unit.name;
+        const list = document.createElement('dl');
+        for (const [label, value] of attributes) {
+            const term = document.createElement('dt');
+            const detail = document.createElement('dd');
+            term.textContent = label;
+            detail.textContent = value;
+            list.append(term, detail);
+        }
+        panel.replaceChildren(heading, list);
+    }
+
+    $('squad-inspector').addEventListener('change', renderSquadInspector);
 
     function renderCreatureDamage(summary) {
         const sides = summary?.sides ?? [];
@@ -1125,6 +1206,16 @@
         setTimeout(() => d.remove(), delay + 1400);
     }
 
+    function rollDescription(entry) {
+        const stat = entry.type === 'luck' ? 'Удача' : 'Мораль';
+        const outcome = {positive: 'позитивний ефект', negative: 'негативний ефект', none: 'без ефекту'};
+        return `${stat} · ${outcome[entry.outcome]} · шанс ${entry.chance}%`;
+    }
+
+    function healDescription(entry) {
+        return `Відновлено ${entry.healed} HP` + (entry.resurrected ? ` · воскресло істот ${entry.resurrected}` : '');
+    }
+
     function showEvents(events) {
         let delay = 0;
         for (const e of events) {
@@ -1146,6 +1237,14 @@
                             ': ' + e.damage + ' шкоди, загинуло ' + e.killed, cls);
                     popup(e.target, '-' + e.damage + (e.killed ? ' 💀' + e.killed : ''), 'ret', delay);
                     delay += 350;
+                    break;
+                case 'luck':
+                case 'morale':
+                    logLine(`${stackName(e.stack)} · ${rollDescription(e)}`, cls);
+                    break;
+                case 'heal':
+                    logLine(`${stackName(e.target)} · ${healDescription(e)}`, cls);
+                    popup(e.target, '+' + e.healed, '', delay);
                     break;
                 case 'defend':
                     logLine(stackName(e.stack) + ' у захисті', cls);
@@ -1486,7 +1585,60 @@
         return effect;
     }
 
+    const procSprites = {
+        positive_luck: 'positive_animations/luck_spritesheet.png',
+        negative_luck: 'negative_animation/luck_negative_spritesheet.png',
+        positive_morale: 'positive_animations/morale_spritesheet.png',
+        negative_morale: 'negative_animation/morale_negative_spritesheet.png',
+    };
+
+    const procAssetRoot = '/static/images/efects/';
+    const procImages = new Map();
+
+    function preloadProcSprites() {
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        for (const stack of Object.values(view.state.stacks)) {
+            const unit = uv(stack.unit);
+            const hero = Object.values(view.state.heroes ?? {}).find(hero => hero.owner === stack.owner);
+            for (const stat of ['luck', 'morale']) {
+                const value = stack[stat] ?? ((unit[stat] ?? 0) + (hero?.[stat] ?? 0));
+                if (!value) continue;
+                const sprite = procSprites[`${value > 0 ? 'positive' : 'negative'}_${stat}`];
+                if (!procImages.has(sprite)) {
+                    const image = new Image();
+                    image.src = procAssetRoot + sprite;
+                    procImages.set(sprite, image);
+                }
+            }
+        }
+    }
+
+    function animateProc(event, state, speed) {
+        if (!event.payload.animation_event || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const sprite = procSprites[event.payload.anim_type];
+        const squad = state.stacks[event.actor_id];
+        if (!sprite || !squad) return;
+        const effect = document.createElement('span');
+        effect.className = 'battle-proc';
+        effect.setAttribute('aria-hidden', 'true');
+        Object.assign(effect.style, {
+            left: `calc(var(--cell) * ${squad.x + squad.w / 2})`,
+            top: `calc(var(--cell) * ${squad.y + squad.h / 2})`,
+            backgroundImage: `url(${procAssetRoot}${sprite})`,
+        });
+        if (!effect.animate) return;
+        el.popups.appendChild(effect);
+        const frames = Array.from({length: 24}, (_, index) => ({
+            backgroundPosition: `${(index % 4) * 100 / 3}% ${Math.floor(index / 4) * 20}%`,
+            offset: index / 24, easing: 'steps(1, end)',
+        }));
+        frames.push({...frames[23], offset: 1});
+        const playback = effect.animate(frames, {duration: 1200 / speed});
+        playback.finished.then(() => effect.remove(), () => effect.remove());
+    }
+
     async function animateEvent(event, state, speed) {
+        animateProc(event, state, speed);
         const entry = BattleEvents.logEvent(event);
         if (entry) showEvents([entry]);
         const effect = heroEffect(event, speed) ?? BattleEvents.animate(event, stackEls, state,
@@ -1541,6 +1693,8 @@
             wait: 'чекає', skip: 'пропускає хід', surrender: 'Сторона здалася',
             summon: `викликає ${uv(entry.unit).name} ×${entry.count}`,
             battle_end: 'Бій завершено',
+            ...(entry.type === 'luck' || entry.type === 'morale' ? {[entry.type]: rollDescription(entry)} : {}),
+            ...(entry.type === 'heal' ? {heal: healDescription(entry)} : {}),
         };
         logLine(actor ? `${stackName(actor)} ${description[entry.type]}` : description[entry.type], 'sys');
     }

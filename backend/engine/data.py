@@ -85,6 +85,8 @@ def creature_rows():
                     "line": f"{faction}_{line['key']}", "icon": line["icon"],
                     "speed": line["speed"], "shots": form.get("shots", line["shots"]),
                     "abilities": resolved_abilities(line, form),
+                    "luck": form.get("luck", line.get("luck", 0)),
+                    "morale": form.get("morale", line.get("morale", 0)),
                     "shooting_range": form.get("shooting_range", line.get("shooting_range", DEFAULT_SHOOTING_RANGE)),
                     "size": line.get("size", (1, 1)), "starter_count": 0,
                     "recruitment": recruitment,
@@ -126,7 +128,15 @@ def load_creatures():
 
 
 UNITS = load_creatures()
-UNIT_PRESENTATION = {u.key: {"name": u.name, "emoji": u.icon} for u in UNITS.values()}
+UNIT_PRESENTATION = {
+    u.key: {
+        "name": u.name, "emoji": u.icon, "attack": u.attack, "defense": u.defense,
+        "hp": u.hp, "shots": u.shots, "dmg_min": u.dmg_min, "dmg_max": u.dmg_max,
+        "speed": u.speed, "initiative": u.initiative, "luck": u.luck, "morale": u.morale,
+        "shooting_range": DEFAULT_SHOOTING_RANGE, "abilities": u.abilities,
+    }
+    for u in UNITS.values()
+}
 for unit in UNITS.values():
     if unit.image_url:
         UNIT_PRESENTATION[unit.key]["image_url"] = unit.image_url

@@ -181,3 +181,24 @@ test('shows a separate damage section with allies first regardless of the winner
         ['Лучник', '12,345']);
     assert.equal(note.textContent, 'Показано шкоду за доступну частину запису.');
 });
+
+test('applies recorded luck, morale, and resurrection without rerolling', () => {
+    const replayContext = vm.createContext({structuredClone});
+    vm.runInContext(readFileSync(resolve(__dirname, '../frontend/static/js/battle_events.js'), 'utf8') +
+        '\nthis.events = BattleEvents;', replayContext);
+    const {apply, logEvent} = replayContext.events;
+    const state = {stacks: {s0_0: {ready: 20, luck_streak: 4}}};
+    const luck = {type: 'LUCK_ROLLED', actor_id: 's0_0', payload: {
+        stack: 's0_0', streak_after: 1, animation_event: true, anim_type: 'positive_luck',
+    }};
+    apply(state, luck);
+    assert.equal(state.stacks.s0_0.luck_streak, undefined);
+    assert.equal(logEvent(luck).anim_type, 'positive_luck');
+
+    apply(state, {type: 'MORALE_ROLLED', actor_id: 's0_0', payload: {streak_after: 2, next_ready_at: 30}});
+    assert.deepEqual(state.stacks.s0_0, {ready: 30, morale_streak: 2});
+    apply(state, {type: 'UNIT_HEALED', target_id: 's0_1', payload: {
+        stack_after: {id: 's0_1', initial_count: 5}, target_count_after: 2, top_hp: 3,
+    }});
+    assert.deepEqual(state.stacks.s0_1, {id: 's0_1', initial_count: 5, count: 2, top_hp: 3});
+});

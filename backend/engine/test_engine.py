@@ -283,6 +283,7 @@ def test_elf_summon_with_full_slots_replaces_and_replays_until_battle_end():
     first, steps = play_turn(state, 0, Summon("earth"))
     summon = next(stack for stack in first.stacks.values() if stack.summoned)
     assert len([stack for stack in first.stacks.values() if stack.owner == 0]) == 9
+    assert summon.initial_count == summon.count
     assert summon.ready == hero.ready + period(summon) and summon.x < first.width // 2
     event = next(event for event in steps[0].replay_events if event["type"] == "ELEMENTAL_SUMMONED")
     assert event["payload"]["summon_ready_at"] == summon.ready
@@ -464,3 +465,85 @@ def test_generated_rocks_change_ground_routes_and_only_block_flight_landings():
     assert routes["4,1"] == {"cost": 40, "path": [[0, 1], [4, 1]]}
     after, events = apply(state, Move(4, 1))
     assert reconstruct(state.to_dict(), action_events(state, after, events)) == after.to_dict()
+
+
+def test_luck_and_morale_streaks_escalate_independently_and_reset(monkeypatch):
+    from engine import squad_effects
+
+    class NearMaximum:
+        def __init__(self, seed):
+            pass
+
+        def random(self):
+            return .9999
+
+    monkeypatch.setattr(squad_effects, "Random", NearMaximum)
+    state = two_stacks()
+    actor = state.stacks["s0_0"]
+    actor.luck, actor.morale = 5, -10
+    events = []
+    assert squad_effects.roll_squad_stat(state, actor, "morale", events) == 0
+    assert [squad_effects.roll_squad_stat(state, actor, "luck", events) for _ in range(4)] == [0, 0, 0, 1]
+    assert [event["chance"] for event in events[1:]] == [25, 50, 75, 100]
+    assert events[-1]["animation_event"] and events[-1]["anim_type"] == "positive_luck"
+    assert all(not event["animation_event"] for event in events[:-1])
+    assert (actor.luck_streak, actor.morale_streak) == (1, 2)
+    assert squad_effects.roll_squad_stat(state, actor, "morale", events) == -1
+    assert events[-1]["chance"] == 100 and events[-1]["anim_type"] == "negative_morale"
+    assert (actor.luck_streak, actor.morale_streak) == (1, 1)
+
+
+@pytest.mark.parametrize(("stat", "sign"), [(20, "positive"), (-20, "negative")])
+def test_luck_changes_final_shot_and_morale_adjusts_readiness(stat, sign):
+    from engine.rules import period
+
+    state = two_stacks("archer", "swordsman", ca=5, cb=20)
+    actor, target = state.stacks["s0_0"], state.stacks["s1_0"]
+    actor.x, actor.y, target.x, target.y = 0, 0, 6, 0
+    state.active_id = actor.id
+    _, baseline = apply(state, Attack(target.id))
+    actor.luck = actor.morale = stat
+    before = state.to_dict()
+    after, events = apply(state, Attack(target.id))
+    luck, attack, morale = events
+    expected_damage = baseline[0]["damage"] * 2 if stat > 0 else max(1, baseline[0]["damage"] // 2)
+    expected_interval = period(actor) // 2 if stat > 0 else period(actor) + period(actor) // 2
+    assert attack["damage"] == luck["damage_after"] == expected_damage
+    assert luck["outcome"] == morale["outcome"] == sign
+    assert morale["next_ready_at"] == after.stacks[actor.id].ready == actor.ready + expected_interval
+    recorded = action_events(state, after, events, {"type": "attack", "target_id": target.id})
+    assert reconstruct(before, recorded) == after.to_dict()
+    assert apply(state, Attack(target.id))[1] == events
+
+
+def test_healing_fills_wounded_unit_first_and_caps_resurrection():
+    from engine.squad_effects import heal_squad
+
+    stack = Stack("s0_0", "swordsman", 0, 2, 5, 0, 0, initial_count=4)
+    assert heal_squad(stack, 100) == 30 and (stack.count, stack.top_hp) == (2, 35)
+    assert heal_squad(stack, 1, allow_resurrect=True) == 1 and (stack.count, stack.top_hp) == (3, 1)
+    assert heal_squad(stack, 500, allow_resurrect=True) == 69 and (stack.count, stack.top_hp) == (4, 35)
+    assert heal_squad(stack, 1, allow_resurrect=True) == 0
+    stack.count = stack.top_hp = 0
+    assert heal_squad(stack, 300) == 0 and stack.count == 0
+    assert heal_squad(stack, 300, allow_resurrect=True) == 140 and stack.count == stack.initial_count
+
+
+def test_heal_event_replays_with_luck_and_morale():
+    from engine.squad_effects import heal_squad
+
+    state = two_stacks("archer", "peasant", ca=10, cb=2)
+    actor, target = state.stacks["s0_0"], state.stacks["s1_0"]
+    state.active_id = actor.id
+    actor.luck = actor.morale = 20
+    actor.x, actor.y, target.x, target.y = 0, 0, 4, 0
+    reserve = Stack("reserve", "peasant", 1, 3, 4, 7, 4, initial_count=3)
+    state.stacks[reserve.id] = reserve
+    after, events = apply(state, Attack(target.id))
+    assert target.id not in after.stacks
+    target = Stack(target.id, target.unit, target.owner, 0, 0, target.x, target.y, initial_count=2)
+    assert heal_squad(target, 100, allow_resurrect=True, events=events) == 8
+    after.stacks[target.id] = target
+    replay_events = action_events(state, after, events)
+    assert {"LUCK_ROLLED", "MORALE_ROLLED", "UNIT_HEALED"} <= {e["type"] for e in replay_events}
+    assert reconstruct(state.to_dict(), replay_events) == after.to_dict()
