@@ -43,15 +43,12 @@
 }
 .hero-identity { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .65rem 1rem; align-items: center; }
 .hero-portrait {
-    width: clamp(4.5rem, 15vw, 7.75rem);
-    aspect-ratio: 1;
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    box-sizing: border-box;
-    border: .22rem solid #b98a42;
-    border-radius: 50%;
-    outline: 1px solid var(--hero-bronze);
-    box-shadow: 0 0 0 2px #e3c677, 0 3px 9px #60421b54;
-    background: #435841;
 }
 .hero-dashboard summary { cursor: pointer; color: #35502f; }
 .hero-dashboard progress { display: block; width: 100%; height: .8rem; margin: .3rem 0; accent-color: #526747; }
@@ -254,15 +251,15 @@
     gap: .8rem;
 }
 .hero-portrait-frame {
-    display: grid;
-    place-items: center;
+    position: relative;
     align-self: stretch;
-    padding: .4rem;
+    width: clamp(4.55rem, 9vw, 6.3rem);
+    min-height: clamp(4.55rem, 9vw, 6.3rem);
+    overflow: hidden;
     border: 1px solid #b68a52;
     border-radius: .35rem;
-    background: radial-gradient(ellipse, #e9ce98, #f8ecd1);
+    background: #435841;
 }
-.hero-portrait-frame .hero-portrait { display: block; width: clamp(3.75rem, 8vw, 5.5rem); }
 .hero-stat-panel, .hero-stat-panel form { display: flex; flex-direction: column; }
 .hero-stat-panel { justify-content: flex-end; }
 .hero-primary > .hero-stat-panel, .hero-profile-details {
@@ -337,7 +334,6 @@
 }
 .hero-stat-card:hover .hero-stat-tooltip,
 .hero-stat-card:focus-within .hero-stat-tooltip { opacity: 1; }
-.hero-portrait-underground { filter: hue-rotate(34deg) saturate(.78); background: #524461; }
 .hero-public-rating { display: grid; gap: .25rem; margin: 0; }
 .hero-public-rating div { display: flex; justify-content: space-between; gap: .5rem; }
 .hero-public-rating dd { margin: 0; font-weight: bold; }

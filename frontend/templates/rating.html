@@ -37,7 +37,7 @@
                 {% for currect_player in players %}
                 <tr class="{% if currect_player.id == player.id %}player{% endif %}">
                     <td>{{ loop.index }}</td>
-                    <td><a href="/player_info?id={{ currect_player.id }}">{{ currect_player.username}} </a></td>
+                    <td><a href="/player_info?id={{ currect_player.id }}">{{ currect_player.username }}</a></td>
                     <td>{{ currect_player.rating.rating }}</td>
                     <td>{{ currect_player.level }}</td>
                     <td>{{ currect_player.experience }}</td>
@@ -99,19 +99,6 @@ th, td {
 th {
     background: #f8f9fa;
     font-weight: 600;
-}
-
-.player-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.player-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
 }
 
 .current-user {

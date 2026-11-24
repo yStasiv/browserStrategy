@@ -8,6 +8,14 @@ from .data import faction_key
 from .state import HeroTurn
 
 
+def hero_portrait_url(faction, gender):
+    faction = faction_key(faction)
+    if faction not in {"elves", "underground_elves"}:
+        faction = "elves"
+    gender = "female" if gender == "female" else "male"
+    return f"/static/images/units_and_buildings/{faction}/hero/{faction}_hero_{gender}.png"
+
+
 def make_hero(db, user, side, level):
     ids = set(equipment_ids(user.equipped_items).values()) - {None}
     equipped = db.scalars(select(Item).where(Item.id.in_(ids), Item.owner_id == user.id)).all() if ids else ()
@@ -17,7 +25,7 @@ def make_hero(db, user, side, level):
         id=f"hero_{side}", owner=side, name=user.username, level=level, **totals,
         damage_min=max(1, HERO_RULES["damage_min"] + attack),
         damage_max=max(1, HERO_RULES["damage_max"] + attack),
-        portrait=user.avatar_url if (user.avatar_url or "").startswith("/avatars/") else None,
+        portrait=hero_portrait_url(user.fraction, user.gender),
         faction=faction_key(user.fraction),
         equipment_ids=sorted(item.id for item in equipped),
     )

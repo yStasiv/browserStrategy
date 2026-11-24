@@ -610,6 +610,10 @@
                 const portrait = document.createElement('img');
                 portrait.src = hero.portrait || heroSprite(hero);
                 if (!hero.portrait) portrait.className = 'hero-default-portrait';
+                portrait.addEventListener('error', () => {
+                    portrait.classList.add('hero-default-portrait');
+                    portrait.src = heroSprite(hero);
+                }, {once: true});
                 portrait.alt = '';
                 c.appendChild(portrait);
             } else {
@@ -794,7 +798,9 @@
             const portrait = document.createElement('img');
             portrait.className = 'field-hero-sprite';
             portrait.src = heroSprite(hero);
-            portrait.addEventListener('error', () => { portrait.src = '/static/images/simple-elfe.png'; }, {once: true});
+            portrait.addEventListener('error', () => {
+                if (hero.portrait?.startsWith('/static/')) portrait.src = hero.portrait;
+            }, {once: true});
             portrait.alt = '';
             const details = document.createElement('div');
             const name = document.createElement('strong');

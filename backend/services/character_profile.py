@@ -10,6 +10,7 @@ from backend.config import LEGACY_BALANCES, RESOURCE_FILE
 
 from backend.engine.battle_models import Battle, BattleParticipant
 from backend.engine.data import UNITS, faction_key
+from backend.engine.hero import hero_portrait_url
 from backend.engine.roster import saved_army
 from backend.engine.battle_service import user_level
 from backend.engine.setup import field_rules
@@ -208,6 +209,7 @@ def dashboard(db, player, next_level_exp):
         "faction": FACTIONS.get(faction, player.fraction),
         "faction_key": faction,
         "gender": GENDERS[gender],
+        "portrait_url": hero_portrait_url(faction, gender),
         "equipment_model_url": equipment_model_url(faction, gender),
         "guilds": progress_entries(db, player, GUILDS),
         "faction_skills": progress_entries(db, player, FACTION_SKILLS),
