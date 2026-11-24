@@ -12,14 +12,13 @@ from backend.guild_models import (
     GuildQuestTemplate,
 )
 from backend.services.guild_content import load_templates
+from backend.services.guild_experience import xp_threshold
 from backend.services.rewards import issue_system_resources
 
 logger = logging.getLogger(__name__)
 
 SLOT_COUNT = 5
 DAILY_LIMIT = 3
-BASE_XP = 100
-XP_PER_LEVEL = 50
 OBJECTIVE_GROWTH_PERCENT = 20
 RANKS = ((10, "Ветеран"), (5, "Шукач пригод"), (1, "Новачок"))
 RESOURCE_NAMES = {"singing_resin": "співочої смоли", "basalt_bone": "базальтової кістки"}
@@ -41,10 +40,6 @@ class GuildError(Exception):
 
 def utc_today():
     return datetime.now(timezone.utc).date()
-
-
-def xp_threshold(level):
-    return BASE_XP + (level - 1) * XP_PER_LEVEL
 
 
 def insert_once(db, model, **values):
@@ -146,7 +141,8 @@ def claim(db, player_id, quest_id):
         gold=quest.gold, wood=quest.wood, stone=quest.stone,
     )
     progress.xp += quest.xp
-    while progress.xp >= progress.next_xp:
+    progress.next_xp = xp_threshold(progress.level)
+    while quest.xp > 0 and progress.xp >= progress.next_xp:
         progress.xp -= progress.next_xp
         progress.level += 1
         progress.next_xp = xp_threshold(progress.level)
@@ -208,7 +204,7 @@ def board(db, player_id):
         "level": progress.level,
         "rank": next(rank for level, rank in RANKS if progress.level >= level),
         "xp": progress.xp,
-        "next_xp": progress.next_xp,
+        "next_xp": xp_threshold(progress.level),
         "claimed_count": progress.claimed_count,
         "replacements_remaining": DAILY_LIMIT - (usage.used if usage else 0),
         "replacement_limit": DAILY_LIMIT,

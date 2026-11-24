@@ -1,6 +1,7 @@
 # backend/main.py
 import asyncio
 import os
+from math import ceil
 
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket
@@ -10,6 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend import database, utils
 from backend.auth import session_player
+from backend.models import RepairJob
+from backend.services.world import utc_now
 from backend.tasks import check_workers
 from backend.services.character_profile import resources as character_resources
 from backend.websockets import manager
@@ -88,6 +91,9 @@ async def resume_active_battle(request: Request, call_next):
                         and battle_service.get_active_battle_id(session, player.id) is not None):
                     return RedirectResponse("/battle", status_code=303, headers={"Cache-Control": "no-store"})
                 request.state.header_player = player
+                job = session.get(RepairJob, player.id)
+                if job is not None:
+                    request.state.header_repair_seconds = max(0, ceil((job.ready_at - utc_now()).total_seconds()))
                 items = character_resources(session, player)
                 request.state.header_resources = (
                     [item for item in items if not item["conditional"]]

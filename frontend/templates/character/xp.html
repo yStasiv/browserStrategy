@@ -1,0 +1,3 @@
+{% macro xp_amount(xp, threshold) -%}
+{% if xp > threshold %}{{ threshold }} +-{{ xp - threshold }}{% else %}{{ xp }} / {{ threshold }}{% endif %}
+{%- endmacro %}

@@ -1,0 +1,50 @@
+.forge-broken-icon { position: relative; display: inline-block; vertical-align: middle; }
+.forge-broken-icon img { filter: grayscale(.7); }
+.forge-broken-icon b {
+    position: absolute;
+    inset: auto 0 0 auto;
+    padding: 0 .2rem;
+    border-radius: .2rem;
+    background: #843e30;
+    color: #fff4d7;
+    line-height: 1;
+}
+
+.forge-repair-result {
+    box-sizing: border-box;
+    width: min(28rem, calc(100% - 2rem));
+    padding: 1.25rem;
+    border: 1px solid #98764d;
+    border-radius: .5rem;
+    background: #f5e8d3;
+    color: #342519;
+    text-align: center;
+    overflow-wrap: anywhere;
+    box-shadow: 0 .25rem 1rem #34251966;
+}
+.forge-repair-result::backdrop { background: #24190c99; }
+
+.forge-item-tile {
+    display: grid;
+    grid-template-columns: clamp(3rem, 16%, 5rem) minmax(0, 1fr);
+    align-items: start;
+    gap: .75rem;
+    margin-block: .65rem;
+    padding: .75rem;
+    border: 1px solid #cfbb98;
+    border-radius: .45rem;
+    background: #f5e8d3;
+}
+.forge-item-image {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border: 1px solid #cfbb98;
+    border-radius: .35rem;
+    background: #ead9bb;
+}
+.forge-item-image img { width: 100%; height: 100%; object-fit: contain; min-width: 0; }
+.forge-item-details { overflow-wrap: anywhere; }
+.forge-item-details p { margin-block: 0 .45rem; }
+.forge-item-details label { display: block; margin-block-end: .45rem; }
+.forge-repair-result .forge-item-image { width: 5rem; margin-inline: auto; }

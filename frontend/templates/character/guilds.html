@@ -1,8 +1,8 @@
+{% from 'character/xp.html' import xp_amount %}
 {% macro guild_progress(name, progress) %}
 <span class="hero-guild-progress">
     {% if progress.next_xp %}
-    <span title="Поточні очки гільдії">{{ progress.xp }}</span>
-    <span title="Очки до наступного рівня">+{{ progress.remaining_xp }}</span>
+    <span title="Досвід гільдії">{{ xp_amount(progress.xp, progress.next_xp) }}</span>
     {% else %}<span>Максимальний рівень</span>{% endif %}
     <strong class="hero-guild-level" aria-label="Рівень {{ progress.level }}">{{ progress.level }}</strong>
 </span>

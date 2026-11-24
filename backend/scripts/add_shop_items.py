@@ -43,6 +43,7 @@ def add_shop_items(db: Session, *, sync_existing=False):
         item_data = {key: value for key, value in artifact.items() if key not in ("shop_data", "repair_cost")}
         shop = artifact["shop_data"]
         item_data["level_required"] = shop["level"]
+        item_data["initial_max_durability"] = artifact.get("max_durability")
         if previous := existing.get(artifact["name"]):
             for listing in previous:
                 for key, value in item_data.items():

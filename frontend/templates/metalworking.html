@@ -1,9 +1,15 @@
 {% extends 'base.html' %}
-{% from 'components/resource_price.html' import resource_price %}
+{% from 'character/xp.html' import xp_amount %}
+{% macro item_image(item) %}
+<div class="forge-item-image" aria-hidden="true">
+    {% if item.image_url %}<img src="{{ item.image_url }}" alt="" loading="lazy">{% else %}<span>◆</span>{% endif %}
+</div>
+{% endmacro %}
 {% block title %}Колегія металознавців{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', path='css/artifact_shop.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/forge_repair.css') }}">
+<script defer src="{{ url_for('static', path='js/forge_repair.js') }}"></script>
 {% endblock %}
 {% block body %}
 <main class="hero-dashboard">
@@ -11,10 +17,41 @@
     <h1>Колегія металознавців</h1>
     <p><strong>Рівень {{ progress.level }}</strong> · Відкрито майстерень {{ unlocked_count }}/{{ progress.level }}</p>
     {% if progress.next_xp %}
-    <p>{{ progress.xp }} +{{ progress.remaining_xp }}</p>
+    <p>{{ xp_amount(progress.xp, progress.next_xp) }}</p>
     <progress value="{{ progress.xp }}" max="{{ progress.next_xp }}" aria-label="Прогрес Колегії металознавців"></progress>
     {% endif %}
-    {% if repaired %}<p role="status">Міцність артефакту відновлено.</p>{% endif %}
+    {% if job %}
+    <section class="hero-panel forge-item-tile" aria-label="Поточний ремонт">
+        {{ item_image(job_item) }}
+        <div class="forge-item-details">
+            <p>{{ job_item.name }} · {% for key, name, _, _items in workshops if key == job.workshop %}{{ name }}{% endfor %}</p>
+            <p id="forge-repair-timer" data-seconds="{{ remaining }}" role="timer">{% if remaining %}Залишилось {{ remaining }} с{% else %}Результат готовий{% endif %}</p>
+            <form method="get" action="/castle/metalworking">
+                <input type="hidden" name="result" value="{{ job.token }}">
+                <button id="forge-repair-claim" type="submit" {% if remaining %}disabled{% endif %}>Забрати</button>
+            </form>
+        </div>
+    </section>
+    {% endif %}
+    {% if show_result %}
+    <dialog id="forge-repair-result" class="forge-repair-result" aria-labelledby="forge-result-title">
+        <h2 id="forge-result-title">Результат ремонту</h2>
+        {{ item_image(job_item) }}
+        {% if job.succeeded %}
+        <p>{{ job_item.name }}</p>
+        <p>Міцність {{ job_item.durability }}/{{ job_item.max_durability }} → {{ repaired_durability[0] }}/{{ repaired_durability[1] }}</p>
+        {% else %}
+        <p><span class="forge-broken-icon" aria-hidden="true">
+            <img class="hero-workshop-icon" src="{{ workshop_icons[job.workshop] }}" alt=""><b>×</b>
+        </span> Не вдалося відновити артефакт «{{ job_item.name }}».</p>
+        <p>Повернення золота — {{ job.gold // 2 }}.</p>
+        {% endif %}
+        <form method="post" action="/castle/metalworking/repair/claim">
+            <input type="hidden" name="token" value="{{ job.token }}">
+            <button type="submit" autofocus>Закрити</button>
+        </form>
+    </dialog>
+    {% endif %}
     <div class="hero-screen">
         {% for key, name, specialization, items in workshops %}
         <section id="{{ key }}" class="hero-panel">
@@ -35,20 +72,30 @@
                 {% endif %}
             {% elif key != 'enchanting' %}
             <p><strong>Рівень {{ specialization.level }}</strong> · Відновлення {{ repair_percent(specialization.level) }}% максимальної міцності за ремонт</p>
-            <p>Ремонт доступний після втрати щонайменше половини міцності. Кожен ремонт зменшує максимальну міцність на 1.</p>
+            <p>Ремонт доступний після втрати щонайменше половини міцності. Успішний ремонт зменшує максимальну міцність на 1.</p>
             {% if specialization.next_xp %}
-            <p>{{ specialization.xp }} +{{ specialization.remaining_xp }}</p>
+            <p>{{ xp_amount(specialization.xp, specialization.next_xp) }}</p>
             <progress value="{{ specialization.xp }}" max="{{ specialization.next_xp }}" aria-label="Прогрес · {{ name }}"></progress>
             {% endif %}
             {% for item in items %}
-            <form class="hero-feature" action="/castle/metalworking/repair" method="post">
-                <input type="hidden" name="item_id" value="{{ item.id }}">
-                <input type="hidden" name="durability" value="{{ item.durability }}">
-                <span>{{ item.name }} · {{ item.durability }}/{{ item.max_durability }}</span>
-                {% set quote = repair_quotes.get(item.id) %}
-                {% if quote is not none %}{{ resource_price(quote, resource_catalog) }}{% else %}<span>Ціна ремонту відсутня.</span>{% endif %}
-                <button type="submit" class="hero-link" aria-label="Відремонтувати {{ item.name }}"
-                        {% if quote is none or quote|selectattr('2')|list %}disabled{% endif %}>Відремонтувати</button>
+            <form class="forge-item-tile" action="/castle/metalworking/repair" method="post">
+                {{ item_image(item) }}
+                <div class="forge-item-details">
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    <input type="hidden" name="durability" value="{{ item.durability }}">
+                    <strong>{{ item.name }}</strong> · Міцність {{ item.durability }}/{{ item.max_durability }}
+                    {% set quote = repair_quotes.get(item.id) %}
+                    {% if quote is not none %}
+                    <p>Відновлення {{ quote.percent }}% · {{ quote.minutes }} хв · {{ quote.points }} очка Колегії та майстерні</p>
+                    <p>Шанс успіху {{ quote.chance }}% · {{ "{:,}".format(quote.gold) }} золота</p>
+                    <p>У разі невдачі предмет буде знищено. Повернення 50% вартості · {{ "{:,}".format(quote.refund) }} золота.</p>
+                    {% if quote.chance < 50 %}
+                    <label><input type="checkbox" name="confirmed" value="true" required> Високий ризик. Підтверджую можливе знищення предмета.</label>
+                    {% endif %}
+                    {% else %}<span>Ціна ремонту відсутня.</span>{% endif %}
+                    <button type="submit" class="hero-link" aria-label="Відремонтувати {{ item.name }}"
+                            {% if job or quote is none or player.gold < quote.gold %}disabled{% endif %}>Почати ремонт</button>
+                </div>
             </form>
             {% else %}
             <p>Немає артефактів, які потребують ремонту.</p>

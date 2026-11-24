@@ -86,8 +86,9 @@ class Service:
 
 def adventurers_progress(db, player):
     progress = db.get(GuildProgress, player.id)
-    level, xp, threshold = (progress.level, progress.xp, progress.next_xp) if progress else (1, 0, xp_threshold(1))
-    return {"level": level, "xp": xp, "next_xp": threshold, "remaining_xp": max(0, threshold - xp)}
+    level, xp = (progress.level, progress.xp) if progress else (1, 0)
+    threshold = xp_threshold(level)
+    return {"level": level, "xp": xp, "next_xp": threshold}
 
 
 def metalworking_progress(db, player):

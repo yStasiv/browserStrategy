@@ -9,6 +9,7 @@ from backend import database, models
 from backend.auth import get_current_user
 from backend.services.character_profile import dashboard, hero_state
 from backend.routers.item import ITEM_TYPES
+from backend.services.guild_experience import hero_xp_threshold
 from backend.services.hero_attributes import SPENDABLE_ATTRIBUTES
 from backend.services.hero_equipment import change_equipment, lock_hero
 from backend.services.hero_army import save_roster
@@ -21,37 +22,8 @@ templates = Jinja2Templates(directory="frontend/templates")
 class PlayerHelper:
 
     @staticmethod
-    def experience_needed_for_next_level(level: int) -> int:
-        """Розрахунок необхідного досвіду для наступного рівня"""
-        if level >= 8:  # Максимальний рівень
-            return None
-
-        # Формула розрахунку досвіду
-        exp_requirements = {
-            1: 1000,  # для досягнення 2 рівня
-            2: 3000,  # для досягнення 3 рівня
-            3: 6000,  # для досягнення 4 рівня
-            4: 10000,  # для досягнення 5 рівня
-            5: 15000,  # для досягнення 6 рівня
-            6: 21000,  # для досягнення 7 рівня
-            7: 28000,  # для досягнення 8 рівня
-        }
-        return int(exp_requirements.get(level, 1))
-
-    @staticmethod
-    def update_user_level(user: models.User, db: Session) -> None:
-        threshold = PlayerHelper.experience_needed_for_next_level(user.level)
-        if threshold is None or user.experience < threshold:
-            return
-
-        lock_hero(db, user)
-        starting_level = user.level
-        threshold = PlayerHelper.experience_needed_for_next_level(user.level)
-        while threshold is not None and user.experience >= threshold:
-            user.level += 1
-            threshold = PlayerHelper.experience_needed_for_next_level(user.level)
-        user.pending_attribute_points = (user.pending_attribute_points or 0) + user.level - starting_level
-        db.commit()
+    def experience_needed_for_next_level(level: int) -> int | None:
+        return hero_xp_threshold(level)
 
 
 @router.get("/player_info")
@@ -98,7 +70,6 @@ class PlayerRotes(PlayerHelper):
         if not user:
             raise HTTPException(status_code=401, detail="Увійди до гри.")
 
-        PlayerHelper().update_user_level(user, db)
         next_level_exp = PlayerHelper().experience_needed_for_next_level(user.level)
 
         return templates.TemplateResponse("player.html", {

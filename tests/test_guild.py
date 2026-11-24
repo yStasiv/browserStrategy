@@ -62,13 +62,17 @@ def test_progress_rewards_and_snapshots(sessions):
         assert all(q["status"] == "completed" for q in completed)
         with pytest.raises(guild.GuildError, match="Завершений"):
             guild.replace(db, 10, completed[0]["id"], True)
+        claimed_xp = sum(q["xp"] for q in completed[:-1])
+        opening_xp = max(0, guild.xp_threshold(1) - claimed_xp)
+        db.get(GuildProgress, 10).xp = opening_xp
+        db.flush()
         for quest in completed[:-1]:
             guild.claim(db, 10, quest["id"])
             db.flush()
         after = guild.board(db, 10)
         assert after["level"] == 2
         assert after["next_xp"] == guild.xp_threshold(2)
-        assert after["xp"] == sum(q["xp"] for q in completed[:-1]) - guild.xp_threshold(1)
+        assert after["xp"] == opening_xp + claimed_xp - guild.xp_threshold(1)
         assert after["claimed_count"] == 4
         assert db.get(User, 10).gold == 100 + sum(q["gold"] for q in completed[:-1])
         assert db.get(User, 10).singing_resin == sum(q["singing_resin"] for q in completed[:-1])
@@ -390,13 +394,15 @@ def test_castle_sliders_save_the_army_used_by_battle(sessions):
 def test_hunts_and_faction_recruitment(sessions, monkeypatch):
     from backend.engine import battle_service
     from backend.engine.battle_models import ArmySlot, Battle
-    from backend.models import CastleBuilding
+    from backend.models import CastleBuilding, PlayerResourceBalance
     from backend.routers.castle import army_options
     from backend.services import world
 
     with sessions.begin() as db:
         player = db.get(User, 10)
         player.level, player.fraction = 4, "elfe"
+        player.experience, player.pending_attribute_points = 28_000, 1
+        db.add(PlayerResourceBalance(player_id=10, resource_id="astralit", quantity=2))
         assert "knight" not in {unit["key"] for unit in army_options(db, player)}
         db.add(CastleBuilding(player_id=10, building_id="knight_stables"))
         db.flush()
@@ -441,10 +447,28 @@ def test_hunts_and_faction_recruitment(sessions, monkeypatch):
         assert any(entry["type"] == "hunters" and entry["amount"] == 1
                    for entry in battle["result"]["sides"][0]["participants"][0]["rewards"])
         db.refresh(player)
-        assert 132 <= player.gold <= 398
+        from backend.services.guild_experience import hero_level_reward
+
+        level_gold = sum(hero_level_reward(level).get("gold", 0) for level in range(5, 9))
+        assert 132 <= player.gold - level_gold <= 398
+        assert player.level == 8 and player.pending_attribute_points == 5
+        level_rewards = [
+            entry["amount"] for entry in battle["result"]["sides"][0]["participants"][0]["rewards"]
+            if entry["type"] == "hero_level" and entry["label"] == "Новий рівень героя"
+        ]
+        assert level_rewards == [5, 6, 7, 8]
+        assert player.singing_resin == player.basalt_bone == 4
+        rewards = {entry["type"]: entry["amount"]
+                   for entry in battle["result"]["sides"][0]["participants"][0]["rewards"]}
+        for resource in ("whisper_dust", "pulse_spark", "brand_salt", "astralit"):
+            balance = db.get(PlayerResourceBalance, (player.id, resource))
+            awarded = sum(hero_level_reward(level).get(resource, 0) for level in range(5, 9))
+            assert balance.quantity == awarded + (2 if resource == "astralit" else 0)
+            assert rewards[resource] == awarded
         before = player.gold
         replay = battle_service.battle_events(db, player, battle["id"], finished_only=True)
         assert replay["initial_state"]["hunt_key"] == "goblin"
+        assert replay["result"] == battle["result"]
         assert player.gold == before
         assert activity_guilds.progress(db, player.id, activity_guilds.HUNTERS)["xp"] == 1
         player.level = 2
@@ -493,7 +517,7 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
 
     with sessions.begin() as db:
         hero = db.get(User, 10)
-        hero.level, hero.experience, hero.stamina = 2, 1500, 9
+        hero.level, hero.experience, hero.stamina = 2, 3500, 9
         hero.gold, hero.singing_resin, hero.basalt_bone = 1200, 17, 19
         db.add(ArmySlot(user_id=10, slot=0, unit_key="archer", count=7))
         db.add(PlayerResourceBalance(player_id=10, resource_id="whisper_dust", quantity=31))
@@ -550,7 +574,8 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
     assert status == 200 and "Срібний шолом" in detail.decode()
     assert b'class="hero-panel artifact-card"' in detail
     assert asyncio.run(asgi_request(app, "GET", "/art_info?id=-1", ""))[0] == 404
-    assert 'value="1500" max="3000"' in html and "Бойовий рівень 2" in html
+    assert 'value="3500" max="3000"' in html and "Бойовий рівень 2" in html
+    assert "3000 +-500" in html
     assert "Знання" in html and "Витривалість" not in html and "Срібний шолом" in html
     assert "Чоловік" in html and "elves_male_back_model.png.png" in html
     assert 'data-hero-stat="defense"' in html and "спорядження 3" in html
@@ -576,9 +601,9 @@ def test_character_dashboard_resources_equipment_and_registered_sections(session
         assert 'id="unit-info-archer"' in profile_html
         assert 'href="/guild"' not in profile_html and "Доступна в Замку." not in profile_html
         assert '<strong class="hero-guild-level" aria-label="Рівень 2">2</strong>' in profile_html
-        assert 'title="Поточні очки гільдії">138<' in profile_html
-        assert 'title="Очки до наступного рівня">+12<' in profile_html
-        assert '<progress value="138" max="150" aria-label="Прогрес до наступного рівня · Гільдія авантюристів">' in profile_html
+        threshold = guild.xp_threshold(2)
+        assert f'title="Досвід гільдії">138 / {threshold}<' in profile_html
+        assert f'<progress value="138" max="{threshold}" aria-label="Прогрес до наступного рівня · Гільдія авантюристів">' in profile_html
         assert "Братство ловців" in profile_html and "Спілка трудівників" in profile_html
         assert "Колегія металознавців" in profile_html
         assert '<details class="hero-guild-workshops">' in profile_html
@@ -659,10 +684,17 @@ def test_hero_endpoints_validate_equipment_and_update_stats_and_army(sessions):
 
 
 def test_work_and_metalworking_award_points_for_successful_actions(sessions, monkeypatch, tmp_path):
-    from backend.models import Item, PlayerResourceBalance
+    from decimal import Decimal
+
+    from backend.models import Item, PlayerResourceBalance, RepairJob
     from backend.routers import castle
     from backend.services import castle_buildings
-    monkeypatch.setattr(castle, "repair_prices", lambda: {("Перстень", "jewelry"): {"gold": 10}})
+    monkeypatch.setattr(castle.forge_repairs, "repair_prices",
+                        lambda: {("Перстень", "jewelry"): 25, ("Ризиковий лук", "bow"): 150})
+    now = datetime(2026, 11, 24, 12)
+    monkeypatch.setattr(castle, "utc_now", lambda: now)
+    rolls = iter((0, 0, 99))
+    monkeypatch.setattr(castle.forge_repairs.secrets, "randbelow", lambda _: next(rolls))
 
     buildings = json.loads(castle_buildings.CATALOG_FILE.read_text(encoding="utf-8"))
     entries = {building["id"]: building for building in buildings}
@@ -696,9 +728,10 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
         player.gold, player.singing_resin, player.basalt_bone = 1250, 10, 20
         db.add_all([
             PlayerResourceBalance(player_id=10, resource_id="pulse_spark", quantity=10),
-            Item(id=101, name="Перстень", item_type="jewelry", owner_id=10, durability=0, max_durability=100),
+            Item(id=101, name="Перстень", item_type="jewelry", owner_id=10, durability=0, max_durability=100,
+                 image_url="/static/images/items/ring.png"),
             Item(id=102, name="Лук", item_type="bow", owner_id=2, durability=0, max_durability=100),
-            ActivityGuildProgress(player_id=10, guild=activity_guilds.METALWORKERS, points=99),
+            ActivityGuildProgress(player_id=10, guild=activity_guilds.METALWORKERS, points=Decimal("99.9")),
         ])
 
     assert call("POST", "/enterprise/1/start-work")[0] == 200
@@ -741,44 +774,106 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     assert call("POST", unlock, {"workshop": "forge"})[0] == 409
     status, body = call("GET", "/castle/metalworking")
     assert status == 200 and "Перстень" in body.decode() and "Зачарувальня" in body.decode()
+    assert b'class="forge-item-tile"' in body and b'src="/static/images/items/ring.png"' in body
     assert all(icon.encode() in body for icon in activity_guilds.WORKSHOP_ICONS.values())
 
     with sessions.begin() as db:
-        db.get(ActivityGuildProgress, (10, activity_guilds.workshop_key("jewelry"))).points = 99
+        db.get(ActivityGuildProgress, (10, activity_guilds.workshop_key("jewelry"))).points = Decimal("99.9")
         assert db.get(User, 10).gold == 0
 
     assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 409
     with sessions.begin() as db:
-        db.get(User, 10).gold = 20
+        db.get(User, 10).gold = 50
 
     assert call("POST", endpoint, {"item_id": 102, "durability": 0})[0] == 409
     assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 303
+    with sessions() as db:
+        assert db.get(Item, 101).durability == 0
+        token = db.get(RepairJob, 10).token
+    claim = endpoint + "/claim"
+    result = f"/castle/metalworking?result={token}"
+    assert b'id="forge-repair-result"' not in call("GET", result)[1]
+    assert call("POST", claim, {"token": token})[0] == 409
+    assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 409
+    now += timedelta(minutes=1)
+    assert json.loads(call("GET", endpoint + "/status")[1])["status"] == "ready"
+    assert "Міцність 0/100 → 5/99".encode() in call("GET", result)[1]
+    with sessions() as db:
+        assert (db.get(Item, 101).durability, db.get(Item, 101).max_durability) == (0, 100)
+        assert db.get(RepairJob, 10) is not None
+    assert call("POST", claim, {"token": token})[0] == 303
+    assert b'id="forge-repair-result"' not in call("GET", result)[1]
+    assert call("POST", claim, {"token": token})[0] == 409
     assert call("POST", unlock, {"workshop": "forge"})[0] == 303
     assert call("POST", unlock, {"workshop": "armor"})[0] == 409
     assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 409
     assert call("POST", endpoint, {"item_id": 101, "durability": 5})[0] == 303
+    with sessions.begin() as db:
+        token = db.get(RepairJob, 10).token
+        db.get(User, 10).gold = 150
+        db.add(Item(id=103, name="Ризиковий лук", item_type="bow", owner_id=10,
+                    durability=0, max_durability=4, initial_max_durability=10))
+    assert call("POST", endpoint, {"item_id": 103, "durability": 0, "confirmed": "true"})[0] == 409
+    now += timedelta(minutes=1)
+    assert call("POST", claim, {"token": token})[0] == 303
 
     with sessions() as db:
         player = db.get(User, 10)
-        assert (player.gold, player.singing_resin, player.basalt_bone) == (0, 0, 0)
+        assert (player.gold, player.singing_resin, player.basalt_bone) == (150, 0, 0)
         assert db.get(PlayerResourceBalance, (10, "pulse_spark")).quantity == 0
         assert (db.get(Item, 101).durability, db.get(Item, 101).max_durability) == (14, 98)
         assert db.get(Item, 102).durability == 0
         assert activity_guilds.progress(db, 10, activity_guilds.WORKERS)["xp"] == 1
         metalworking = activity_guilds.progress(db, 10, activity_guilds.METALWORKERS)
-        assert (metalworking["level"], metalworking["xp"]) == (2, 1)
+        assert (metalworking["level"], metalworking["xp"]) == (2, Decimal("0.1"))
         workshops = activity_guilds.workshop_progress(db, 10)
         assert (workshops["jewelry"]["level"], workshops["forge"]["level"]) == (1, 0)
 
+    assert "Високий ризик".encode() in call("GET", "/castle/metalworking")[1]
+    assert call("POST", endpoint, {"item_id": 103, "durability": 0})[0] == 409
+    assert call("POST", endpoint, {"item_id": 103, "durability": 0, "confirmed": "true"})[0] == 303
+    with sessions() as db:
+        job = db.get(RepairJob, 10)
+        token = job.token
+        assert not job.succeeded and job.ready_at == now + timedelta(minutes=2)
+        assert db.get(User, 10).gold == 0 and db.get(Item, 103) is not None
+    now += timedelta(minutes=2)
+    failure = call("GET", f"/castle/metalworking?result={token}")[1].decode()
+    assert "Не вдалося відновити артефакт «Ризиковий лук»." in failure
+    assert "Повернення золота — 75." in failure
+    with sessions() as db:
+        assert db.get(User, 10).gold == 0 and db.get(Item, 103) is not None
+    assert call("POST", claim, {"token": token})[0] == 303
+    assert call("POST", claim, {"token": token})[0] == 409
+    with sessions() as db:
+        assert db.get(User, 10).gold == 75 and db.get(Item, 103) is None
+        assert activity_guilds.workshop_progress(db, 10)["forge"]["xp"] == Decimal("0.3")
+        assert activity_guilds.progress(db, 10, activity_guilds.METALWORKERS)["xp"] == Decimal("0.4")
+
     with sessions.begin() as db:
-        db.get(ActivityGuildProgress, (10, activity_guilds.METALWORKERS)).points = 250
+        db.get(ActivityGuildProgress, (10, activity_guilds.METALWORKERS)).points = 260
+        assert activity_guilds.progress(db, 10, activity_guilds.METALWORKERS)["level"] == 2
+    assert call("POST", unlock, {"workshop": "armor"})[0] == 409
+    assert "150 +-10" in call("GET", "/castle/metalworking")[1].decode()
+    with sessions.begin() as db:
+        activity_guilds.award_point(db, 10, activity_guilds.METALWORKERS)
     assert call("POST", unlock, {"workshop": "armor"})[0] == 303
     assert call("POST", unlock, {"workshop": "enchanting"})[0] == 409
     with sessions.begin() as db:
         db.get(ActivityGuildProgress, (10, activity_guilds.METALWORKERS)).points = 450
+        db.flush()
+        activity_guilds.award_point(db, 10, activity_guilds.METALWORKERS)
     assert call("POST", unlock, {"workshop": "enchanting"})[0] == 303
     with sessions() as db:
         assert set(activity_guilds.workshop_progress(db, 10)) == set(activity_guilds.WORKSHOPS)
+    with sessions.begin() as db:
+        workers = db.get(ActivityGuildProgress, (10, activity_guilds.WORKERS))
+        workers.points = 450
+        db.flush()
+        assert activity_guilds.progress(db, 10, activity_guilds.WORKERS)["level"] == 1
+        activity_guilds.award_point(db, 10, activity_guilds.WORKERS)
+        progress = activity_guilds.progress(db, 10, activity_guilds.WORKERS)
+        assert (progress["level"], progress["xp"]) == (4, 1)
     assert [activity_guilds.repair_percent(level) for level in range(11)] == [5, *range(10, 100, 10), 95]
 
 
@@ -1041,3 +1136,26 @@ def test_hunt_cooldown_after_defeat_is_shared_and_expires(sessions, monkeypatch)
             battle_service.start_hunt(db, player, "skeleton")
         now = finished + timedelta(seconds=30)
         assert location_state(db, player)["hunt_ready_at"] is None
+
+
+
+def test_hero_experience_thresholds_configurable(tmp_path, monkeypatch):
+    from backend.services import guild_experience
+
+    config = json.loads(guild_experience.TABLE_FILE.read_text(encoding="utf-8"))
+    config["hero_leveling"] = {
+        "2": {"exp": 500, "rewards": {"gold": 55, "singing_resin": 1}},
+        "3": {"exp": 1200, "rewards": {}},
+    }
+    path = tmp_path / "experience_tables.json"
+    path.write_text(json.dumps(config), encoding="utf-8")
+    monkeypatch.setattr(guild_experience, "TABLE_FILE", path)
+    guild_experience.tables.cache_clear()
+    try:
+        assert player.PlayerHelper.experience_needed_for_next_level(1) == 500
+        assert player.PlayerHelper.experience_needed_for_next_level(2) == 1200
+        assert player.PlayerHelper.experience_needed_for_next_level(3) is None
+        assert guild_experience.hero_level_reward(1) == {}
+        assert guild_experience.hero_level_reward(2) == {"gold": 55, "singing_resin": 1}
+    finally:
+        guild_experience.tables.cache_clear()

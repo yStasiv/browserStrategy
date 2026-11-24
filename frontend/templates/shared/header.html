@@ -13,10 +13,17 @@
 
                     Карта
                 </a>
-                <a href="/castle" class="nav-link"{% if request.url.path == "/castle" %} aria-current="page"{% endif %}>
-
-                    Замок
-                </a>
+                <div class="nav-castle">
+                    <a href="/castle" class="nav-link"{% if request.url.path == "/castle" %} aria-current="page"{% endif %}>Замок</a>
+                    {% if request.state.header_repair_seconds is defined %}
+                    <a href="/castle/metalworking" class="nav-repair-badge"
+                       data-repair-seconds="{{ request.state.header_repair_seconds }}"
+                       title="Ремонт завершено · До кузні"{% if request.state.header_repair_seconds %} hidden{% endif %}>
+                        <img src="{{ url_for('static', path='images/guild_icons/guild_metallurgists.png') }}"
+                             alt="Ремонт завершено · До кузні">
+                    </a>
+                    {% endif %}
+                </div>
                 <a href="/rating" class="nav-link"{% if request.url.path == "/rating" %} aria-current="page"{% endif %}>
 
                     Рейтинг
@@ -58,6 +65,11 @@
 
     {% if navigation_player %}
     <script>
+    const repairBadge = document.querySelector('[data-repair-seconds]');
+    if (repairBadge?.hidden) {
+        setTimeout(() => { repairBadge.hidden = false; }, Number(repairBadge.dataset.repairSeconds) * 1000);
+    }
+
     function updateClock() {
         const now = new Date();
         const timeElement = document.getElementById('currentTime');

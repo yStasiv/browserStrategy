@@ -9,6 +9,7 @@ from .events import SCHEMA_VERSION
 
 
 REWARD_DISPLAY = {
+    "hero_level": {"label": "Новий рівень героя", "order": 5},
     "experience": {"label": "Досвід героя", "order": 10},
     "gold": {"label": "Золото", "order": 20, "icon": "/static/images/resources/00_gold.png"},
     "singing_resin": {"label": "Співоча смола", "order": 30, "icon": "/static/images/resources/01_singing_resin.png"},

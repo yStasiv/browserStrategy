@@ -1,4 +1,4 @@
-import json
+from math import ceil
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -9,13 +9,12 @@ from sqlalchemy.orm import Session
 from .. import database
 from ..auth import session_player
 from ..engine.battle_service import get_active_battle_id, user_level
-from ..engine.data import CONTENT, ELEMENTALS, UNITS, faction_key
+from ..engine.data import ELEMENTALS, UNITS, faction_key
 from ..guild_models import ActivityGuildProgress
-from ..models import Item
-from ..services import activity_guilds, castle_buildings
-from ..services.resource_balances import resource_definitions, resource_owners, resource_quantity
+from ..models import Item, RepairJob
+from ..services import activity_guilds, castle_buildings, forge_repairs
 from ..services.hero_army import army_options, recruitment_cards, save_roster
-from ..services.world import require_presence
+from ..services.world import require_presence, utc_now
 from ..engine.setup import field_rules
 
 router = APIRouter()
@@ -130,16 +129,6 @@ def repairable_items(player):
     )
 
 
-def repair_prices():
-    rows = json.loads((CONTENT / "artifacts.json").read_text(encoding="utf-8"))
-    resources = resource_definitions()
-    prices = {(row["name"], row["item_type"]): row["repair_cost"] for row in rows if "repair_cost" in row}
-    if any(key not in resources or type(amount) is not int or amount <= 0
-           for price in prices.values() for key, amount in price.items()):
-        raise ValueError("Неправильна ціна ремонту в каталозі артефактів.")
-    return prices
-
-
 def metalworking_progress(db, player):
     return activity_guilds.progress(db, player.id, activity_guilds.METALWORKERS)
 
@@ -152,17 +141,20 @@ def metalworking_page(request: Request, db: Session = Depends(database.get_db)):
     progress = metalworking_progress(db, player)
     unlocked = activity_guilds.workshop_progress(db, player.id)
     items = db.scalars(repairable_items(player).order_by(Item.name, Item.id)).all()
-    prices = repair_prices()
-    owners = resource_owners(db, player, {resource for price in prices.values() for resource in price})
+    prices = forge_repairs.repair_prices()
     quotes = {}
+    job = db.get(RepairJob, player.id)
+    job_item = db.get(Item, job.item_id) if job else None
+    remaining = max(0, ceil((job.ready_at - utc_now()).total_seconds())) if job else 0
+    show_result = bool(job_item and job_item.owner_id == player.id and not remaining
+                       and request.query_params.get("result") == job.token)
     for item in items:
         price = prices.get((item.name, item.item_type))
         specialization = unlocked.get(REPAIR_WORKSHOPS[item.item_type])
         if price is not None and specialization:
-            quotes[item.id] = [(key, amount, resource_quantity(owners, key) < amount)
-                               for key, amount in price.items()]
+            quotes[item.id] = forge_repairs.preview(item, specialization["level"], price)
     workshops = [
-        (key, name, unlocked.get(key), [item for item in items if item.item_type in types])
+        (key, name, unlocked.get(key), [item for item in items if item.item_type in types and (job is None or item.id != job.item_id)])
         for key, (name, types) in WORKSHOPS.items()
     ]
     return templates.TemplateResponse("metalworking.html", {
@@ -170,8 +162,10 @@ def metalworking_page(request: Request, db: Session = Depends(database.get_db)):
         "workshops": workshops, "workshop_icons": activity_guilds.WORKSHOP_ICONS,
         "unlocked_count": len(unlocked),
         "repair_percent": activity_guilds.repair_percent,
-        "repair_quotes": quotes, "resource_catalog": resource_definitions(),
-        "repaired": request.query_params.get("repaired") == "1",
+        "repair_quotes": quotes, "job": job, "job_item": job_item, "remaining": remaining,
+        "show_result": show_result,
+        "repaired_durability": forge_repairs.repaired_durability(job, job_item)
+        if show_result and job.succeeded else None,
     })
 
 
@@ -201,6 +195,7 @@ def unlock_workshop(
 @router.post("/castle/metalworking/repair")
 def repair_artifact(
     request: Request, item_id: int = Form(..., gt=0), durability: int = Form(..., ge=0),
+    confirmed: bool = Form(False),
     db: Session = Depends(database.get_db),
 ):
     player = require_player(request, db)
@@ -216,25 +211,34 @@ def repair_artifact(
     if specialization is None:
         raise HTTPException(403, "Спочатку відкрий відповідну майстерню.")
 
-    percent = activity_guilds.repair_percent(specialization["level"])
-    cost = repair_prices().get((item.name, item.item_type))
-    if cost is None:
+    gold = forge_repairs.repair_prices().get((item.name, item.item_type))
+    if gold is None:
         raise HTTPException(409, "Для артефакту немає ціни ремонту.")
-    owners = resource_owners(db, player, cost)
-    if any(resource_quantity(owners, key) < amount for key, amount in cost.items()):
-        raise HTTPException(409, "Недостатньо ресурсів для ремонту.")
-    for key, amount in cost.items():
-        owner, field = owners[key]
-        setattr(owner, field, resource_quantity(owners, key) - amount)
-    restored = max(1, item.max_durability * percent // 100)
-    item.max_durability -= 1
-    item.durability = min(item.max_durability, item.durability + restored)
-    if specialization["next_xp"] is not None:
-        activity_guilds.award_point(db, player.id, activity_guilds.workshop_key(workshop))
-    if metalworking_progress(db, player)["next_xp"] is not None:
-        activity_guilds.award_point(db, player.id, activity_guilds.METALWORKERS)
+    forge_repairs.start(db, player, item, workshop, specialization["level"], gold, utc_now(), confirmed)
     db.commit()
-    return RedirectResponse(f"/castle/metalworking?repaired=1#{workshop}", status_code=303)
+    return RedirectResponse(f"/castle/metalworking#{workshop}", status_code=303)
+
+
+@router.get("/castle/metalworking/repair/status")
+def repair_status(request: Request, db: Session = Depends(database.get_db)):
+    player = require_player(request, db)
+    require_forge(db, player)
+    job = db.get(RepairJob, player.id)
+    if job is None:
+        return {"status": "idle"}
+    remaining = max(0, ceil((job.ready_at - utc_now()).total_seconds()))
+    return {"status": "running" if remaining else "ready", "remaining_seconds": remaining}
+
+
+@router.post("/castle/metalworking/repair/claim")
+def collect_repair(request: Request, token: str = Form(...), db: Session = Depends(database.get_db)):
+    player = require_player(request, db)
+    require_forge(db, player)
+    if get_active_battle_id(db, player.id) is not None:
+        return RedirectResponse("/battle", status_code=303)
+    _, workshop = forge_repairs.claim(db, player, token, utc_now())
+    db.commit()
+    return RedirectResponse(f"/castle/metalworking#{workshop}", status_code=303)
 
 
 @router.post("/castle")
