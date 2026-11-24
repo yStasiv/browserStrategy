@@ -8,280 +8,44 @@
     <link rel="stylesheet" href="{{ url_for('static', path='css/battle_result.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/navigation.css') }}">
     <script defer src="{{ url_for('static', path='js/dialog.js') }}"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root { --cell: 56px; }
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100dvh;
-            margin: 0;
-            background: #0f172a;
-            color: #e2e8f0;
-            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-        }
-        .battle-page { box-sizing: border-box; flex: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; padding: .75rem; }
-        #battle:not(.hidden) { display: flex; flex: 1; flex-direction: column; min-height: 0; }
-        #battle > :not(.battle-workspace) { flex-shrink: 0; }
-        .battle-workspace { flex: 1; display: grid; gap: .75rem; min-width: 0; min-height: 0; }
-        .battle-sidebar { min-width: 0; }
-        @media (min-width: 64rem) {
-            .battle-workspace { grid-template-columns: minmax(0, 1fr) clamp(16rem, 21vw, 20rem); }
-        }
-        @media (min-width: 64rem) and (min-height: 34rem) {
-            body:has(#battle:not(.hidden)) { height: 100dvh; overflow: hidden; }
-            .battle-workspace { grid-template-rows: minmax(0, 1fr); }
-            .battle-sidebar { overflow-y: auto; }
-        }
-
-        #board-wrap {
-            display: grid;
-            grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-            place-items: center;
-            min-width: 0;
-            min-height: 0;
-            padding: clamp(0.5rem, 2vw, 1.4rem);
-            border: 1px solid #51432e;
-            border-radius: 0.8rem;
-            background:
-                radial-gradient(ellipse at 50% 85%, #495335 0%, transparent 62%),
-                linear-gradient(160deg, #293b32, #1d2a25 47%, #171e1b);
-        }
-        #board {
-            position: relative;
-            margin: 0;
-            border: 2px solid #a88c56;
-            border-radius: 0.35rem;
-            overflow: hidden;
-            box-shadow: 0 9px 0 #342b1c, 0 18px 24px #0b110d;
-            translate: 0 -10%;
-            transform: rotateX(22deg);
-            transform-origin: center;
-            background:
-                radial-gradient(ellipse at 24% 20%, #7e8750a0, transparent 62%),
-                radial-gradient(ellipse at 78% 72%, #99815888, transparent 66%),
-                repeating-linear-gradient(113deg, #d6c29813 0 1px, transparent 1px 6px),
-                #56613a;
-        }
-        #cells { display: grid; position: relative; }
-        .cell {
-            width: var(--cell); height: var(--cell); box-sizing: border-box;
-            border: 1px solid #ece2b331;
-            background: #242c1510;
-        }
-        .cell.alt { background: #ddd4ad14; }
-        .cell.mv { background: #e0c56680; border-color: #f6e397aa; cursor: pointer; }
-        .cell.mv:hover { background: #f5da8799; outline: 1px solid #fff1b5; outline-offset: -2px; }
-        .cell.obstacle { position: relative; background: #303b37; cursor: default; }
-        .cell.obstacle::after {
-            content: "";
-            position: absolute;
-            inset: 15% 12%;
-            background: linear-gradient(140deg, #b7beb1 12%, #737d75 52%, #4b5550 53%);
-            clip-path: polygon(19% 28%, 45% 4%, 76% 15%, 96% 61%, 77% 90%, 12% 88%, 2% 61%);
-            pointer-events: none;
-        }
-        .cell.route { box-shadow: inset 0 0 0 3px #6ddbea; }
-        .cell.deployment-zone { border-color: #e0c56688; }
-        #route-preview, #landing-preview { position: absolute; z-index: 3; pointer-events: none; }
-        #route-preview { inset: 0; }
-        .route-segment {
-            position: absolute;
-            height: 0;
-            border-top: 2px solid #a5f3fc;
-            transform-origin: left center;
-        }
-        .route-segment.flight { border-top-style: dashed; }
-        #landing-preview {
-            box-sizing: border-box;
-            border: 2px solid #a5f3fc;
-            background: #64b6c729;
-        }
-        #landing-preview[data-kind="from"] { border-color: #ffc086; background: #d68b5229; }
-        .cell.ghost { background: #64b6c785; }
-        .cell.hit { background: #ad3f3f9c; border-color: #ff9c8b; }
-        .cell.from { background: #d68b5299; }
-        @media (max-width: 480px) {
-            #board { transform: rotateX(14deg); }
-        }
-
-        #stacks, #popups { position: absolute; inset: 0; pointer-events: none; }
-        .stack { position: absolute; display: flex; align-items: center; justify-content: center;
-                 transition: opacity 0.4s ease; pointer-events: auto; cursor: pointer; user-select: none; }
-        .stack .icon {
-            width: 78%; height: 78%; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(ellipse at 45% 28%, #374f50, #1a2528 70%);
-            border: 2px solid #79b6c4;
-            box-shadow: 0 5px 0 #172b2d, 0 9px 9px #182416b0;
-            transform: rotateX(-22deg);
-            text-shadow: 0 2px 4px #050a08;
-        }
-        .stack.big .icon { width: 90%; height: 87%; border-radius: 30%; }
-        .stack .unit-portrait, .chip .unit-portrait {
-            display: block; width: 100%; height: 100%; object-fit: contain;
-            border-radius: inherit; pointer-events: none;
-        }
-        .stack.enemy .icon { border-color: #d98f75; background: radial-gradient(ellipse at 45% 28%, #684b38, #302225 70%); }
-        .stack.active .icon { box-shadow: 0 0 0 3px #facc15, 0 0 14px 4px rgba(250, 204, 21, 0.7); }
-        .stack.target { cursor: crosshair; }
-        .stack.melee-target { cursor: crosshair; }
-        .stack.unreachable-target { cursor: not-allowed; }
-        #deployment-army {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: .35rem;
-            max-width: 17rem;
-        }
-        .deployment-unit {
-            position: relative;
-            display: grid;
-            place-items: center;
-            aspect-ratio: 1;
-            min-width: 0;
-            padding: .16rem;
-            border: 1px solid #b18b5c;
-            border-radius: .3rem;
-            background: #333e35;
-            color: #f4e7c6;
-        }
-        .deployment-slot { position: relative; min-width: 0; }
-        .deployment-slot.merge-target .deployment-unit {
-            outline: 2px solid #a7c57b;
-            background: #485e3d;
-        }
-        .deployment-unit.dragging { opacity: .5; }
-        .deployment-slot > .deployment-unit { width: 100%; }
-        button.deployment-unit { cursor: pointer; }
-        .deployment-split-trigger {
-            position: absolute;
-            top: .18rem;
-            inset-inline-end: .18rem;
-            z-index: 1;
-            width: 1.65rem;
-            height: 1.65rem;
-            border: 1px solid #b18b5c;
-            border-radius: .2rem;
-            background: #f3dfaf;
-            color: #46311d;
-            font-weight: 700;
-        }
-        .deployment-split-trigger:hover:not(:disabled) { background: #fff3d1; }
-        .deployment-split-trigger:disabled { opacity: .5; }
-        .deployment-unit[aria-pressed="true"] { outline: 2px solid #f1d084; outline-offset: 1px; }
-        .deployment-unit.unplaced { background: #353b3a; border-color: #909693; }
-        .deployment-unit.unplaced .deployment-portrait { opacity: .65; filter: grayscale(1); }
-        .deployment-portrait { width: 100%; height: 100%; min-width: 0; min-height: 0; display: grid; place-items: center; }
-        .deployment-portrait img { width: 100%; height: 100%; object-fit: contain; }
-        .deployment-unit .badge { font-size: .68rem; }
-        .deployment-unit.empty { border-style: dashed; background: #243027; color: #c5b493; }
-        .deployment-unit.locked { opacity: .45; }
-        .stack.target .icon { box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.85); }
-        .stack.enemy:hover .icon { background: rgba(127, 29, 29, 0.7); box-shadow: 0 0 0 3px #ef4444, 0 0 16px 5px rgba(239, 68, 68, 0.9); }
-        .stack.hl .icon { box-shadow: 0 0 0 3px #fff, 0 0 12px 3px rgba(255, 255, 255, 0.6); }
-        .stack.dead { opacity: 0; }
-        .badge { position: absolute; right: 2px; bottom: 2px; min-width: 1.3rem; padding: 0 4px; text-align: center; font-size: 0.75rem; font-weight: 700;
-                 color: #fff; background: #1e293b; border: 1px solid #94a3b8; border-radius: 9999px; }
-        .flag { position: absolute; left: 3px; top: 1px; font-size: 0.8rem; }
-
-        .popup { position: absolute; transform: translateX(-50%); font-weight: 800; font-size: 1.05rem; color: #fff;
-                 text-shadow: 0 0 4px #000, 0 0 2px #000; opacity: 0; animation: pop 1.3s ease-out forwards; white-space: nowrap; }
-        .popup.ret { color: #fbbf24; }
-        .battle-proc {
-            position: absolute;
-            z-index: 5;
-            pointer-events: none;
-            width: calc(var(--cell) * 2.5);
-            aspect-ratio: 1;
-            transform: translate(-50%, -50%);
-            background-repeat: no-repeat;
-            background-size: 400% 600%;
-        }
-        .stack[role="button"]:focus-visible .icon { outline: 2px solid #fff2b5; outline-offset: 2px; }
-        .stack:hover, .stack:focus { z-index: 2; }
-        .stack-hp {
-            position: absolute;
-            top: .1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            visibility: hidden;
-            pointer-events: none;
-            padding: .12rem .28rem;
-            border: 1px solid #b18854;
-            border-radius: .22rem;
-            background: #33281c;
-            color: #fff2d2;
-            font: 700 .7rem/1.15 Georgia, serif;
-            min-width: max-content;
-            white-space: pre-line;
-        }
-        .stack[data-tooltip-edge="left"] .stack-hp { left: .1rem; transform: none; }
-        .stack[data-tooltip-edge="right"] .stack-hp { left: auto; right: .1rem; transform: none; }
-        .stack[data-tooltip-bottom] .stack-hp { top: auto; bottom: .1rem; }
-        .stack:hover .stack-hp, .stack:focus .stack-hp { visibility: visible; }
-        @keyframes pop { 0% { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px); } }
-
-        #initiative { display: flex; flex: 1 1 0; min-width: 0; gap: .3rem; overflow-x: auto; padding: .25rem .15rem; }
-        #initiative .chip { position: relative; width: 2.4rem; height: 2.4rem; flex: 0 0 2.4rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-                background: #1e293b; border: 2px solid #3b82f6; border-radius: 0.4rem; }
-        #initiative .chip.enemy { border-color: #ef4444; }
-        #initiative .chip.first { box-shadow: 0 0 0 2px #facc15; }
-        #initiative .chip.wait-destination { border-style: dashed; border-color: #facc15; }
-        #initiative .chip.hl { border-color: #fff; background: #475569; }
-        #battle-result-toggle { position: absolute; inset: .4rem calc(var(--hero-gutter, 0px) + .4rem) auto auto; z-index: 3; }
-        body:has(#result[open]) #battle-result-toggle { visibility: hidden; }
-        .chip .badge { font-size: 0.6rem; min-width: 1rem; }
-
-        #log { height: 14rem; overflow-y: auto; font-size: 0.8rem; line-height: 1.3; }
-        #log div.ally { color: #93c5fd; }
-        #log div.enemy { color: #fca5a5; }
-        #log div.sys { color: #94a3b8; }
-
-        .btn { background: #2563eb; color: #fff; padding: 0.5rem 0.9rem; border-radius: 0.5rem; font-weight: 700; }
-        .btn:hover:not(:disabled) { background: #1d4ed8; }
-        .btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
-        .btn.alt { background: #334155; }
-        .btn.alt:hover:not(:disabled) { background: #475569; }
-        .btn.danger { background: #991b1b; }
-        .btn.danger:hover:not(:disabled) { background: #b91c1c; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/battle.css') }}">
 </head>
 <body>
 {% include 'shared/header.html' %}
 <div class="battle-page">
-    <header class="flex items-center justify-between mb-3">
-        <h1 class="text-xl font-bold">Бій</h1>
-        <a id="battle-return" href="/player" class="text-sm text-sky-300 hover:underline">До персонажа</a>
+    <header class="battle-heading">
+        <h1>Бій</h1>
+        <a id="battle-return" href="/player" class="btn alt">До персонажа</a>
     </header>
 
     <!-- Вибір бою -->
-    <section id="menu" class="hidden">
-        <p class="mb-3 text-slate-300">Оберіть супротивника:</p>
-        <div id="scenarios" class="flex flex-wrap gap-2 mb-4"></div>
-        <section id="battle-history" class="mt-5" aria-label="Завершені бої"></section>
+    <section id="menu" class="battle-panel battle-menu hidden">
+        <h2>Оберіть супротивника</h2>
+        <div id="scenarios" class="battle-scenario-list"></div>
+        <section id="battle-history" aria-label="Завершені бої"></section>
     </section>
 
     <!-- Бій -->
     <section id="battle" class="hidden">
-        <div id="replay-controls" class="hidden flex flex-wrap items-center gap-2 mb-3">
+        <div id="replay-controls" class="battle-panel hidden">
             <button type="button" class="btn" id="replay-play">Відтворити</button>
             <button type="button" class="btn alt" id="replay-restart">З початку</button>
             <button type="button" class="btn alt" id="replay-next-turn">Наступний хід</button>
-            <label>Швидкість <select id="replay-speed" class="bg-slate-800"><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
+            <label>Швидкість <select id="replay-speed"><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
             <label>Подія <input id="replay-seek" type="range" min="0" value="0"></label>
             <output id="replay-position" aria-live="polite"></output>
             <button type="button" class="btn alt" id="replay-exit">До списку боїв</button>
         </div>
-        <div class="flex items-center gap-2 mb-2">
-            <span class="text-xs text-slate-400 shrink-0" title="Прогноз на 50 ходів: не враховує майбутні втрати та «чекати»">Черга (50):</span>
-            <div id="initiative"></div>
+        <div class="battle-initiative battle-panel">
+            <h2 id="initiative-title" title="Прогноз на 50 ходів">Черга ходів</h2>
+            <div id="initiative" role="region" aria-labelledby="initiative-title" tabindex="0"></div>
+            <button type="button" id="battle-result-toggle" class="btn alt" hidden
+                    title="Підсумок бою" aria-label="Відкрити підсумок бою" aria-haspopup="dialog">Підсумок</button>
         </div>
 
         <div class="battle-workspace">
             <div id="board-wrap">
                 <div class="battle-stage" id="battle-stage">
-                    <button type="button" id="battle-result-toggle" class="btn alt" hidden
-                            title="Підсумок бою" aria-label="Відкрити підсумок бою" aria-haspopup="dialog">📜</button>
                     <div id="field-heroes" aria-label="Герої" hidden></div>
                     <div id="board">
                         <div id="cells"></div>
@@ -293,45 +57,50 @@
                 </div>
             </div>
 
-            <aside class="battle-sidebar space-y-3">
-                <div id="deployment-actions" class="hidden space-y-2">
+            <aside class="battle-sidebar">
+                <div id="deployment-actions" class="battle-panel hidden">
                     <div id="deployment-army" role="group" aria-label="Загони для розстановки"></div>
-                    <p id="deployment-placement-hint" class="text-sm text-slate-300">Обери загін і клітинку в підсвіченій зоні.</p>
-                    <button id="deployment-auto" type="button" class="btn alt">Автоматична розстановка</button>
-                    <button id="deployment-begin" type="button" class="btn">У бій</button>
+                    <p id="deployment-placement-hint">Обери загін і клітинку в підсвіченій зоні.</p>
+                    <div class="deployment-buttons">
+                        <button id="deployment-auto" type="button" class="btn alt">Автоматична розстановка</button>
+                        <button id="deployment-begin" type="button" class="btn">У бій</button>
+                    </div>
                 </div>
-                <div id="battle-actions" class="flex gap-2">
-                    <button id="btn-auto" type="button" class="btn alt flex-1" aria-pressed="false">Авто</button>
-                    <button id="btn-wait" class="btn alt flex-1" title="Почекати пів ходу (W)">Чекати</button>
-                    <button id="btn-defend" class="btn alt flex-1" title="Захист (D)">Захист</button>
-                    <button id="btn-surrender" class="btn danger flex-1" title="Здатися">Здатись</button>
+                <div id="battle-actions" class="battle-panel">
+                    <button id="btn-auto" type="button" class="btn alt" aria-pressed="false">Авто</button>
+                    <button id="btn-wait" class="btn alt" title="Почекати пів ходу (W)">Чекати</button>
+                    <button id="btn-defend" class="btn alt" title="Захист (D)">Захист</button>
+                    <button id="btn-surrender" class="btn danger" title="Здатися">Здатись</button>
                 </div>
-                <section id="spell-target-controls" class="bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Ціль закляття" hidden>
+                <section id="spell-target-controls" class="battle-panel" aria-label="Ціль закляття" hidden>
                     <p id="spell-target-status" role="status"></p>
                     <button id="confirm-spell" type="button" class="btn">Застосувати</button>
                     <button id="cancel-spell" type="button" class="btn alt">Скасувати</button>
                 </section>
                 <button id="legacy-spellbook" type="button" class="btn" hidden>Книга заклять</button>
-                <div id="log" class="bg-slate-800 rounded-lg p-2"></div>
+                <section class="battle-panel battle-journal" aria-labelledby="battle-log-title">
+                    <h2 id="battle-log-title">Журнал бою</h2>
+                    <div id="log" tabindex="0"></div>
+                </section>
             </aside>
         </div>
     </section>
 
     <dialog id="spellbook" aria-labelledby="spellbook-title">
-        <div class="flex items-center justify-between gap-2 mb-3">
-            <h2 id="spellbook-title" class="font-bold">Книга заклять</h2>
+        <div class="spellbook-heading">
+            <h2 id="spellbook-title">Книга заклять</h2>
             <form method="dialog"><button class="btn alt" type="submit">Закрити</button></form>
         </div>
-        <p id="spellbook-energy" class="mb-3"></p>
+        <p id="spellbook-energy"></p>
         <div id="spell-list"></div>
     </dialog>
 
     <!-- Підтвердження здачі -->
-    <div id="confirm" class="hidden fixed inset-0 z-40 bg-black/70 flex items-center justify-center">
-        <div class="bg-slate-800 rounded-xl p-6 text-center max-w-sm">
-            <div class="text-lg font-bold mb-2">Здатися?</div>
-            <p class="text-sm text-slate-300 mb-4">Бій буде одразу завершено, а перемогу отримає суперник. Нагороду за цей бій ви не отримаєте.</p>
-            <div class="flex gap-2 justify-center">
+    <div id="confirm" class="hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div class="battle-panel battle-confirm">
+            <h2 id="confirm-title">Здатися?</h2>
+            <p>Бій буде одразу завершено, а перемогу отримає суперник. Нагороду за цей бій ви не отримаєте.</p>
+            <div class="confirm-actions">
                 <button id="confirm-yes" class="btn danger">Так, здатись</button>
                 <button id="confirm-no" class="btn alt">Продовжити бій</button>
             </div>
@@ -366,7 +135,7 @@
         </div>
     </dialog>
 
-    <div id="toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black/85 text-white text-sm px-4 py-2 rounded"></div>
+    <div id="toast" class="hidden" role="status"></div>
 </div>
 
 <script src="{{ url_for('static', path='js/battle_events.js') }}"></script>
@@ -1740,7 +1509,6 @@
                 const link = document.createElement('a');
                 link.href = '/castle?section=army';
                 link.textContent = 'Набрати військо';
-                link.className = 'underline';
                 el.toast.append(' ', link);
             }
             showMenu();
@@ -1768,11 +1536,11 @@
             title.textContent = 'Завершені бої';
             history.append(title);
             const list = document.createElement('ul');
-            list.className = 'space-y-2 my-3';
+            list.className = 'battle-history-list';
             history.append(list);
             for (const battle of battles) {
                 const link = document.createElement('button');
-                link.className = 'btn alt m-1';
+                link.className = 'btn alt';
                 link.textContent = battle.available ? `Повтор №${battle.id}` : `Бій №${battle.id} · повтор недоступний`;
                 link.disabled = !battle.available;
                 link.addEventListener('click', () => openReplay(battle.id));
@@ -1781,7 +1549,7 @@
                 list.append(row);
             }
             const all = document.createElement('a');
-            all.className = 'btn alt inline-block';
+            all.className = 'btn alt';
             all.href = '/battle/history';
             all.textContent = 'Переглянути всі бої';
             history.append(all);
