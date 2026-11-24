@@ -22,7 +22,7 @@
   },
   {
     "name": "Клинок Вбивці",
-    "description": "Ллегкий та елегантний меч із загостреним кінцем. Лезо тонке, темного металу, руків'я загорнуте в червону тканину, а хрестовина вигнута, що додає стилю. Виглядає створеним для швидких і точних ударів.",
+    "description": "Легкий та елегантний меч із загостреним кінцем. Лезо тонке, з темного металу, руків'я загорнуте в червону тканину, а хрестовина вигнута. Створений для швидких і точних ударів.",
     "item_type": "one_handed_weapon",
     "image_url": "/static/images/items/weapons/assassins_blade.png",
     "stats": {
@@ -45,7 +45,7 @@
   },
   {
     "name": "Молот Титана",
-    "description": "В величезний дворукий бойовий молот. Головка з масивного темного металу, інкрустована магічними символами. Рукоятка обгорнута шкірою для кращого зчеплення. Випромінює силу та здатен оглушувати ворогів.",
+    "description": "Величезний дворучний бойовий молот із головкою з масивного темного металу, інкрустованою магічними символами. Руків'я обгорнуте шкірою для надійного хвату.",
     "item_type": "two_handed_weapon",
     "image_url": "/static/images/items/weapons/titans_hammer.png",
     "stats": {
@@ -67,7 +67,7 @@
   },
   {
     "name": "Обладунок Льоду",
-    "description": "Міцний крижаний панцир, що підвищує захист.",
+    "description": "Міцний крижаний панцир, що суттєво підвищує захист власника.",
     "item_type": "armor",
     "image_url": "/static/images/items/armor/ice_armor.png",
     "stats": {
@@ -89,7 +89,7 @@
   },
   {
     "name": "Кольчуга",
-    "description": "Середня броня з металевих кілець",
+    "description": "Середня броня зі сплетених металевих кілець.",
     "item_type": "armor",
     "image_url": "/static/images/items/armor/chainmail.png",
     "stats": {
@@ -110,7 +110,7 @@
   },
   {
     "name": "Шолом Дракона",
-    "description": "Легендарний шолом, що входить у комплект 'Драконяча Лють'.",
+    "description": "Легендарний шолом, що входить у комплект «Драконяча Лють».",
     "item_type": "helmet",
     "image_url": "/static/images/items/armor/dragon_helmet.png",
     "stats": {
@@ -155,7 +155,7 @@
   },
   {
     "name": "Плащ Тіней",
-    "description": "Частина 'Сету Вбивці', робить власника менш помітним.",
+    "description": "Частина «Сету Вбивці», що робить власника менш помітним у бою.",
     "item_type": "back",
     "image_url": "/static/images/items/armor/shadow_cloak.png",
     "stats": {
@@ -198,7 +198,7 @@
   },
   {
     "name": "Кільце Захисту",
-    "description": "Збільшує броню власника.",
+    "description": "Кільце, що зміцнює броню власника.",
     "item_type": "jewelry",
     "image_url": "/static/images/items/accessories/protection_ring.png",
     "stats": {
@@ -285,7 +285,7 @@
   },
   {
     "name": "Криваве Кільце",
-    "description": "Перстень, що посилює атаку героя.",
+    "description": "Перстень, що суттєво посилює атаку героя.",
     "item_type": "jewelry",
     "image_url": "/static/images/items/accessories/blood_ring.png",
     "stats": {
@@ -330,7 +330,7 @@
   },
   {
     "name": "Легендарний меч",
-    "description": "Рідкісний могутній меч",
+    "description": "Рідкісний могутній меч, викуваний майстрами давнини.",
     "item_type": "one_handed_weapon",
     "image_url": "/static/images/items/weapons/legendary_sword.png",
     "stats": {
@@ -350,6 +350,590 @@
     "max_durability": 30,
     "repair_cost": {
       "gold": 240
+    }
+  },
+  {
+    "name": "Гілка з дерева сосни",
+    "description": "Звичайна смолиста соснова гілка, обчухрана ножем для самозахисту.",
+    "item_type": "one_handed_weapon",
+    "image_url": "/static/images/items/weapons/pine_branch.png",
+    "stats": {
+      "melee_attack": 1
+    },
+    "shop_data": {
+      "price": 60,
+      "level": 1,
+      "resources": {
+        "singing_resin": 2
+      }
+    },
+    "durability": 8,
+    "max_durability": 8,
+    "repair_cost": {
+      "gold": 9
+    }
+  },
+  {
+    "name": "Поламана сережка",
+    "description": "Тьмяна сережка з погнутою застібкою, але її власник чомусь трохи частіше уникає біди.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/accessories/broken_earring.png",
+    "stats": {
+      "luck": 1
+    },
+    "shop_data": {
+      "price": 80,
+      "level": 1,
+      "resources": {
+        "basalt_bone": 2
+      }
+    },
+    "durability": 8,
+    "max_durability": 8,
+    "repair_cost": {
+      "gold": 12
+    }
+  },
+  {
+    "name": "Рваний мішковинний плащ",
+    "description": "Грубий плащ із мішковини, що ледь захищає від вітру та ковзних ударів.",
+    "item_type": "back",
+    "image_url": "/static/images/items/armor/tattered_burlap_cloak.png",
+    "stats": {
+      "physical_defense": 1
+    },
+    "shop_data": {
+      "price": 90,
+      "level": 1,
+      "resources": {
+        "singing_resin": 3
+      }
+    },
+    "durability": 10,
+    "max_durability": 10,
+    "repair_cost": {
+      "gold": 14
+    }
+  },
+  {
+    "name": "Натертий мотузковий пояс",
+    "description": "Простий пояс зі скрученої мотузки, який додає трохи впевненості новачку.",
+    "item_type": "belt",
+    "image_url": "/static/images/items/belts/frayed_rope_belt.png",
+    "stats": {
+      "morale": 1
+    },
+    "shop_data": {
+      "price": 90,
+      "level": 1,
+      "resources": {
+        "singing_resin": 3
+      }
+    },
+    "durability": 10,
+    "max_durability": 10,
+    "repair_cost": {
+      "gold": 14
+    }
+  },
+  {
+    "name": "Стоптані постоли",
+    "description": "Старі шкіряні постоли, у яких краще не затримуватися на одному місці.",
+    "item_type": "boots",
+    "image_url": "/static/images/items/armor/worn_bast_shoes.png",
+    "stats": {
+      "physical_defense": 1
+    },
+    "shop_data": {
+      "price": 140,
+      "level": 2,
+      "resources": {
+        "singing_resin": 4
+      }
+    },
+    "durability": 12,
+    "max_durability": 12,
+    "repair_cost": {
+      "gold": 21
+    }
+  },
+  {
+    "name": "Пошарпаний шкіряний ковпак",
+    "description": "Потертий головний убір зі щільної шкіри, що пом'якшує удари по голові.",
+    "item_type": "helmet",
+    "image_url": "/static/images/items/armor/scuffed_leather_cap.png",
+    "stats": {
+      "physical_defense": 1
+    },
+    "shop_data": {
+      "price": 150,
+      "level": 2,
+      "resources": {
+        "basalt_bone": 5
+      }
+    },
+    "durability": 12,
+    "max_durability": 12,
+    "repair_cost": {
+      "gold": 23
+    }
+  },
+  {
+    "name": "Міцний дрюк лісоруба",
+    "description": "Важка дворучна палиця з твердої деревини, здатна збити з ніг необережного ворога.",
+    "item_type": "two_handed_weapon",
+    "image_url": "/static/images/items/weapons/woodcutters_cudgel.png",
+    "stats": {
+      "melee_attack": 3
+    },
+    "shop_data": {
+      "price": 210,
+      "level": 2,
+      "resources": {
+        "singing_resin": 5,
+        "basalt_bone": 3
+      }
+    },
+    "durability": 14,
+    "max_durability": 14,
+    "repair_cost": {
+      "gold": 32
+    }
+  },
+  {
+    "name": "Іржавий тесак стражника",
+    "description": "Вкритий плямами іржі, але все ще гострий і зручний у ближньому бою тесак.",
+    "item_type": "one_handed_weapon",
+    "image_url": "/static/images/items/weapons/rusty_guard_cleaver.png",
+    "stats": {
+      "melee_attack": 3,
+      "initiative": 1
+    },
+    "shop_data": {
+      "price": 310,
+      "level": 3,
+      "resources": {
+        "basalt_bone": 9,
+        "whisper_dust": 2
+      }
+    },
+    "durability": 15,
+    "max_durability": 15,
+    "repair_cost": {
+      "gold": 47
+    }
+  },
+  {
+    "name": "Шкіряний нагрудник мандрівника",
+    "description": "Прошитий нагрудник із товстої волячої шкіри для тривалих переходів і сутичок.",
+    "item_type": "armor",
+    "image_url": "/static/images/items/armor/travelers_leather_chestplate.png",
+    "stats": {
+      "physical_defense": 3
+    },
+    "shop_data": {
+      "price": 320,
+      "level": 3,
+      "resources": {
+        "basalt_bone": 8,
+        "singing_resin": 4
+      }
+    },
+    "durability": 16,
+    "max_durability": 16,
+    "repair_cost": {
+      "gold": 48
+    }
+  },
+  {
+    "name": "Мідна каблучка шукача",
+    "description": "Проста мідна каблучка з викарбуваним знаком шляху, що загострює реакцію та удачу.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/accessories/seekers_copper_ring.png",
+    "stats": {
+      "luck": 2,
+      "initiative": 1
+    },
+    "shop_data": {
+      "price": 350,
+      "level": 3,
+      "resources": {
+        "basalt_bone": 7,
+        "whisper_dust": 4
+      }
+    },
+    "durability": 14,
+    "max_durability": 14,
+    "repair_cost": {
+      "gold": 53
+    }
+  },
+  {
+    "name": "Ремінь із залізною пряжкою",
+    "description": "Широкий шкіряний ремінь із масивною пряжкою, що підтримує дух і захищає поперек.",
+    "item_type": "belt",
+    "image_url": "/static/images/items/belts/iron_buckle_belt.png",
+    "stats": {
+      "morale": 2,
+      "physical_defense": 1
+    },
+    "shop_data": {
+      "price": 410,
+      "level": 4,
+      "resources": {
+        "basalt_bone": 10,
+        "singing_resin": 5
+      }
+    },
+    "durability": 16,
+    "max_durability": 16,
+    "repair_cost": {
+      "gold": 62
+    }
+  },
+  {
+    "name": "Посилені шкіряні чоботи",
+    "description": "Міцні чоботи зі сталевими накладками на носках, що дозволяють рухатися впевненіше.",
+    "item_type": "boots",
+    "image_url": "/static/images/items/armor/reinforced_leather_boots.png",
+    "stats": {
+      "physical_defense": 2,
+      "initiative": 1
+    },
+    "shop_data": {
+      "price": 430,
+      "level": 4,
+      "resources": {
+        "basalt_bone": 9,
+        "whisper_dust": 4
+      }
+    },
+    "durability": 16,
+    "max_durability": 16,
+    "repair_cost": {
+      "gold": 65
+    }
+  },
+  {
+    "name": "Залізний шлем вартових",
+    "description": "Надійний кований шолом міської варти з наносником.",
+    "item_type": "helmet",
+    "image_url": "/static/images/items/armor/iron_guard_helmet.png",
+    "stats": {
+      "physical_defense": 4
+    },
+    "shop_data": {
+      "price": 520,
+      "level": 5,
+      "resources": {
+        "basalt_bone": 14,
+        "pulse_spark": 3
+      }
+    },
+    "durability": 18,
+    "max_durability": 18,
+    "repair_cost": {
+      "gold": 78
+    }
+  },
+  {
+    "name": "Дорожній плащ слідопита",
+    "description": "Щільний плащ лісових розвідників, який вкриває від стріл і приносить талан у дорозі.",
+    "item_type": "back",
+    "image_url": "/static/images/items/armor/pathfinders_travel_cloak.png",
+    "stats": {
+      "physical_defense": 2,
+      "luck": 2
+    },
+    "shop_data": {
+      "price": 540,
+      "level": 5,
+      "resources": {
+        "singing_resin": 12,
+        "whisper_dust": 5
+      }
+    },
+    "durability": 18,
+    "max_durability": 18,
+    "repair_cost": {
+      "gold": 81
+    }
+  },
+  {
+    "name": "Срібний медальйон віщуна",
+    "description": "Витончений медальйон зі срібла, що розширює магічні знання та посилює чари.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/accessories/seers_silver_medallion.png",
+    "stats": {
+      "mind": 1,
+      "magic_power": 1
+    },
+    "shop_data": {
+      "price": 590,
+      "level": 5,
+      "resources": {
+        "singing_resin": 11,
+        "pulse_spark": 5
+      }
+    },
+    "durability": 18,
+    "max_durability": 18,
+    "repair_cost": {
+      "gold": 89
+    }
+  },
+  {
+    "name": "Загартований мисливський клинок",
+    "description": "Чудово збалансований клинок із загартованої сталі для швидких атак.",
+    "item_type": "one_handed_weapon",
+    "image_url": "/static/images/items/weapons/tempered_hunting_blade.png",
+    "stats": {
+      "melee_attack": 6,
+      "initiative": 1
+    },
+    "shop_data": {
+      "price": 690,
+      "level": 6,
+      "resources": {
+        "basalt_bone": 16,
+        "whisper_dust": 7
+      }
+    },
+    "durability": 20,
+    "max_durability": 20,
+    "repair_cost": {
+      "gold": 104
+    }
+  },
+  {
+    "name": "Дворучна сокира коваля",
+    "description": "Важка бойова сокира ручного кування, здатна прорубати міцні щити.",
+    "item_type": "two_handed_weapon",
+    "image_url": "/static/images/items/weapons/blacksmiths_greataxe.png",
+    "stats": {
+      "melee_attack": 8
+    },
+    "shop_data": {
+      "price": 740,
+      "level": 6,
+      "resources": {
+        "basalt_bone": 20,
+        "pulse_spark": 6
+      }
+    },
+    "durability": 22,
+    "max_durability": 22,
+    "repair_cost": {
+      "gold": 111
+    }
+  },
+  {
+    "name": "Пластинчастий обладунок досвідченого воїна",
+    "description": "Складений із загартованих сталевих пластин панцир, перевірений у десятках битв.",
+    "item_type": "armor",
+    "image_url": "/static/images/items/armor/veterans_plate_armor.png",
+    "stats": {
+      "physical_defense": 7
+    },
+    "shop_data": {
+      "price": 860,
+      "level": 7,
+      "resources": {
+        "basalt_bone": 22,
+        "brand_salt": 8
+      }
+    },
+    "durability": 25,
+    "max_durability": 25,
+    "repair_cost": {
+      "gold": 129
+    }
+  },
+  {
+    "name": "Чоботи вітроходу",
+    "description": "Легкі зачаровані чоботи, що помітно прискорюють крок власника на полі бою.",
+    "item_type": "boots",
+    "image_url": "/static/images/items/armor/windstrider_boots.png",
+    "stats": {
+      "physical_defense": 3,
+      "initiative": 2
+    },
+    "shop_data": {
+      "price": 840,
+      "level": 7,
+      "resources": {
+        "singing_resin": 16,
+        "whisper_dust": 9
+      }
+    },
+    "durability": 22,
+    "max_durability": 22,
+    "repair_cost": {
+      "gold": 126
+    }
+  },
+  {
+    "name": "Пояс магічної рівноваги",
+    "description": "Оздоблений рунами пояс, який одночасно підтримує бойовий дух і притягує удачу.",
+    "item_type": "belt",
+    "image_url": "/static/images/items/belts/belt_of_arcane_balance.png",
+    "stats": {
+      "luck": 3,
+      "morale": 3
+    },
+    "shop_data": {
+      "price": 880,
+      "level": 7,
+      "resources": {
+        "singing_resin": 18,
+        "pulse_spark": 7
+      }
+    },
+    "durability": 22,
+    "max_durability": 22,
+    "repair_cost": {
+      "gold": 132
+    }
+  },
+  {
+    "name": "Клинок ранкової роси",
+    "description": "Сріблястий клинок із тонким магічним лезом, що блискавично розсікає повітря.",
+    "item_type": "one_handed_weapon",
+    "image_url": "/static/images/items/weapons/morning_dew_blade.png",
+    "stats": {
+      "melee_attack": 9,
+      "initiative": 2
+    },
+    "shop_data": {
+      "price": 1120,
+      "level": 8,
+      "resources": {
+        "basalt_bone": 26,
+        "pulse_spark": 10
+      }
+    },
+    "durability": 26,
+    "max_durability": 26,
+    "repair_cost": {
+      "gold": 168
+    }
+  },
+  {
+    "name": "Корона сонячного сходу",
+    "description": "Золотистий бойовий вінець, який захищає голову та наповнює закляття сонячною міццю.",
+    "item_type": "helmet",
+    "image_url": "/static/images/items/armor/sunrise_crown.png",
+    "stats": {
+      "physical_defense": 6,
+      "magic_power": 2
+    },
+    "shop_data": {
+      "price": 1080,
+      "level": 8,
+      "resources": {
+        "basalt_bone": 22,
+        "pulse_spark": 9
+      }
+    },
+    "durability": 25,
+    "max_durability": 25,
+    "repair_cost": {
+      "gold": 162
+    }
+  },
+  {
+    "name": "Зачарований перстень стихій",
+    "description": "Перстень із переливчастим каменем, що поєднує глибокі знання та силу стихійної магії.",
+    "item_type": "jewelry",
+    "image_url": "/static/images/items/accessories/enchanted_elemental_ring.png",
+    "stats": {
+      "magic_power": 3,
+      "mind": 2
+    },
+    "shop_data": {
+      "price": 1150,
+      "level": 8,
+      "resources": {
+        "pulse_spark": 11,
+        "brand_salt": 10
+      }
+    },
+    "durability": 24,
+    "max_durability": 24,
+    "repair_cost": {
+      "gold": 173
+    }
+  },
+  {
+    "name": "Пояс удачі",
+    "description": "Тестовий предмет: підвищує удачу героя на 20.",
+    "item_type": "belt",
+    "image_url": "/static/images/items/background_icons/belt.png",
+    "stats": {
+      "luck": 20
+    },
+    "shop_data": {
+      "price": 500,
+      "level": 1
+    },
+    "durability": 20,
+    "max_durability": 20,
+    "repair_cost": {
+      "gold": 75
+    }
+  },
+  {
+    "name": "Пояс бойового духу",
+    "description": "Тестовий предмет: підвищує бойовий дух героя на 20.",
+    "item_type": "belt",
+    "image_url": "/static/images/items/background_icons/belt.png",
+    "stats": {
+      "morale": 20
+    },
+    "shop_data": {
+      "price": 500,
+      "level": 1
+    },
+    "durability": 20,
+    "max_durability": 20,
+    "repair_cost": {
+      "gold": 75
+    }
+  },
+  {
+    "name": "Пояс невдачі",
+    "description": "Тестовий предмет: знижує удачу героя на 20.",
+    "item_type": "belt",
+    "image_url": "/static/images/items/background_icons/belt.png",
+    "stats": {
+      "luck": -20
+    },
+    "shop_data": {
+      "price": 500,
+      "level": 1
+    },
+    "durability": 20,
+    "max_durability": 20,
+    "repair_cost": {
+      "gold": 75
+    }
+  },
+  {
+    "name": "Пояс зневіри",
+    "description": "Тестовий предмет: знижує бойовий дух героя на 20.",
+    "item_type": "belt",
+    "image_url": "/static/images/items/background_icons/belt.png",
+    "stats": {
+      "morale": -20
+    },
+    "shop_data": {
+      "price": 500,
+      "level": 1
+    },
+    "durability": 20,
+    "max_durability": 20,
+    "repair_cost": {
+      "gold": 75
     }
   }
 ]

@@ -26,8 +26,9 @@ def place(state, side, stack_id, x, y, split_count, limit):
         raise ValueError("Ці клітинки зайняті.")
     if splitting:
         index = next(i for i in range(limit) if f"s{side}_{i}" not in state.stacks)
-        placed = replace(placed, id=f"s{side}_{index}", count=split_count)
+        placed = replace(placed, id=f"s{side}_{index}", count=split_count, initial_count=split_count)
         stack.count -= split_count
+        stack.initial_count = stack.count
     state.stacks[placed.id] = placed
     if placed.id not in state.placed_stack_ids:
         state.placed_stack_ids.append(placed.id)

@@ -1,5 +1,5 @@
 """Experience awarded for fighting an opposing army."""
-from .rules import total_hp
+from .squad_effects import total_hp
 
 
 def army_hp(state, side):

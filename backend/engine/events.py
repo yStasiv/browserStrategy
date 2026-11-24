@@ -10,6 +10,7 @@ TYPES = {
     "surrender": "SIDE_SURRENDERED", "battle_end": "BATTLE_FINISHED",
     "summon": "ELEMENTAL_SUMMONED",
     "hero_attack": "HERO_ATTACKED",
+    "luck": "LUCK_ROLLED", "morale": "MORALE_ROLLED", "heal": "UNIT_HEALED",
 }
 
 
@@ -99,6 +100,22 @@ def reconstruct(initial_state, events):
         if kind == "UNIT_MOVED":
             stack = state["stacks"][event["actor_id"]]
             stack["x"], stack["y"] = event["payload"]["to"]
+        elif kind in {"LUCK_ROLLED", "MORALE_ROLLED"}:
+            stack = state["stacks"][event["actor_id"]]
+            payload = event["payload"]
+            counter = "luck_streak" if kind == "LUCK_ROLLED" else "morale_streak"
+            if payload["streak_after"] == 1:
+                stack.pop(counter, None)
+            else:
+                stack[counter] = payload["streak_after"]
+            if kind == "MORALE_ROLLED":
+                stack["ready"] = payload["next_ready_at"]
+        elif kind == "UNIT_HEALED":
+            target = event["target_id"]
+            payload = event["payload"]
+            if target not in state["stacks"]:
+                state["stacks"][target] = deepcopy(payload["stack_after"])
+            state["stacks"][target].update(count=payload["target_count_after"], top_hp=payload["top_hp"])
         elif kind == "DAMAGE_APPLIED":
             stack = state["stacks"][event["target_id"]]
             stack.update(count=event["payload"]["creatures_after"], top_hp=event["payload"]["top_hp"])

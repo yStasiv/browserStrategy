@@ -17,6 +17,7 @@ from typing import Dict, List, Optional, Tuple
 from .actions import Attack, Defend, Move, Skip, Summon, Wait
 from .data import DEFAULT_SHOOTING_RANGE, UNITS
 from .state import ATB_SCALE, MAX_ACTIONS, BattleState, HeroTurn, Stack
+from .squad_effects import roll_squad_stat, squad_stat, total_hp
 from .summoning import spell_options, summon_plan
 
 Cell = Tuple[int, int]
@@ -181,10 +182,6 @@ def _roll_damage(att: Stack, target: Stack, rng: random.Random) -> int:
     return scaled_damage(base, _multiplier(att, target))
 
 
-def total_hp(stack: Stack) -> int:
-    return (stack.count - 1) * UNITS[stack.unit].hp + stack.top_hp if stack.count > 0 else 0
-
-
 def _hurt(stack: Stack, dmg: int) -> int:
     """Завдає шкоду загону. Повертає, скільки істот загинуло."""
     hp = UNITS[stack.unit].hp
@@ -220,6 +217,10 @@ def _pick_active(state: BattleState) -> str:
 
 def init_timeline(state: BattleState) -> None:
     state.initial_ready_at = {}
+    if state.heroes:
+        for stack in state.stacks.values():
+            stack.luck = squad_stat(state, stack, "luck")
+            stack.morale = squad_stat(state, stack, "morale")
     for s in state.actors():
         interval = period(s)
         rng = random.Random(f"{state.seed}:initiative:{s.id}")
@@ -258,7 +259,12 @@ def _advance(state: BattleState, events: list) -> None:
 
 def _end_turn(state: BattleState, actor: Stack | HeroTurn, events: list) -> None:
     if actor.id in state.stacks or actor.id in state.heroes:  # загін міг загинути від контратаки
-        actor.ready += period(actor)
+        interval = period(actor)
+        before = actor.ready
+        morale = roll_squad_stat(state, actor, "morale", events) if isinstance(actor, Stack) else 0
+        actor.ready += max(1, interval // 2) if morale > 0 else interval + (interval // 2 if morale < 0 else 0)
+        if events and events[-1]["type"] == "morale":
+            events[-1].update(ready_before=before, normal_ready_at=before + interval, next_ready_at=actor.ready)
     _advance(state, events)
 
 
@@ -271,6 +277,14 @@ def _do_move(st: BattleState, actor: Stack, a: Move, events: list) -> None:
         raise IllegalAction("клітинка недосяжна")
     _move_stack(actor, dest, _path(parents, dest), costs[dest], events)
     _end_turn(st, actor, events)
+
+
+def _apply_luck(state, stack, damage, events):
+    luck = roll_squad_stat(state, stack, "luck", events)
+    adjusted = damage * 2 if luck > 0 else max(1, damage // 2) if luck < 0 else damage
+    if events and events[-1]["type"] == "luck":
+        events[-1].update(damage_before=damage, damage_after=adjusted)
+    return adjusted
 
 
 def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, events: list) -> None:
@@ -295,7 +309,7 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
     hp_before = total_hp(target)
     dmg = _roll_damage(actor, target, rng)
     shot = shot_multiplier(actor, target) if ranged else 1
-    dmg *= shot
+    dmg = _apply_luck(st, actor, dmg * shot, events)
     killed = _hurt(target, dmg)
     if ranged:
         actor.shots_left -= 1
@@ -310,7 +324,7 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
     elif not ranged and not target.retaliated:
         target.retaliated = True
         hp_before = total_hp(actor)
-        rdmg = _roll_damage(target, actor, rng)
+        rdmg = _apply_luck(st, target, _roll_damage(target, actor, rng), events)
         rkilled = _hurt(actor, rdmg)
         events.append({"type": "retaliation", "attacker": target.id, "target": actor.id,
                        "damage": rdmg, "killed": rkilled, "target_left": actor.count,
@@ -335,8 +349,10 @@ def _do_summon(state, actor, action, events):
     stack = Stack(
         id=f"summon_{actor.owner}_{state.seq}", unit=unit.key, owner=actor.owner,
         count=count, top_hp=top_hp, x=position[0], y=position[1],
-        w=unit.size[0], h=unit.size[1], shots_left=unit.shots, summoned=True,
+        w=unit.size[0], h=unit.size[1], shots_left=unit.shots, summoned=True, initial_count=count,
     )
+    stack.luck = squad_stat(state, stack, "luck")
+    stack.morale = squad_stat(state, stack, "morale")
     stack.ready = actor.ready + period(stack)
     state.stacks[stack.id] = stack
     magic["energy"] -= magic["cost"]

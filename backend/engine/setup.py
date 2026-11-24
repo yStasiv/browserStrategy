@@ -95,7 +95,7 @@ def create_battle(
             ut = UNITS[key]
             sid = f"s{owner}_{i}"
             stack = Stack(id=sid, unit=key, owner=owner, count=count, top_hp=ut.hp,
-                                x=x, y=y, w=w, h=h, shots_left=ut.shots)
+                                x=x, y=y, w=w, h=h, shots_left=ut.shots, initial_count=count)
             cells = set(stack.cells())
             if any(not (0 <= x < rules.width and 0 <= y < height) for x, y in cells) or cells & occupied:
                 raise ValueError("загони не можна розмістити на цьому полі")

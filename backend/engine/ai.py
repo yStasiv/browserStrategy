@@ -4,8 +4,9 @@ from __future__ import annotations
 from typing import Iterable, List, Tuple
 
 from .actions import Attack, Defend, Move
-from .rules import apply, dist_stacks, expected_damage, is_ranged, reachable, rect_dist, total_hp
+from .rules import apply, dist_stacks, expected_damage, is_ranged, reachable, rect_dist
 from .state import BattleState, HeroTurn
+from .squad_effects import total_hp
 
 
 def choose_action(state: BattleState):

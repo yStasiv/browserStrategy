@@ -17,6 +17,18 @@ MAX_ACTIONS = 600   # після такої кількості дій бій з�
 ATB_SCALE = 100_000 # період загону = ATB_SCALE // ініціатива
 
 
+def compact_stack_snapshot(data):
+    if not data["summoned"]:
+        del data["summoned"]
+    for key in ("initial_count", "luck", "morale"):
+        if data[key] is None:
+            del data[key]
+    for key in ("luck_streak", "morale_streak"):
+        if data[key] == 1:
+            del data[key]
+    return data
+
+
 @dataclass
 class Stack:
     id: str
@@ -34,6 +46,11 @@ class Stack:
     waited: bool = False       # Сумісність зі знімками боїв зі старим правилом очікування.
     retaliated: bool = False   # вже контратакував з початку свого останнього ходу
     summoned: bool = False
+    initial_count: int | None = None
+    luck: float | None = None
+    morale: float | None = None
+    luck_streak: int = 1
+    morale_streak: int = 1
 
     def cells(self) -> List[Tuple[int, int]]:
         return [(self.x + i, self.y + j) for i in range(self.w) for j in range(self.h)]
@@ -127,8 +144,7 @@ class BattleState:
                 if not hero["equipment_ids"]:
                     del hero["equipment_ids"]
         for stack in snapshot["stacks"].values():
-            if not stack["summoned"]:
-                del stack["summoned"]
+            compact_stack_snapshot(stack)
         return snapshot
 
     @classmethod

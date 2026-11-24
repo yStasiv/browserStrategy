@@ -6,6 +6,7 @@ const BattleEvents = (() => {
         SIDE_SURRENDERED: 'surrender', BATTLE_FINISHED: 'battle_end',
         ELEMENTAL_SUMMONED: 'summon',
         HERO_ATTACKED: 'hero_attack',
+        LUCK_ROLLED: 'luck', MORALE_ROLLED: 'morale', UNIT_HEALED: 'heal',
     };
 
     function logEvent(event) {
@@ -16,6 +17,15 @@ const BattleEvents = (() => {
         if (event.type === 'UNIT_MOVED') {
             const [x, y] = event.payload.to;
             Object.assign(state.stacks[event.actor_id], {x, y});
+        } else if (event.type === 'LUCK_ROLLED' || event.type === 'MORALE_ROLLED') {
+            const stack = state.stacks[event.actor_id];
+            const counter = event.type === 'LUCK_ROLLED' ? 'luck_streak' : 'morale_streak';
+            if (event.payload.streak_after === 1) delete stack[counter];
+            else stack[counter] = event.payload.streak_after;
+            if (event.type === 'MORALE_ROLLED') stack.ready = event.payload.next_ready_at;
+        } else if (event.type === 'UNIT_HEALED') {
+            const stack = state.stacks[event.target_id] ??= structuredClone(event.payload.stack_after);
+            Object.assign(stack, {count: event.payload.target_count_after, top_hp: event.payload.top_hp});
         } else if (event.type === 'DAMAGE_APPLIED') {
             Object.assign(state.stacks[event.target_id], {
                 count: event.payload.creatures_after, top_hp: event.payload.top_hp,
