@@ -40,7 +40,7 @@ def add_shop_items(db: Session, *, sync_existing=False):
         for listing in listings:
             existing.setdefault(listing.item_template.name, []).append(listing)
     for artifact in artifacts:
-        item_data = {key: value for key, value in artifact.items() if key != "shop_data"}
+        item_data = {key: value for key, value in artifact.items() if key not in ("shop_data", "repair_cost")}
         shop = artifact["shop_data"]
         item_data["level_required"] = shop["level"]
         if previous := existing.get(artifact["name"]):

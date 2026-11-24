@@ -662,6 +662,7 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     from backend.models import Item, PlayerResourceBalance
     from backend.routers import castle
     from backend.services import castle_buildings
+    monkeypatch.setattr(castle, "repair_prices", lambda: {("Перстень", "jewelry"): {"gold": 10}})
 
     buildings = json.loads(castle_buildings.CATALOG_FILE.read_text(encoding="utf-8"))
     entries = {building["id"]: building for building in buildings}
@@ -744,6 +745,11 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
 
     with sessions.begin() as db:
         db.get(ActivityGuildProgress, (10, activity_guilds.workshop_key("jewelry"))).points = 99
+        assert db.get(User, 10).gold == 0
+
+    assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 409
+    with sessions.begin() as db:
+        db.get(User, 10).gold = 20
 
     assert call("POST", endpoint, {"item_id": 102, "durability": 0})[0] == 409
     assert call("POST", endpoint, {"item_id": 101, "durability": 0})[0] == 303
@@ -756,7 +762,7 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
         player = db.get(User, 10)
         assert (player.gold, player.singing_resin, player.basalt_bone) == (0, 0, 0)
         assert db.get(PlayerResourceBalance, (10, "pulse_spark")).quantity == 0
-        assert db.get(Item, 101).durability == 15
+        assert (db.get(Item, 101).durability, db.get(Item, 101).max_durability) == (14, 98)
         assert db.get(Item, 102).durability == 0
         assert activity_guilds.progress(db, 10, activity_guilds.WORKERS)["xp"] == 1
         metalworking = activity_guilds.progress(db, 10, activity_guilds.METALWORKERS)

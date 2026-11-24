@@ -19,4 +19,5 @@ def make_hero(db, user, side, level):
         damage_max=max(1, HERO_RULES["damage_max"] + attack),
         portrait=user.avatar_url if (user.avatar_url or "").startswith("/avatars/") else None,
         faction=faction_key(user.fraction),
+        equipment_ids=sorted(item.id for item in equipped),
     )

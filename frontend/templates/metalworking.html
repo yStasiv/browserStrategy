@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
+{% from 'components/resource_price.html' import resource_price %}
 {% block title %}Колегія металознавців{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/artifact_shop.css') }}">
 {% endblock %}
 {% block body %}
 <main class="hero-dashboard">
@@ -33,6 +35,7 @@
                 {% endif %}
             {% elif key != 'enchanting' %}
             <p><strong>Рівень {{ specialization.level }}</strong> · Відновлення {{ repair_percent(specialization.level) }}% максимальної міцності за ремонт</p>
+            <p>Ремонт доступний після втрати щонайменше половини міцності. Кожен ремонт зменшує максимальну міцність на 1.</p>
             {% if specialization.next_xp %}
             <p>{{ specialization.xp }} +{{ specialization.remaining_xp }}</p>
             <progress value="{{ specialization.xp }}" max="{{ specialization.next_xp }}" aria-label="Прогрес · {{ name }}"></progress>
@@ -42,7 +45,10 @@
                 <input type="hidden" name="item_id" value="{{ item.id }}">
                 <input type="hidden" name="durability" value="{{ item.durability }}">
                 <span>{{ item.name }} · {{ item.durability }}/{{ item.max_durability }}</span>
-                <button type="submit" class="hero-link" aria-label="Відремонтувати {{ item.name }}">Відремонтувати</button>
+                {% set quote = repair_quotes.get(item.id) %}
+                {% if quote is not none %}{{ resource_price(quote, resource_catalog) }}{% else %}<span>Ціна ремонту відсутня.</span>{% endif %}
+                <button type="submit" class="hero-link" aria-label="Відремонтувати {{ item.name }}"
+                        {% if quote is none or quote|selectattr('2')|list %}disabled{% endif %}>Відремонтувати</button>
             </form>
             {% else %}
             <p>Немає артефактів, які потребують ремонту.</p>

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from .. import models
 from ..services.activity_guilds import HUNTERS, award_point
 from ..services import castle_buildings
+from ..services.hero_equipment import wear_battle_equipment
 from ..services.rewards import issue_system_resources
 from .battle_damage import attributed_events, damage_summary
 from .battle_experience import earned_experience
@@ -104,19 +105,23 @@ def _flat_events(steps: List[Step]) -> list:
 # ---------- нагороди ----------
 
 def _settle(db: Session, battle_id: int, state: BattleState) -> None:
-    """Видає нагороди рівно один раз: прапорець rewarded ставиться атомарно."""
+    """Фіксує нагороди й знос спорядження один раз за бій."""
     res = db.execute(update(Battle)
                      .where(Battle.id == battle_id, Battle.rewarded.is_(False))
                      .values(rewarded=True))
     if res.rowcount != 1:
         return
     battle = db.get(Battle, battle_id)
-    if battle.mode != "pve":
-        return  # PvP-нагороди й рейтинг — окремий крок
     initial = BattleState.from_dict(battle.initial_state) if battle.initial_state else state
     parts = db.query(BattleParticipant).filter(BattleParticipant.battle_id == battle_id,
                                                BattleParticipant.user_id.isnot(None)).all()
     for p in parts:
+        equipped_ids = {item_id for hero in initial.heroes.values() if hero.owner == p.side
+                        for item_id in hero.equipment_ids}
+        if equipped_ids:
+            wear_battle_equipment(db, db.get(models.User, p.user_id), equipped_ids)
+        if battle.mode != "pve":
+            continue
         xp = earned_experience(initial, state, p.side)
         gold = random.randint(*PVE_VICTORY_GOLD) if state.winner == p.side else 0
         rewarded_hunt = state.hunt_key and state.winner == p.side

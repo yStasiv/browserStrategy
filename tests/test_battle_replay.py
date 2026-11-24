@@ -16,7 +16,7 @@ from backend.engine.battle_models import ArmySlot, Battle, BattleParticipant
 from backend.engine.events import reconstruct
 from backend.engine.flow import play_turn
 from backend.engine.setup import FieldRules
-from backend.models import RewardTransaction, User
+from backend.models import EquippedItems, Item, RewardTransaction, User
 from backend.config import SYSTEM_PLAYER_ID
 from test_guild import asgi_request
 
@@ -28,10 +28,17 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     sessions = sessionmaker(engine, autoflush=False)
     with sessions.begin() as db:
         db.add_all([
-            User(id=10, username="fighter", level=4, gold=100, experience=0, session_id="fighter-token"),
+            User(id=10, username="fighter", level=4, gold=100, experience=0, physical_defense=2, session_id="fighter-token"),
             User(id=11, username="outsider", session_id="outsider-token"),
         ])
         db.flush()
+        db.add_all([
+            Item(id=201, owner_id=10, item_type="helmet", durability=1, max_durability=10,
+                 is_equipped=True, stats={"physical_defense": 2}),
+            Item(id=202, owner_id=10, item_type="helmet", durability=5, max_durability=10),
+        ])
+        db.flush()
+        db.add(EquippedItems(user_id=10, helmet_id=201))
         db.add_all([
             ArmySlot(user_id=10, slot=slot, unit_key=key, count=count)
             for slot, (key, count) in enumerate((("peasant", 20), ("archer", 10), ("swordsman", 5)))
@@ -102,6 +109,10 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
         assert call("GET", root)[1]["reward"] == battle["reward"]
         assert 132 <= player.gold <= 398
         record = db.get(Battle, battle["id"])
+        assert (db.get(Item, 201).durability, db.get(Item, 202).durability) == (0, 5)
+        assert not db.get(Item, 201).is_equipped
+        assert db.get(Item, 201).owner_id == player.id
+        assert player.equipped_items.helmet_id is None and player.physical_defense == 0
         state_type = battle_service.BattleState
         assert player.experience == earned_experience(
             state_type.from_dict(record.initial_state), state_type.from_dict(record.state), 0,
@@ -159,6 +170,7 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     with sessions() as db:
         player = db.get(User, 10)
         assert (player.gold, player.experience) == balances
+        assert db.get(Item, 201).durability == 0
 
 
 def test_draw_result_reads_extensible_ledger_metadata(tmp_path, monkeypatch):

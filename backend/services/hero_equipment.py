@@ -46,6 +46,19 @@ def apply_equipment(equipped, player, slot, item, worn):
     item.is_equipped = worn
 
 
+def wear_battle_equipment(db, player, item_ids):
+    lock_hero(db, player)
+    equipped = player.equipped_items
+    slots = {item_id: slot for slot, item_id in equipment_ids(equipped).items() if item_id is not None}
+    items = db.scalars(select(Item).where(
+        Item.id.in_(item_ids), Item.owner_id == player.id, Item.durability > 0,
+    ))
+    for item in items:
+        item.durability -= 1
+        if item.durability == 0 and item.id in slots:
+            apply_equipment(equipped, player, slots[item.id], item, False)
+
+
 def replacement_slot(candidates, same_type, free, previous):
     eligible = free or same_type
     if previous in same_type:

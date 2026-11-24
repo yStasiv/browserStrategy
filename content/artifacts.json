@@ -15,7 +15,11 @@
       }
     },
     "durability": 20,
-    "max_durability": 20
+    "max_durability": 20,
+    "repair_cost": {
+      "gold": 39,
+      "basalt_bone": 2
+    }
   },
   {
     "name": "Клинок Вбивці",
@@ -35,7 +39,12 @@
       }
     },
     "durability": 18,
-    "max_durability": 18
+    "max_durability": 18,
+    "repair_cost": {
+      "gold": 87,
+      "basalt_bone": 3,
+      "whisper_dust": 1
+    }
   },
   {
     "name": "Молот Титана",
@@ -54,7 +63,12 @@
       }
     },
     "durability": 25,
-    "max_durability": 25
+    "max_durability": 25,
+    "repair_cost": {
+      "gold": 210,
+      "basalt_bone": 6,
+      "pulse_spark": 2
+    }
   },
   {
     "name": "Обладунок Льоду",
@@ -73,7 +87,12 @@
       }
     },
     "durability": 30,
-    "max_durability": 30
+    "max_durability": 30,
+    "repair_cost": {
+      "gold": 158,
+      "basalt_bone": 4,
+      "brand_salt": 2
+    }
   },
   {
     "name": "Кольчуга",
@@ -91,7 +110,11 @@
       }
     },
     "durability": 12,
-    "max_durability": 12
+    "max_durability": 12,
+    "repair_cost": {
+      "gold": 18,
+      "basalt_bone": 1
+    }
   },
   {
     "name": "Шолом Дракона",
@@ -110,7 +133,12 @@
       }
     },
     "durability": 22,
-    "max_durability": 22
+    "max_durability": 22,
+    "repair_cost": {
+      "gold": 117,
+      "basalt_bone": 3,
+      "pulse_spark": 1
+    }
   },
   {
     "name": "Чоботи Тіней",
@@ -130,7 +158,12 @@
       }
     },
     "durability": 18,
-    "max_durability": 18
+    "max_durability": 18,
+    "repair_cost": {
+      "gold": 78,
+      "singing_resin": 2,
+      "whisper_dust": 1
+    }
   },
   {
     "name": "Плащ Тіней",
@@ -149,7 +182,12 @@
       }
     },
     "durability": 20,
-    "max_durability": 20
+    "max_durability": 20,
+    "repair_cost": {
+      "gold": 165,
+      "singing_resin": 4,
+      "whisper_dust": 2
+    }
   },
   {
     "name": "Амулет Сили",
@@ -167,7 +205,11 @@
       }
     },
     "durability": 10,
-    "max_durability": 10
+    "max_durability": 10,
+    "repair_cost": {
+      "gold": 29,
+      "singing_resin": 1
+    }
   },
   {
     "name": "Кільце Захисту",
@@ -185,7 +227,11 @@
       }
     },
     "durability": 10,
-    "max_durability": 10
+    "max_durability": 10,
+    "repair_cost": {
+      "gold": 33,
+      "basalt_bone": 2
+    }
   },
   {
     "name": "Перстень Влучності",
@@ -204,7 +250,12 @@
       }
     },
     "durability": 12,
-    "max_durability": 12
+    "max_durability": 12,
+    "repair_cost": {
+      "gold": 50,
+      "basalt_bone": 2,
+      "whisper_dust": 1
+    }
   },
   {
     "name": "Амулет Мудрості",
@@ -223,7 +274,12 @@
       }
     },
     "durability": 15,
-    "max_durability": 15
+    "max_durability": 15,
+    "repair_cost": {
+      "gold": 84,
+      "singing_resin": 2,
+      "pulse_spark": 1
+    }
   },
   {
     "name": "Смарагдовий Оберіг",
@@ -242,7 +298,12 @@
       }
     },
     "durability": 20,
-    "max_durability": 20
+    "max_durability": 20,
+    "repair_cost": {
+      "gold": 123,
+      "singing_resin": 3,
+      "brand_salt": 2
+    }
   },
   {
     "name": "Криваве Кільце",
@@ -261,7 +322,12 @@
       }
     },
     "durability": 25,
-    "max_durability": 25
+    "max_durability": 25,
+    "repair_cost": {
+      "gold": 180,
+      "basalt_bone": 4,
+      "brand_salt": 2
+    }
   },
   {
     "name": "Сапфіровий Амулет",
@@ -281,7 +347,12 @@
       }
     },
     "durability": 22,
-    "max_durability": 22
+    "max_durability": 22,
+    "repair_cost": {
+      "gold": 144,
+      "pulse_spark": 2,
+      "brand_salt": 2
+    }
   },
   {
     "name": "Легендарний меч",
@@ -302,6 +373,11 @@
       }
     },
     "durability": 30,
-    "max_durability": 30
+    "max_durability": 30,
+    "repair_cost": {
+      "gold": 240,
+      "basalt_bone": 6,
+      "pulse_spark": 3
+    }
   }
 ]
