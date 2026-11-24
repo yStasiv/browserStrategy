@@ -90,6 +90,7 @@ def buy(db, player, listing_id):
         image_url=source.image_url, stats={key: value for key, value in (source.stats or {}).items() if key in BONUS_LABELS},
         durability=source.max_durability if source.max_durability is not None else source.durability,
         max_durability=source.max_durability,
+        initial_max_durability=source.initial_max_durability or source.max_durability,
         level_required=listing.level_required,
     ))
     if listing.quantity > 0:

@@ -16,6 +16,7 @@ from backend.services.character_profile import equipment_model_url, equipment_st
 from backend.services.hero_attributes import PROFILE_STATS
 from backend.services.hero_equipment import (
     INVENTORY_LIMIT, MODIFIED_STATS, SLOT_COLUMNS, change_equipment, equipment_ids, lock_hero,
+    require_item_not_under_repair,
 )
 
 router = APIRouter()
@@ -66,6 +67,7 @@ def update_inventory(
         item = db.scalar(select(models.Item).where(models.Item.id == item_id, models.Item.owner_id == user.id))
         if item is None:
             raise HTTPException(404, "Предмет не знайдено.")
+        require_item_not_under_repair(db, user, item.id)
         if action == "equip":
             slot = selected_slot if selected_slot is not None else slot
             aliases = {column: key for key, column in SLOT_COLUMNS.items()}

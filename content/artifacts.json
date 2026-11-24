@@ -17,8 +17,7 @@
     "durability": 20,
     "max_durability": 20,
     "repair_cost": {
-      "gold": 39,
-      "basalt_bone": 2
+      "gold": 39
     }
   },
   {
@@ -41,9 +40,7 @@
     "durability": 18,
     "max_durability": 18,
     "repair_cost": {
-      "gold": 87,
-      "basalt_bone": 3,
-      "whisper_dust": 1
+      "gold": 87
     }
   },
   {
@@ -65,9 +62,7 @@
     "durability": 25,
     "max_durability": 25,
     "repair_cost": {
-      "gold": 210,
-      "basalt_bone": 6,
-      "pulse_spark": 2
+      "gold": 210
     }
   },
   {
@@ -89,9 +84,7 @@
     "durability": 30,
     "max_durability": 30,
     "repair_cost": {
-      "gold": 158,
-      "basalt_bone": 4,
-      "brand_salt": 2
+      "gold": 158
     }
   },
   {
@@ -112,8 +105,7 @@
     "durability": 12,
     "max_durability": 12,
     "repair_cost": {
-      "gold": 18,
-      "basalt_bone": 1
+      "gold": 18
     }
   },
   {
@@ -135,9 +127,7 @@
     "durability": 22,
     "max_durability": 22,
     "repair_cost": {
-      "gold": 117,
-      "basalt_bone": 3,
-      "pulse_spark": 1
+      "gold": 117
     }
   },
   {
@@ -160,9 +150,7 @@
     "durability": 18,
     "max_durability": 18,
     "repair_cost": {
-      "gold": 78,
-      "singing_resin": 2,
-      "whisper_dust": 1
+      "gold": 78
     }
   },
   {
@@ -184,9 +172,7 @@
     "durability": 20,
     "max_durability": 20,
     "repair_cost": {
-      "gold": 165,
-      "singing_resin": 4,
-      "whisper_dust": 2
+      "gold": 165
     }
   },
   {
@@ -207,8 +193,7 @@
     "durability": 10,
     "max_durability": 10,
     "repair_cost": {
-      "gold": 29,
-      "singing_resin": 1
+      "gold": 29
     }
   },
   {
@@ -229,8 +214,7 @@
     "durability": 10,
     "max_durability": 10,
     "repair_cost": {
-      "gold": 33,
-      "basalt_bone": 2
+      "gold": 33
     }
   },
   {
@@ -252,9 +236,7 @@
     "durability": 12,
     "max_durability": 12,
     "repair_cost": {
-      "gold": 50,
-      "basalt_bone": 2,
-      "whisper_dust": 1
+      "gold": 50
     }
   },
   {
@@ -276,9 +258,7 @@
     "durability": 15,
     "max_durability": 15,
     "repair_cost": {
-      "gold": 84,
-      "singing_resin": 2,
-      "pulse_spark": 1
+      "gold": 84
     }
   },
   {
@@ -300,9 +280,7 @@
     "durability": 20,
     "max_durability": 20,
     "repair_cost": {
-      "gold": 123,
-      "singing_resin": 3,
-      "brand_salt": 2
+      "gold": 123
     }
   },
   {
@@ -324,9 +302,7 @@
     "durability": 25,
     "max_durability": 25,
     "repair_cost": {
-      "gold": 180,
-      "basalt_bone": 4,
-      "brand_salt": 2
+      "gold": 180
     }
   },
   {
@@ -349,9 +325,7 @@
     "durability": 22,
     "max_durability": 22,
     "repair_cost": {
-      "gold": 144,
-      "pulse_spark": 2,
-      "brand_salt": 2
+      "gold": 144
     }
   },
   {
@@ -375,9 +349,7 @@
     "durability": 30,
     "max_durability": 30,
     "repair_cost": {
-      "gold": 240,
-      "basalt_bone": 6,
-      "pulse_spark": 3
+      "gold": 240
     }
   }
 ]

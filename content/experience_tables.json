@@ -1,0 +1,35 @@
+{
+  "hero": {
+    "1": 1000,
+    "2": 3000,
+    "3": 6000,
+    "4": 10000,
+    "5": 15000,
+    "6": 21000,
+    "7": 28000
+  },
+  "default": {
+    "0": 100,
+    "1": 100,
+    "2": 150,
+    "3": 200,
+    "4": 250,
+    "5": 300,
+    "6": 350,
+    "7": 400,
+    "8": 450,
+    "9": 500,
+    "10": 550
+  },
+  "per_level_after_table": 50,
+  "guilds": {
+    "adventurers": {},
+    "hunters": {},
+    "workers": {},
+    "metalworkers": {},
+    "metalworking:jewelry": {},
+    "metalworking:forge": {},
+    "metalworking:armor": {},
+    "metalworking:enchanting": {}
+  }
+}

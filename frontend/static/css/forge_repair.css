@@ -1,0 +1,25 @@
+.forge-broken-icon { position: relative; display: inline-block; vertical-align: middle; }
+.forge-broken-icon img { filter: grayscale(.7); }
+.forge-broken-icon b {
+    position: absolute;
+    inset: auto 0 0 auto;
+    padding: 0 .2rem;
+    border-radius: .2rem;
+    background: #843e30;
+    color: #fff4d7;
+    line-height: 1;
+}
+
+.forge-repair-result {
+    box-sizing: border-box;
+    width: min(28rem, calc(100% - 2rem));
+    padding: 1.25rem;
+    border: 1px solid #98764d;
+    border-radius: .5rem;
+    background: #f5e8d3;
+    color: #342519;
+    text-align: center;
+    overflow-wrap: anywhere;
+    box-shadow: 0 .25rem 1rem #34251966;
+}
+.forge-repair-result::backdrop { background: #24190c99; }

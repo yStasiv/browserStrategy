@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
-from backend.models import EquippedItems, Item, User
+from backend.models import EquippedItems, Item, RepairJob, User
 
 INVENTORY_LIMIT = 30
 SLOT_COLUMNS = {
@@ -36,6 +36,12 @@ def equipment_ids(equipped):
 def lock_hero(db, player):
     db.execute(update(User).where(User.id == player.id).values(map_sector=User.map_sector))
     db.refresh(player)
+
+
+def require_item_not_under_repair(db, player, item_id):
+    job = db.get(RepairJob, player.id)
+    if job is not None and job.item_id == item_id:
+        raise HTTPException(409, "Артефакт перебуває в ремонті.")
 
 
 def apply_equipment(equipped, player, slot, item, worn):
@@ -82,6 +88,7 @@ def change_equipment(db, player, *, slot=None, item_id=None, remove=False, repla
     item = db.scalar(select(Item).where(Item.id == item_id, Item.owner_id == player.id))
     if item is None:
         raise HTTPException(404, "Предмет не знайдено.")
+    require_item_not_under_repair(db, player, item.id)
     if remove:
         apply_equipment(equipped, player, slot, item, False)
     else:

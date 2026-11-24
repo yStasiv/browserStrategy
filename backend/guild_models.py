@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Boolean, CheckConstraint, Column, Date, ForeignKey, ForeignKeyConstraint,
-    Integer, String, UniqueConstraint,
+    Integer, Numeric, String, UniqueConstraint,
 )
 
 from .db_base import Base
@@ -96,4 +96,4 @@ class ActivityGuildProgress(Base):
 
     player_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     guild = Column(String(32), primary_key=True)
-    points = Column(Integer, nullable=False)
+    points = Column(Numeric(16, 3), nullable=False)

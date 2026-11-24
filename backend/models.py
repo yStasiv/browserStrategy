@@ -115,6 +115,7 @@ class Item(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     durability = Column(Integer)  # Поточна міцність
     max_durability = Column(Integer)  # Максимальна міцність
+    initial_max_durability = Column(Integer)
     level_required = Column(Integer, nullable=False, default=1, server_default="1")
 
     owner = relationship("User", back_populates="inventory_items")
@@ -463,3 +464,16 @@ class EnterpriseDailyReport(Base):
     sold = Column(JSON, nullable=False, default=dict)
     sale_gold = Column(BigInteger, nullable=False, default=0)
     wages = Column(BigInteger, nullable=False, default=0)
+
+
+class RepairJob(Base):
+    __tablename__ = "repair_jobs"
+
+    player_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
+    token = Column(String(32), nullable=False)
+    workshop = Column(String(32), nullable=False)
+    ready_at = Column(DateTime, nullable=False)
+    gold = Column(Integer, nullable=False)
+    restored = Column(Integer, nullable=False)
+    succeeded = Column(Boolean, nullable=False)
