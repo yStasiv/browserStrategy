@@ -101,8 +101,32 @@
         .stack.target { cursor: crosshair; }
         .stack.melee-target { cursor: crosshair; }
         .stack.unreachable-target { cursor: not-allowed; }
-        .deployment-unit[aria-pressed="true"] { outline: 2px solid #e0c566; }
-        .deployment-unit.unplaced { opacity: .6; filter: grayscale(1); }
+        #deployment-army {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: .35rem;
+            max-width: 17rem;
+        }
+        .deployment-unit {
+            position: relative;
+            display: grid;
+            place-items: center;
+            aspect-ratio: 1;
+            min-width: 0;
+            padding: .16rem;
+            border: 1px solid #b18b5c;
+            border-radius: .3rem;
+            background: #333e35;
+            color: #f4e7c6;
+        }
+        button.deployment-unit { cursor: pointer; }
+        .deployment-unit[aria-pressed="true"] { outline: 2px solid #f1d084; outline-offset: 1px; }
+        .deployment-unit.unplaced .deployment-portrait { opacity: .6; filter: grayscale(1); }
+        .deployment-portrait { width: 100%; height: 100%; min-width: 0; min-height: 0; display: grid; place-items: center; }
+        .deployment-portrait img { width: 100%; height: 100%; object-fit: contain; }
+        .deployment-unit .badge { font-size: .68rem; }
+        .deployment-unit.empty { border-style: dashed; background: #243027; color: #c5b493; }
+        .deployment-unit.locked { opacity: .45; }
         .stack.target .icon { box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.85); }
         .stack.enemy:hover .icon { background: rgba(127, 29, 29, 0.7); box-shadow: 0 0 0 3px #ef4444, 0 0 16px 5px rgba(239, 68, 68, 0.9); }
         .stack.hl .icon { box-shadow: 0 0 0 3px #fff, 0 0 12px 3px rgba(255, 255, 255, 0.6); }
@@ -206,7 +230,7 @@
                     <output id="attack-preview" class="text-sm text-amber-200" hidden></output>
                 </div>
                 <div id="deployment-actions" class="hidden space-y-2">
-                    <div id="deployment-army" class="flex flex-wrap gap-2" aria-label="Загони для розстановки"></div>
+                    <div id="deployment-army" role="group" aria-label="Загони для розстановки"></div>
                     <label class="block" id="deployment-split-label">Відокремити істот
                         <input id="deployment-split" class="bg-slate-800 w-16" type="number" min="0" value="0">
                     </label>
@@ -955,17 +979,37 @@
             const owned = Object.values(st.stacks).filter(stack => stack.owner === view.my_side);
             if (!owned.some(stack => stack.id === deploymentStack)) deploymentStack = owned[0]?.id;
             const placed = new Set(st.placed_stack_ids ?? []);
-            $('deployment-army').replaceChildren(...owned.map(stack => {
+            const slots = Array.from({length: 8}, (_, index) => {
+                const stack = owned[index];
+                if (!stack) {
+                    const empty = document.createElement('span');
+                    const locked = index >= view.deployment.max_slots;
+                    empty.className = 'deployment-unit empty' + (locked ? ' locked' : '');
+                    empty.title = locked ? 'Слот недоступний у цьому бою' : 'Вільний слот для поділу загону';
+                    empty.setAttribute('role', 'img');
+                    empty.setAttribute('aria-label', empty.title);
+                    empty.textContent = locked ? '🔒' : '+';
+                    return empty;
+                }
                 const chip = document.createElement('button');
                 chip.type = 'button';
-                chip.className = 'btn alt deployment-unit' + (placed.has(stack.id) ? '' : ' unplaced');
-                chip.textContent = `${uv(stack.unit).name} ×${stack.count}`;
+                chip.className = 'deployment-unit' + (placed.has(stack.id) ? '' : ' unplaced');
+                const portrait = document.createElement('span');
+                portrait.className = 'deployment-portrait';
+                renderUnitPortrait(portrait, uv(stack.unit));
+                const count = document.createElement('span');
+                count.className = 'badge';
+                count.textContent = stack.count;
+                chip.append(portrait, count);
                 chip.setAttribute('aria-pressed', String(stack.id === deploymentStack));
-                chip.title = placed.has(stack.id) ? 'Позицію підтверджено' : 'Початкова позиція';
+                const label = `${uv(stack.unit).name} ×${stack.count}`;
+                chip.setAttribute('aria-label', label);
+                chip.title = `${label} · ${placed.has(stack.id) ? 'Позицію підтверджено' : 'Початкова позиція'}`;
                 chip.disabled = busy;
                 chip.addEventListener('click', () => selectDeploymentStack(stack.id));
                 return chip;
-            }));
+            });
+            $('deployment-army').replaceChildren(...slots);
             const split = $('deployment-split');
             const max = owned.length < view.deployment.max_slots ? st.stacks[deploymentStack].count - 1 : 0;
             split.max = max;
