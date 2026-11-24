@@ -116,6 +116,21 @@
     content: "💡 ";
 }
 
+.help-guilds table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: .9rem;
+}
+.help-guilds caption { font-weight: 600; text-align: left; padding-bottom: .4rem; }
+.help-guilds th, .help-guilds td {
+    padding: .4rem .5rem;
+    border: 1px solid #cbb691;
+    overflow-wrap: anywhere;
+    text-align: left;
+}
+.help-guilds thead { background: #f5ead6; }
+
 .help-content .help-creatures {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
@@ -161,6 +176,12 @@
             </ul>
         </div>
         <div class="help-section">
+            <h3>Гільдії</h3>
+            <ul>
+                <li><a href="#guilds" class="help-item" data-content="guilds">Колегія металознавців</a></li>
+            </ul>
+        </div>
+        <div class="help-section">
             <h3>🏰 Економіка</h3>
             <ul>
                 <li><a href="#economy" class="help-item" data-content="economy">Економіка</a></li>
@@ -191,6 +212,13 @@
         <li><a href="/unit_info?key={{ creature.key }}">{{ portrait(creature) }} {{ creature.name }}</a></li>
         {% endfor %}
     </ul>
+</template>
+
+<template id="help-guilds">
+    <div class="help-guilds">
+        <h2>Гільдії</h2>
+        {% include 'help/metalworkers.html' %}
+    </div>
 </template>
 
 <script>
@@ -391,8 +419,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Функція для завантаження контенту
     function loadContent(contentKey) {
-        if (contentKey === 'creatures') {
-            helpContent.replaceChildren(document.getElementById('help-creatures').content.cloneNode(true));
+        const template = document.getElementById('help-' + contentKey);
+        if (template instanceof HTMLTemplateElement) {
+            helpContent.replaceChildren(template.content.cloneNode(true));
         } else if (Object.hasOwn(contents, contentKey)) {
             helpContent.innerHTML = contents[contentKey].content;
         } else {
