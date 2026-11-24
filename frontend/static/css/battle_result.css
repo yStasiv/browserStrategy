@@ -204,3 +204,22 @@
 }
 .squad-dialog-content dd { margin: 0; color: #415537; font-weight: 700; text-align: end; }
 .squad-dialog [hidden] { display: none; }
+
+
+.split-dialog { width: min(24rem, calc(100% - 1.5rem)); }
+.split-dialog-content {
+    display: grid;
+    gap: .4rem;
+    justify-items: center;
+    padding: 1rem;
+    text-align: center;
+}
+.split-dialog-content input {
+    width: 6rem;
+    padding: .3rem .5rem;
+    border: 1px solid #ad834d;
+    border-radius: .25rem;
+    background: #fff2d3;
+    color: #392718;
+    text-align: center;
+}

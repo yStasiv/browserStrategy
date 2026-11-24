@@ -28,7 +28,7 @@ from ..engine.flow import NotYourTurn, Step, advance_ai, play_turn, surrender_tu
 from ..engine.rules import forecast
 from .actions import action_to_dict
 from .ai import choose_action
-from .deployment import place, slot_limit
+from .deployment import arrange, merge, place, slot_limit, split, unplaced_stacks
 from .setup import ZONE_COLS
 from .rules import init_timeline
 from .events import SCHEMA_VERSION, initial_events
@@ -73,11 +73,18 @@ def _view(db, battle_id: int, mode: str, status: str, version: int, winner_side,
           my_side: int, events: list, steps=(), level=None, completion=None) -> dict:
     active = state.active()
     snapshot = state.to_dict()
-    if status == DEPLOYMENT and mode == "pvp":
-        human_enemies = set(db.scalars(select(BattleParticipant.side).where(
-            BattleParticipant.battle_id == battle_id, BattleParticipant.side != my_side,
-            BattleParticipant.user_id.is_not(None),
+    deployment = None
+    if status == DEPLOYMENT:
+        human_sides = set(db.scalars(select(BattleParticipant.side).where(
+            BattleParticipant.battle_id == battle_id, BattleParticipant.user_id.is_not(None),
         )))
+        unplaced = unplaced_stacks(state, human_sides)
+        deployment = {
+            "zone_width": ZONE_COLS, "max_slots": slot_limit(level, mode),
+            "remaining": sum(stack.owner == my_side for stack in unplaced),
+            "can_begin": not unplaced,
+        }
+        human_enemies = human_sides - {my_side}
         snapshot["stacks"] = {key: row for key, row in snapshot["stacks"].items()
                               if row["owner"] not in human_enemies}
         snapshot["heroes"] = {key: row for key, row in snapshot.get("heroes", {}).items()
@@ -100,9 +107,7 @@ def _view(db, battle_id: int, mode: str, status: str, version: int, winner_side,
         "wait_forecast": forecast(state, 50, after_wait=True)
         if active and active.owner == my_side and active.id in state.stacks else None,
         "events": events,
-        "deployment": {
-            "zone_width": ZONE_COLS, "max_slots": slot_limit(level, mode),
-        } if status == DEPLOYMENT else None,
+        "deployment": deployment,
         "event_stream": [e for step in steps for e in step.replay_events],
     }
 
@@ -282,6 +287,7 @@ def start_pve(db: Session, user, scenario_key: str, *, hunting=False, expected_d
         "elements": available_elements(school),
     }
     state.status = DEPLOYMENT
+    state.placed_stack_ids = [stack.id for stack in state.stacks.values() if stack.owner == 0]
     state.active_id = None
     state.initial_ready_at.clear()
     battle = Battle(mode="pve", level=level, status=DEPLOYMENT, state=state.to_dict(), version=0)
@@ -293,24 +299,50 @@ def start_pve(db: Session, user, scenario_key: str, *, hunting=False, expected_d
     return _view(db, battle.id, battle.mode, DEPLOYMENT, 0, None, state, 0, [], level=level)
 
 
-def update_deployment(db, user, battle_id, version, placement=None):
+def previous_formation(db, user_id):
+    row = db.execute(select(Battle.initial_state, BattleParticipant.side)
+                     .join(BattleParticipant, BattleParticipant.battle_id == Battle.id)
+                     .where(BattleParticipant.user_id == user_id, Battle.status == "finished")
+                     .order_by(Battle.finished_at.desc(), Battle.id.desc()).limit(1)).first()
+    if row is not None and row.initial_state and row.initial_state.get("seq") == 0:
+        return row.initial_state, row.side
+    return None
+
+
+def update_deployment(db, user, battle_id, version, placement=None, *, merge_ids=None, split_request=None, auto_place=False):
     battle, side = _owned_battle(db, user, battle_id)
     if battle.status != DEPLOYMENT or battle.version != version:
         raise Conflict("Стан розстановки змінився.")
     state = BattleState.from_dict(battle.state)
     extra = {}
     steps = []
-    if placement is not None:
+    human_sides = set(db.scalars(select(BattleParticipant.side).where(
+        BattleParticipant.battle_id == battle.id, BattleParticipant.user_id.is_not(None),
+    )))
+    ai_sides = {0, 1} - human_sides
+    restored = None
+    if placement is not None or merge_ids is not None or split_request is not None or auto_place:
         try:
-            place(state, side, *placement, limit=slot_limit(battle.level, battle.mode))
+            if auto_place:
+                state, restored = arrange(
+                    state, side, previous_formation(db, user.id),
+                    limit=slot_limit(battle.level, battle.mode), ai_sides=ai_sides,
+                )
+            elif merge_ids is not None:
+                merge(state, side, *merge_ids)
+            elif split_request is not None:
+                split(state, side, *split_request, limit=slot_limit(battle.level, battle.mode))
+            else:
+                place(state, side, *placement, ai_sides=ai_sides)
         except ValueError as exc:
             raise BattleError(str(exc)) from exc
     else:
+        if unplaced_stacks(state, human_sides):
+            raise Conflict("Розстав усі загони гравців перед початком бою.")
         state.status = "active"
         state.placed_stack_ids.clear()
         init_timeline(state)
         extra = {"initial_state": state.to_dict(), "replay_schema_version": SCHEMA_VERSION}
-        ai_sides = {row.side for row in db.query(BattleParticipant).filter_by(battle_id=battle_id, user_id=None)}
         state, steps = advance_ai(state, ai_sides)
         extra.update(_finish_fields(state))
         extra["winner_side"] = state.winner
@@ -326,9 +358,12 @@ def update_deployment(db, user, battle_id, version, placement=None):
     if state.status == "finished":
         _settle(db, battle_id, state)
     db.commit()
-    return _view(db, battle_id, battle.mode, state.status, version + 1,
-                 state.winner, state, side, _flat_events(steps), steps, level=battle.level,
-                 completion=completion_data(db, battle_id, state, user.id, legacy_battle_experience))
+    payload = _view(db, battle_id, battle.mode, state.status, version + 1,
+                    state.winner, state, side, _flat_events(steps), steps, level=battle.level,
+                    completion=completion_data(db, battle_id, state, user.id, legacy_battle_experience))
+    if restored is not None:
+        payload["deployment"]["restored_previous"] = restored
+    return payload
 
 
 def _checkpoint(battle):

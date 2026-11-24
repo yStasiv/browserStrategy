@@ -119,9 +119,32 @@
             background: #333e35;
             color: #f4e7c6;
         }
+        .deployment-slot { position: relative; min-width: 0; }
+        .deployment-slot.merge-target .deployment-unit {
+            outline: 2px solid #a7c57b;
+            background: #485e3d;
+        }
+        .deployment-unit.dragging { opacity: .5; }
+        .deployment-slot > .deployment-unit { width: 100%; }
         button.deployment-unit { cursor: pointer; }
+        .deployment-split-trigger {
+            position: absolute;
+            top: .18rem;
+            inset-inline-end: .18rem;
+            z-index: 1;
+            width: 1.65rem;
+            height: 1.65rem;
+            border: 1px solid #b18b5c;
+            border-radius: .2rem;
+            background: #f3dfaf;
+            color: #46311d;
+            font-weight: 700;
+        }
+        .deployment-split-trigger:hover:not(:disabled) { background: #fff3d1; }
+        .deployment-split-trigger:disabled { opacity: .5; }
         .deployment-unit[aria-pressed="true"] { outline: 2px solid #f1d084; outline-offset: 1px; }
-        .deployment-unit.unplaced .deployment-portrait { opacity: .6; filter: grayscale(1); }
+        .deployment-unit.unplaced { background: #353b3a; border-color: #909693; }
+        .deployment-unit.unplaced .deployment-portrait { opacity: .65; filter: grayscale(1); }
         .deployment-portrait { width: 100%; height: 100%; min-width: 0; min-height: 0; display: grid; place-items: center; }
         .deployment-portrait img { width: 100%; height: 100%; object-fit: contain; }
         .deployment-unit .badge { font-size: .68rem; }
@@ -231,10 +254,8 @@
                 </div>
                 <div id="deployment-actions" class="hidden space-y-2">
                     <div id="deployment-army" role="group" aria-label="Загони для розстановки"></div>
-                    <label class="block" id="deployment-split-label">Відокремити істот
-                        <input id="deployment-split" class="bg-slate-800 w-16" type="number" min="0" value="0">
-                    </label>
-                    <p class="text-sm text-slate-300">Обери загін і клітинку в підсвіченій зоні. Нуль означає переміщення всього загону.</p>
+                    <p id="deployment-placement-hint" class="text-sm text-slate-300">Обери загін і клітинку в підсвіченій зоні.</p>
+                    <button id="deployment-auto" type="button" class="btn alt">Автоматична розстановка</button>
                     <button id="deployment-begin" type="button" class="btn">У бій</button>
                 </div>
                 <div id="battle-actions" class="flex gap-2">
@@ -276,6 +297,20 @@
     </div>
 
     {% include 'components/battle_result.html' %}
+    <dialog id="deployment-split-dialog" class="battle-result split-dialog" aria-labelledby="deployment-split-title">
+        <form class="battle-result-frame" id="deployment-split-form">
+            <header class="battle-result-header"><h2 id="deployment-split-title">Поділ загону</h2></header>
+            <div class="split-dialog-content">
+                <p id="deployment-split-unit"></p>
+                <label for="deployment-split">Скільки істот відокремити</label>
+                <input id="deployment-split" type="number" min="1" step="1" required autofocus>
+            </div>
+            <footer class="battle-result-footer">
+                <button type="button" id="deployment-split-close">Скасувати</button>
+                <button type="submit" data-squad-action>Розділити</button>
+            </footer>
+        </form>
+    </dialog>
     <dialog id="squad-inspector" class="battle-result squad-dialog" aria-labelledby="squad-title">
         <div class="battle-result-frame">
             <header class="battle-result-header">
@@ -311,6 +346,7 @@
     let busy = false;
     let auto = false;
     let deploymentStack = null;
+    let deploymentDragId = null;
     let inspectedSquad = null;
     let hoveredStackId = null;
     let hoveredAttack = null;
@@ -531,12 +567,20 @@
         schedulePoll();
     }
 
+    function boardStacks() {
+        const stacks = Object.values(view.state.stacks);
+        if (!view.deployment) return stacks;
+        const placed = new Set(view.state.placed_stack_ids ?? []);
+        return stacks.filter(stack => stack.owner !== view.my_side || placed.has(stack.id));
+    }
+
     function renderStacks() {
-        const stacks = view.state.stacks;
+        const stacks = boardStacks();
+        const visible = new Set(stacks.map(stack => stack.id));
         const activeId = view.deployment ? deploymentStack : view.state.active_id;
         const targetIds = new Set(view.turn ? view.turn.targets.map((t) => t.id) : []);
 
-        for (const s of Object.values(stacks)) {
+        for (const s of stacks) {
             let d = stackEls[s.id];
             if (!d) {
                 d = document.createElement('div');
@@ -592,11 +636,15 @@
                       (s.shots_left > 0 ? ', пострілів: ' + s.shots_left : '');
         }
         for (const id of Object.keys(stackEls)) {
-            if (!stacks[id]) {
+            if (!visible.has(id)) {
                 if (hoveredStackId === id) highlightInitiative(null);
                 const d = stackEls[id];
-                d.classList.add('dead');
-                setTimeout(() => d.remove(), 450);
+                if (view.deployment) {
+                    d.remove();
+                } else {
+                    d.classList.add('dead');
+                    setTimeout(() => d.remove(), 450);
+                }
                 delete stackEls[id];
             }
         }
@@ -762,16 +810,13 @@
     function deploymentOptions() {
         const actor = view.state.stacks[deploymentStack];
         const positions = [];
-        if (!actor) return {actor, positions, count: null};
-        const split = $('deployment-split');
-        const count = Number(split.value) || null;
-        if (!split.validity.valid || (count && split.disabled)) return {actor, positions, count};
+        if (!actor) return {actor, positions};
 
         const zone = view.deployment.zone_width;
         const left = view.my_side === 0 ? 0 : view.state.width - zone;
         const blocked = new Set((view.state.obstacles ?? []).map(cell => cell.join(',')));
-        for (const stack of Object.values(view.state.stacks)) {
-            if (stack.id === actor.id && !count) continue;
+        for (const stack of boardStacks()) {
+            if (stack.id === actor.id) continue;
             for (const cell of footprint(stack.x, stack.y, stack.w, stack.h)) {
                 blocked.add(cell.dataset.x + ',' + cell.dataset.y);
             }
@@ -784,7 +829,7 @@
                 }
             }
         }
-        return {actor, positions, count};
+        return {actor, positions};
     }
 
     function renderHighlights() {
@@ -1007,15 +1052,29 @@
                 chip.title = `${label} · ${placed.has(stack.id) ? 'Позицію підтверджено' : 'Початкова позиція'}`;
                 chip.disabled = busy;
                 chip.addEventListener('click', () => selectDeploymentStack(stack.id));
-                return chip;
+                const splitButton = document.createElement('button');
+                splitButton.type = 'button';
+                splitButton.className = 'deployment-split-trigger';
+                splitButton.textContent = '⑂';
+                splitButton.title = 'Розділити загін';
+                splitButton.setAttribute('aria-label', `Розділити загін: ${label}`);
+                splitButton.setAttribute('aria-haspopup', 'dialog');
+                splitButton.disabled = busy || stack.count < 2 || owned.length >= view.deployment.max_slots;
+                splitButton.addEventListener('click', () => openDeploymentSplit(stack));
+                const slot = document.createElement('div');
+                slot.className = 'deployment-slot';
+                slot.append(chip, splitButton);
+                chip.draggable = !busy && owned.some(other => other.id !== stack.id && other.unit === stack.unit);
+                if (chip.draggable) chip.title += ' · Перетягни на загін тієї самої форми, щоб об’єднати';
+                bindDeploymentMerge(slot, chip, stack);
+                return slot;
             });
             $('deployment-army').replaceChildren(...slots);
-            const split = $('deployment-split');
-            const max = owned.length < view.deployment.max_slots ? st.stacks[deploymentStack].count - 1 : 0;
-            split.max = max;
-            split.disabled = busy || max === 0;
-            if (Number(split.value) > max) split.value = 0;
-            $('deployment-begin').disabled = busy;
+            $('deployment-placement-hint').textContent = view.deployment.remaining
+                ? `Вибери сірий загін і місце на полі · Залишилося виставити ${view.deployment.remaining}`
+                : view.deployment.can_begin ? 'Усі загони виставлено.' : 'Очікуємо на розстановку суперника.';
+            $('deployment-auto').disabled = busy;
+            $('deployment-begin').disabled = busy || !view.deployment.can_begin;
             el.turnText.textContent = 'Розстановка загонів';
             el.activeInfo.textContent = `${owned.length}/${view.deployment.max_slots} слотів зайнято`;
             return;
@@ -1106,7 +1165,7 @@
         const valid = deployment ?
             deployment.positions.some(([px, py]) => px === destination[0] && py === destination[1]) :
             view.turn?.move_paths?.[destination.join(',')];
-        return valid ? {actor, destination, count: deployment?.count} : null;
+        return valid ? {actor, destination} : null;
     }
 
     function onCellHover(x, y) {
@@ -1364,13 +1423,56 @@
         }
     }
 
+    function bindDeploymentMerge(slot, chip, target) {
+        function canDrop() {
+            const source = view?.state.stacks[deploymentDragId];
+            return !busy && view?.deployment && source && source.id !== target.id
+                && source.owner === view.my_side && source.unit === target.unit;
+        }
+
+        chip.addEventListener('dragstart', event => {
+            if (!chip.draggable) { event.preventDefault(); return; }
+            deploymentDragId = target.id;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', target.id);
+            chip.classList.add('dragging');
+        });
+        chip.addEventListener('dragend', () => {
+            deploymentDragId = null;
+            chip.classList.remove('dragging');
+            $('deployment-army').querySelectorAll('.merge-target').forEach(node => node.classList.remove('merge-target'));
+        });
+        slot.addEventListener('dragover', event => {
+            if (!canDrop()) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            slot.classList.add('merge-target');
+        });
+        slot.addEventListener('dragleave', event => {
+            if (!slot.contains(event.relatedTarget)) slot.classList.remove('merge-target');
+        });
+        slot.addEventListener('drop', event => {
+            if (!canDrop()) return;
+            event.preventDefault();
+            const sourceId = deploymentDragId;
+            deploymentDragId = null;
+            deploymentCommand('/deployment/merge', {source_id: sourceId, target_id: target.id});
+        });
+    }
+
     async function deploymentCommand(path, fields = {}) {
         if (busy || !view?.deployment) return;
         setBusy(true);
         try {
+            const previousStacks = view.state.stacks;
             const next = await api('/' + view.id + path, 'POST', {version: view.version, ...fields});
-            $('deployment-split').value = 0;
+            if (path === '/deployment/split') {
+                deploymentStack = Object.keys(next.state.stacks).find(key => !previousStacks[key]) ?? fields.stack_id;
+            }
+            if (path === '/deployment/merge') deploymentStack = fields.target_id;
             applyView(next, next.events);
+            if (path === '/deployment/auto') toast(next.deployment.restored_previous
+                ? 'Відновлено розстановку з попереднього бою.' : 'Застосовано стандартну розстановку.');
         } catch (error) {
             toast(error.message);
             if (error.status === 409) await refresh();
@@ -1383,25 +1485,44 @@
     function selectDeploymentStack(id) {
         if (busy || view.state.stacks[id]?.owner !== view.my_side) return;
         deploymentStack = id;
-        $('deployment-split').value = 0;
         renderPanel();
         renderStacks();
         renderHighlights();
     }
 
-    $('deployment-split').addEventListener('input', renderHighlights);
-    $('deployment-begin').addEventListener('click', () => deploymentCommand('/begin'));
+    function openDeploymentSplit(stack) {
+        const dialog = $('deployment-split-dialog');
+        const input = $('deployment-split');
+        dialog.dataset.stackId = stack.id;
+        $('deployment-split-unit').textContent = `${uv(stack.unit).name} ×${stack.count}`;
+        input.max = stack.count - 1;
+        input.value = Math.floor(stack.count / 2);
+        dialog.showModal();
+    }
+
+    $('deployment-split-form').addEventListener('submit', event => {
+        event.preventDefault();
+        const dialog = $('deployment-split-dialog');
+        const input = $('deployment-split');
+        if (!input.reportValidity()) return;
+        dialog.close();
+        deploymentCommand('/deployment/split', {stack_id: dialog.dataset.stackId, count: input.valueAsNumber});
+    });
+    $('deployment-split-close').addEventListener('click', () => $('deployment-split-dialog').close());
+    $('deployment-auto').addEventListener('click', () => deploymentCommand('/deployment/auto'));
+    $('deployment-begin').addEventListener('click', () => {
+        if (view?.deployment?.can_begin) deploymentCommand('/begin');
+    });
 
     function onCellClick(x, y) {
         if (spellSelection) { confirmSpellAt(x, y); return; }
         if (!view || busy || auto || replay) return;
-        if (view.deployment && !$('deployment-split').reportValidity()) return;
         const choice = boardDestination(x, y);
         if (!choice) return;
-        const {actor, destination: [ax, ay], count} = choice;
+        const {actor, destination: [ax, ay]} = choice;
         if (view.deployment) {
-            if (!count && actor.x === ax && actor.y === ay && view.state.placed_stack_ids?.includes(actor.id)) return;
-            deploymentCommand('/deployment', {stack_id: actor.id, x: ax, y: ay, split_count: count});
+            if (actor.x === ax && actor.y === ay && view.state.placed_stack_ids?.includes(actor.id)) return;
+            deploymentCommand('/deployment', {stack_id: actor.id, x: ax, y: ay});
         } else {
             send({type: 'move', x: ax, y: ay});
         }
@@ -1523,7 +1644,7 @@
 
     function schedulePoll() {
         clearTimeout(pollTimer);
-        if (replay || busy || !view || view.status !== 'active') return;
+        if (replay || busy || !view || (view.status !== 'active' && !(view.deployment && view.mode === 'pvp'))) return;
         if (view.turn && auto && !$('squad-inspector').open) pollTimer = setTimeout(autoTurn, 250);
         else if (!view.turn) pollTimer = setTimeout(async () => {
             await refresh();
@@ -1533,6 +1654,8 @@
 
     // ---------- Старт ----------
     function resetClientState() {
+        if ($('deployment-split-dialog').open) $('deployment-split-dialog').close();
+        deploymentDragId = null;
         if ($('squad-inspector').open) $('squad-inspector').close();
         inspectedSquad = null;
         if ($('spellbook').open) $('spellbook').close();

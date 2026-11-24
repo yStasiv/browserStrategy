@@ -30,9 +30,9 @@ async def _user(request: Request, db: Session):
     return user
 
 
-def _call(fn, *args):
+def _call(fn, *args, **kwargs):
     try:
-        return fn(*args)
+        return fn(*args, **kwargs)
     except svc.ArmyRequired as e:
         raise HTTPException(status_code=e.status_code, detail={"code": "army_required", "message": str(e)})
     except svc.BattleError as e:
@@ -107,8 +107,43 @@ class PlacementIn(BaseModel):
 
 @router.post("/{battle_id}/deployment")
 async def deploy(battle_id: int, body: PlacementIn, request: Request, db: Session = Depends(database.get_db)):
+    user = await _user(request, db)
+    if body.split_count is not None:
+        return _call(svc.update_deployment, db, user, battle_id, body.version,
+                     split_request=(body.stack_id, body.split_count))
+    return _call(svc.update_deployment, db, user, battle_id, body.version, (body.stack_id, body.x, body.y))
+
+
+class SplitDeploymentIn(BaseModel):
+    version: int
+    stack_id: str
+    count: StrictInt
+
+
+@router.post("/{battle_id}/deployment/split")
+async def split_deployment(battle_id: int, body: SplitDeploymentIn, request: Request,
+                           db: Session = Depends(database.get_db)):
     return _call(svc.update_deployment, db, await _user(request, db), battle_id, body.version,
-                 (body.stack_id, body.x, body.y, body.split_count))
+                 split_request=(body.stack_id, body.count))
+
+
+class MergeDeploymentIn(BaseModel):
+    version: int
+    source_id: str
+    target_id: str
+
+
+@router.post("/{battle_id}/deployment/merge")
+async def merge_deployment(battle_id: int, body: MergeDeploymentIn, request: Request,
+                           db: Session = Depends(database.get_db)):
+    return _call(svc.update_deployment, db, await _user(request, db), battle_id, body.version,
+                 merge_ids=(body.source_id, body.target_id))
+
+
+@router.post("/{battle_id}/deployment/auto")
+async def auto_deployment(battle_id: int, body: SurrenderIn, request: Request,
+                          db: Session = Depends(database.get_db)):
+    return _call(svc.update_deployment, db, await _user(request, db), battle_id, body.version, auto_place=True)
 
 
 @router.post("/{battle_id}/begin")
