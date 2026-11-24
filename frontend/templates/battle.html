@@ -11,10 +11,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --cell: 56px; }
-        body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+            margin: 0;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        }
+        .battle-page { box-sizing: border-box; flex: 1; display: flex; flex-direction: column; min-height: 0; width: 100%; padding: .75rem; }
+        #battle:not(.hidden) { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+        #battle > :not(.battle-workspace) { flex-shrink: 0; }
+        .battle-workspace { flex: 1; display: grid; gap: .75rem; min-width: 0; min-height: 0; }
+        .battle-sidebar { min-width: 0; }
+        @media (min-width: 64rem) {
+            .battle-workspace { grid-template-columns: minmax(0, 1fr) clamp(16rem, 21vw, 20rem); }
+        }
+        @media (min-width: 64rem) and (min-height: 34rem) {
+            body:has(#battle:not(.hidden)) { height: 100dvh; overflow: hidden; }
+            .battle-workspace { grid-template-rows: minmax(0, 1fr); }
+            .battle-sidebar { overflow-y: auto; }
+        }
 
         #board-wrap {
-            min-height: 12rem;
+            display: grid;
+            grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+            place-items: center;
+            min-width: 0;
+            min-height: 0;
             padding: clamp(0.5rem, 2vw, 1.4rem);
             border: 1px solid #51432e;
             border-radius: 0.8rem;
@@ -24,13 +49,14 @@
         }
         #board {
             position: relative;
-            margin: 0 auto;
+            margin: 0;
             border: 2px solid #a88c56;
             border-radius: 0.35rem;
             overflow: hidden;
             box-shadow: 0 9px 0 #342b1c, 0 18px 24px #0b110d;
+            translate: 0 -10%;
             transform: rotateX(22deg);
-            transform-origin: center bottom;
+            transform-origin: center;
             background:
                 radial-gradient(ellipse at 24% 20%, #7e8750a0, transparent 62%),
                 radial-gradient(ellipse at 78% 72%, #99815888, transparent 66%),
@@ -172,6 +198,27 @@
             background-size: 400% 600%;
         }
         .stack[role="button"]:focus-visible .icon { outline: 2px solid #fff2b5; outline-offset: 2px; }
+        .stack:hover, .stack:focus { z-index: 2; }
+        .stack-hp {
+            position: absolute;
+            top: .1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            visibility: hidden;
+            pointer-events: none;
+            padding: .12rem .28rem;
+            border: 1px solid #b18854;
+            border-radius: .22rem;
+            background: #33281c;
+            color: #fff2d2;
+            font: 700 .7rem/1.15 Georgia, serif;
+            min-width: max-content;
+            white-space: pre-line;
+        }
+        .stack[data-tooltip-edge="left"] .stack-hp { left: .1rem; transform: none; }
+        .stack[data-tooltip-edge="right"] .stack-hp { left: auto; right: .1rem; transform: none; }
+        .stack[data-tooltip-bottom] .stack-hp { top: auto; bottom: .1rem; }
+        .stack:hover .stack-hp, .stack:focus .stack-hp { visibility: visible; }
         @keyframes pop { 0% { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px); } }
 
         #initiative { display: flex; flex: 1 1 0; min-width: 0; gap: .3rem; overflow-x: auto; padding: .25rem .15rem; }
@@ -201,7 +248,7 @@
 </head>
 <body>
 {% include 'shared/header.html' %}
-<div class="max-w-6xl mx-auto p-3">
+<div class="battle-page">
     <header class="flex items-center justify-between mb-3">
         <h1 class="text-xl font-bold">Бій</h1>
         <a id="battle-return" href="/player" class="text-sm text-sky-300 hover:underline">До персонажа</a>
@@ -230,8 +277,8 @@
             <div id="initiative"></div>
         </div>
 
-        <div class="flex flex-col lg:flex-row gap-3">
-            <div id="board-wrap" class="flex-1 min-w-0">
+        <div class="battle-workspace">
+            <div id="board-wrap">
                 <div class="battle-stage" id="battle-stage">
                     <button type="button" id="battle-result-toggle" class="btn alt" hidden
                             title="Підсумок бою" aria-label="Відкрити підсумок бою" aria-haspopup="dialog">📜</button>
@@ -246,12 +293,7 @@
                 </div>
             </div>
 
-            <aside class="lg:w-72 shrink-0 space-y-3">
-                <div class="bg-slate-800 rounded-lg p-3">
-                    <div id="turn-text" class="font-bold mb-1"></div>
-                    <div id="active-info" class="text-sm text-slate-300 min-h-[2.5rem]"></div>
-                    <output id="attack-preview" class="text-sm text-amber-200" hidden></output>
-                </div>
+            <aside class="battle-sidebar space-y-3">
                 <div id="deployment-actions" class="hidden space-y-2">
                     <div id="deployment-army" role="group" aria-label="Загони для розстановки"></div>
                     <p id="deployment-placement-hint" class="text-sm text-slate-300">Обери загін і клітинку в підсвіченій зоні.</p>
@@ -367,7 +409,7 @@
     const el = {
         menu: $('menu'), battle: $('battle'), scenarios: $('scenarios'),
         cells: $('cells'), stacks: $('stacks'), popups: $('popups'), board: $('board'), wrap: $('board-wrap'),
-        initiative: $('initiative'), turnText: $('turn-text'), activeInfo: $('active-info'),
+        initiative: $('initiative'),
         log: $('log'), toast: $('toast'), confirm: $('confirm'),
         btnWait: $('btn-wait'), btnDefend: $('btn-defend'), btnSurrender: $('btn-surrender'),
     };
@@ -425,10 +467,6 @@
 
     // ---------- Допоміжне ----------
     const uv = (unit) => UNIT_VIEW[unit] || { emoji: '❓', name: unit };
-    const unitTitle = (key) => {
-        const unit = uv(key);
-        return unit.form ? `${unit.name} · ранг ${unit.tier}, форма ${unit.form}/3` : unit.name;
-    };
 
     function toast(text, ms = 2800) {
         el.toast.textContent = text;
@@ -476,19 +514,35 @@
         if (!view || !el.wrap.clientWidth) return;
         const w = view.state.width, h = view.state.height;
         const frame = getComputedStyle(el.wrap);
-        const padding = parseFloat(frame.paddingLeft) + parseFloat(frame.paddingRight) || 0;
+        const paddingX = parseFloat(frame.paddingLeft) + parseFloat(frame.paddingRight);
+        const paddingY = parseFloat(frame.paddingTop) + parseFloat(frame.paddingBottom);
         const gutter = Object.keys(view.state.heroes ?? {}).length
-            ? Math.round(Math.max(30, Math.min(78, el.wrap.clientWidth * 0.12))) : 0;
-        const maxW = Math.min(el.wrap.clientWidth - padding - 4 - 2 * gutter, 960);
-        const maxH = window.innerHeight * 0.62;
-        const cell = Math.max(1, Math.min(72, Math.floor(Math.min(maxW / w, maxH / h)))) + 'px';
+            ? Math.round(Math.max(28, Math.min(100, el.wrap.clientWidth * .085))) : 0;
+        const maxWidth = el.wrap.clientWidth - paddingX - 4 - 2 * gutter;
+        const fixedHeight = matchMedia('(min-width: 64rem) and (min-height: 34rem)').matches;
+        const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+        const maxHeight = (fixedHeight ? el.wrap.clientHeight : viewportHeight) - paddingY - 4;
+        const size = Math.max(1, Math.floor(Math.min(maxWidth / w, maxHeight / (h * 1.2))));
         const stage = $('battle-stage');
-        stage.style.maxWidth = (parseFloat(cell) * w + 4 + 2 * gutter) + 'px';
-        stage.style.marginInline = 'auto';
+        stage.style.width = (size * w + 4 + 2 * gutter) + 'px';
+        stage.style.marginBlockStart = fixedHeight ? '0' : Math.ceil((size * h + 4) * .1) + 'px';
         stage.style.setProperty('--hero-gutter', gutter + 'px');
-        stage.style.setProperty('--hero-height', Math.max(48, Math.min(104, parseFloat(cell) * 1.42)) + 'px');
-        if (el.board.style.getPropertyValue('--cell') !== cell) {
-            el.board.style.setProperty('--cell', cell);
+        stage.style.setProperty('--hero-height', Math.max(42, Math.min(148, size * 1.9)) + 'px');
+        const cell = size + 'px';
+        if (el.board.style.getPropertyValue('--cell') !== cell) el.board.style.setProperty('--cell', cell);
+        alignFieldHeroes();
+    }
+
+    function alignFieldHeroes() {
+        const field = $('field-heroes');
+        if (field.hidden || !el.cells.children.length) return;
+        const stageTop = $('battle-stage').getBoundingClientRect().top;
+        for (const hero of field.children) {
+            const center = Number(hero.dataset.centerRow);
+            const row = cellEl(0, Math.floor(center));
+            if (!row) continue;
+            const bounds = row.getBoundingClientRect();
+            hero.style.top = (bounds.top - stageTop + (center % 1) * bounds.height) + 'px';
         }
     }
 
@@ -574,6 +628,15 @@
         return stacks.filter(stack => stack.owner !== view.my_side || placed.has(stack.id));
     }
 
+    function stackTooltip(stack, unit) {
+        const stats = [`HP: ${stack.top_hp}/${unit.hp}`];
+        if (unit.shots > 0) stats.push(`Стріли: ${stack.shots_left}/${unit.shots}`);
+        if (stack.max_energy > 0 && Number.isFinite(stack.energy)) {
+            stats.push(`Енергія: ${stack.energy}/${stack.max_energy}`);
+        }
+        return stats.join('\n');
+    }
+
     function renderStacks() {
         const stacks = boardStacks();
         const visible = new Set(stacks.map(stack => stack.id));
@@ -584,7 +647,10 @@
             let d = stackEls[s.id];
             if (!d) {
                 d = document.createElement('div');
-                d.innerHTML = '<div class="icon"></div><span class="flag"></span><span class="badge"></span>';
+                d.innerHTML = '<div class="icon"></div><span class="flag"></span><span class="badge"></span><span class="stack-hp" role="tooltip"></span>';
+                const hp = d.querySelector('.stack-hp');
+                hp.id = 'stack-hp-' + s.id;
+                d.setAttribute('aria-describedby', hp.id);
                 d.setAttribute('role', 'button');
                 d.setAttribute('aria-haspopup', 'dialog');
                 d.tabIndex = 0;
@@ -632,8 +698,9 @@
             renderUnitPortrait(d.children[0], u);
             d.children[1].textContent = s.defending ? '🛡' : s.summoned ? '✦' : '';
             d.children[2].textContent = s.count;
-            d.title = unitTitle(s.unit) + ': ' + s.count + ' шт., HP верхнього: ' + s.top_hp +
-                      (s.shots_left > 0 ? ', пострілів: ' + s.shots_left : '');
+            d.dataset.tooltipEdge = s.x < 2 ? 'left' : s.x + s.w >= view.state.width - 1 ? 'right' : '';
+            d.toggleAttribute('data-tooltip-bottom', s.y + s.h >= view.state.height);
+            d.querySelector('.stack-hp').textContent = stackTooltip(s, u);
         }
         for (const id of Object.keys(stackEls)) {
             if (!visible.has(id)) {
@@ -958,9 +1025,8 @@
         field.replaceChildren(...heroes.map(hero => {
             const card = document.createElement('div');
             const sideHeroes = bySide[hero.owner];
-            if (sideHeroes.length > 1) {
-                card.style.bottom = `${12 + sideHeroes.indexOf(hero) * 65 / sideHeroes.length}%`;
-            }
+            const sectionHeight = Math.min(10, st.height / sideHeroes.length);
+            card.dataset.centerRow = (sideHeroes.indexOf(hero) + .5) * sectionHeight;
             card.id = 'field-' + hero.id;
             card.dataset.side = hero.owner;
             card.className = 'field-hero' + (st.active_id === hero.id ? ' active' : '');
@@ -1002,11 +1068,11 @@
             }
             return card;
         }));
+        alignFieldHeroes();
     }
 
     function renderPanel() {
         const st = view.state;
-        const a = activeStack();
         const myTurn = !!view.turn;
         const deploying = Boolean(view.deployment);
         $('battle-actions').classList.toggle('hidden', Boolean(replay) || deploying);
@@ -1075,28 +1141,9 @@
                 : view.deployment.can_begin ? 'Усі загони виставлено.' : 'Очікуємо на розстановку суперника.';
             $('deployment-auto').disabled = busy;
             $('deployment-begin').disabled = busy || !view.deployment.can_begin;
-            el.turnText.textContent = 'Розстановка загонів';
-            el.activeInfo.textContent = `${owned.length}/${view.deployment.max_slots} слотів зайнято`;
             return;
         }
 
-        if (st.status === 'finished') {
-            el.turnText.textContent = 'Бій завершено';
-            el.activeInfo.textContent = '';
-        } else if (st.heroes?.[st.active_id]) {
-            const hero = st.heroes[st.active_id];
-            el.turnText.textContent = `Хід героя · ${hero.name}`;
-            el.activeInfo.textContent = `Ініціатива ${hero.initiative} · Шкода ${hero.damage_min}–${hero.damage_max}`;
-        } else if (a) {
-            const u = uv(a.unit);
-            el.turnText.textContent = replay ? 'Хід · ' + u.name : (myTurn ? 'Ваш хід' : 'Хід суперника…');
-            el.activeInfo.textContent = u.emoji + ' ' + unitTitle(a.unit) + ' ×' + a.count + ' (HP верхнього: ' + a.top_hp + ')' +
-                (a.shots_left > 0
-                    ? (view.turn && !view.turn.ranged
-                        ? ', ворог поруч — атакуйте врукопашну або відійдіть (постріли: ' + a.shots_left + ')'
-                        : ', постріли: ' + a.shots_left)
-                    : '');
-        }
         $('btn-auto').disabled = view.status !== 'active';
         $('btn-auto').setAttribute('aria-pressed', String(auto));
         $('btn-auto').textContent = auto ? 'Авто увімкнено' : 'Авто';
@@ -1107,7 +1154,6 @@
 
     // ---------- Наведення ----------
     function clearHover() {
-        $('attack-preview').hidden = true;
         el.stacks.querySelectorAll('.melee-target, .unreachable-target').forEach(
             node => node.classList.remove('melee-target', 'unreachable-target'));
         $('route-preview').replaceChildren();
@@ -1133,7 +1179,7 @@
     function drawApproach(actor, destination, kind) {
         drawLanding(actor, destination, kind);
         const movement = view.turn.move_paths?.[destination.join(',')];
-        if (!movement) return 0;
+        if (!movement) return;
         const route = $('route-preview');
         for (let i = 1; i < movement.path.length; i++) {
             const [x, y] = movement.path[i - 1];
@@ -1153,7 +1199,6 @@
                 footprint(nextX, nextY, actor.w, actor.h).forEach(cell => cell.classList.add('route'));
             }
         }
-        return movement.cost;
     }
 
     function boardDestination(x, y) {
@@ -1181,10 +1226,7 @@
             drawLanding(choice.actor, choice.destination, 'ghost');
             return;
         }
-        const cost = drawApproach(choice.actor, choice.destination, 'ghost');
-        const output = $('attack-preview');
-        output.textContent = `Рух ${cost} / ${view.turn.move_points} очок`;
-        output.hidden = false;
+        drawApproach(choice.actor, choice.destination, 'ghost');
     }
 
     function attackAim(target, event) {
@@ -1231,7 +1273,6 @@
         return {
             from: !view.turn.ranged || forceMelee ? attackOrigin(positions, activeStack(), aim) : null,
             forceMelee,
-            preview: forceMelee ? options.melee_preview : options.preview,
         };
     }
 
@@ -1243,30 +1284,15 @@
         const options = view.turn?.targets.find(entry => entry.id === id);
         if (!options) return;
         const choice = attackChoice(options, aim, shift);
-        const output = $('attack-preview');
         if (!choice) {
             stackEls[id]?.classList.add('unreachable-target');
-            output.textContent = 'Немає досяжної позиції для ближньої атаки.';
-            output.hidden = false;
             return;
         }
         footprint(target.x, target.y, target.w, target.h).forEach(cell => cell.classList.add('hit'));
-        let moveCost = 0;
         if (choice.from) {
-            moveCost = drawApproach(activeStack(), choice.from, 'from');
+            drawApproach(activeStack(), choice.from, 'from');
             stackEls[id]?.classList.add('melee-target');
         }
-        const preview = choice.preview;
-        if (!preview) return;
-        const modifier = new Intl.NumberFormat('uk-UA', {maximumFractionDigits: 3});
-        const roll = preview.roll_scale > 1 ? ` · ${preview.roll_count} кидків × ${modifier.format(preview.roll_scale)}` : '';
-        output.textContent = `Шкода загону ${preview.final_dmg_min}–${preview.final_dmg_max} (оцінка ${preview.average_damage}) · `
-            + `За істоту ${preview.unit_dmg_min}–${preview.unit_dmg_max} · Орієнтовні втрати до ${preview.estimated_kills}${roll}`
-            + (moveCost ? ` · Рух ${moveCost} / ${view.turn.move_points} очок` : '')
-            + (preview.is_double_shot ? ' · Подвійний постріл' : '')
-            + (preview.will_counterattack ? ' · Можлива контратака' : '')
-            + (preview.can_shoot && options.melee_preview ? ' · Shift для ближньої атаки' : '');
-        output.hidden = false;
     }
 
     function onStackHover(id, event) {
@@ -1604,6 +1630,7 @@
         if (k === 'd' && !el.btnDefend.disabled) send({ type: 'defend' });
     });
     window.addEventListener('resize', layout);
+    window.visualViewport?.addEventListener('resize', layout);
     new ResizeObserver(layout).observe(el.wrap);
 
     // ---------- Синхронізація ----------

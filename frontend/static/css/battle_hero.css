@@ -1,9 +1,10 @@
-.battle-stage { position: relative; perspective: 1000px; }
+.battle-stage { position: relative; display: grid; place-items: center; perspective: 1000px; }
 #field-heroes { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 #field-heroes[hidden], #spell-target-controls[hidden] { display: none; }
 .field-hero {
     position: absolute;
-    bottom: 12%;
+    top: 50%;
+    transform: translateY(calc(var(--hero-height, 94px) / -2));
     inset-inline-start: 0;
     width: var(--hero-gutter, 3rem);
     display: grid;
@@ -19,7 +20,7 @@
     width: 100%;
     height: var(--hero-height, 94px);
     object-fit: contain;
-    object-position: center bottom;
+    object-position: center;
     filter: drop-shadow(0 3px 3px #14150ecc);
 }
 .field-hero[data-side="1"] .field-hero-sprite { scale: -1 1; }

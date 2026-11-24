@@ -19,7 +19,7 @@ ATB_SCALE = 100_000 # період загону = ATB_SCALE // ініціати�
 def compact_stack_snapshot(data):
     if not data["summoned"]:
         del data["summoned"]
-    for key in ("initial_count", "luck", "morale"):
+    for key in ("initial_count", "luck", "morale", "energy", "max_energy"):
         if data[key] is None:
             del data[key]
     for key in ("luck_streak", "morale_streak"):
@@ -50,6 +50,8 @@ class Stack:
     morale: float | None = None
     luck_streak: int = 1
     morale_streak: int = 1
+    energy: int | None = None
+    max_energy: int | None = None
 
     def cells(self) -> List[Tuple[int, int]]:
         return [(self.x + i, self.y + j) for i in range(self.w) for j in range(self.h)]
