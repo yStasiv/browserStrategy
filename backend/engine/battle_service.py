@@ -13,8 +13,10 @@ from sqlalchemy.orm import Session
 from .. import models
 from ..services.activity_guilds import HUNTERS, award_point
 from ..services import castle_buildings
-from ..services.guild_experience import hero_xp_threshold
-from ..services.hero_equipment import wear_battle_equipment
+from ..config import LEGACY_BALANCES
+from ..services.guild_experience import hero_level_reward, hero_xp_threshold
+from ..services.hero_equipment import lock_hero, wear_battle_equipment
+from ..services.resource_balances import resource_definitions, resource_owners
 from ..services.rewards import issue_system_resources
 from .battle_damage import attributed_events, damage_summary
 from .battle_experience import earned_experience
@@ -119,8 +121,9 @@ def _settle(db: Session, battle_id: int, state: BattleState) -> None:
     for p in parts:
         equipped_ids = {item_id for hero in initial.heroes.values() if hero.owner == p.side
                         for item_id in hero.equipment_ids}
+        hero = db.get(models.User, p.user_id)
         if equipped_ids:
-            wear_battle_equipment(db, db.get(models.User, p.user_id), equipped_ids)
+            wear_battle_equipment(db, hero, equipped_ids)
         if battle.mode != "pve":
             continue
         xp = earned_experience(initial, state, p.side)
@@ -129,14 +132,39 @@ def _settle(db: Session, battle_id: int, state: BattleState) -> None:
         entries = [{"type": "experience", "amount": xp}]
         if rewarded_hunt:
             entries.append({"type": "hunters", "amount": 1})
-        issue_system_resources(db, p.user_id, "battle_v1", str(battle_id),
-                               gold=gold, wood=0, stone=0, experience=xp, reward_entries=entries)
+        level_resources = {}
         if xp > 0:
-            hero = db.get(models.User, p.user_id, populate_existing=True)
-            threshold = hero_xp_threshold(hero.level)
-            if threshold is not None and hero.experience >= threshold:
+            if not equipped_ids:
+                lock_hero(db, hero)
+            final_experience = hero.experience + xp
+            while (threshold := hero_xp_threshold(hero.level)) is not None and final_experience >= threshold:
                 hero.level += 1
                 hero.pending_attribute_points = (hero.pending_attribute_points or 0) + 1
+                entries.append({"type": "hero_level", "amount": hero.level})
+                for resource, amount in hero_level_reward(hero.level).items():
+                    level_resources[resource] = level_resources.get(resource, 0) + amount
+        extra_resources = level_resources.keys() - LEGACY_BALANCES
+        if extra_resources:
+            definitions = resource_definitions()
+            owners = resource_owners(db, hero, extra_resources)
+            for order, (resource, definition) in enumerate(definitions.items(), start=32):
+                if resource not in extra_resources or not (amount := level_resources[resource]):
+                    continue
+                if resource in owners:
+                    balance, _ = owners[resource]
+                    balance.quantity += amount
+                else:
+                    db.add(models.PlayerResourceBalance(player_id=hero.id, resource_id=resource, quantity=amount))
+                entries.append({
+                    "type": resource, "amount": amount, "label": definition["name"],
+                    "icon": definition.get("icon"), "order": order,
+                })
+        issue_system_resources(
+            db, p.user_id, "battle_v1", str(battle_id),
+            gold=gold + level_resources.get("gold", 0),
+            wood=level_resources.get("singing_resin", 0), stone=level_resources.get("basalt_bone", 0),
+            experience=xp, reward_entries=entries,
+        )
         if rewarded_hunt:
             award_point(db, p.user_id, HUNTERS)
 

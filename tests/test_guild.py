@@ -394,7 +394,7 @@ def test_castle_sliders_save_the_army_used_by_battle(sessions):
 def test_hunts_and_faction_recruitment(sessions, monkeypatch):
     from backend.engine import battle_service
     from backend.engine.battle_models import ArmySlot, Battle
-    from backend.models import CastleBuilding
+    from backend.models import CastleBuilding, PlayerResourceBalance
     from backend.routers.castle import army_options
     from backend.services import world
 
@@ -402,6 +402,7 @@ def test_hunts_and_faction_recruitment(sessions, monkeypatch):
         player = db.get(User, 10)
         player.level, player.fraction = 4, "elfe"
         player.experience, player.pending_attribute_points = 28_000, 1
+        db.add(PlayerResourceBalance(player_id=10, resource_id="astralit", quantity=2))
         assert "knight" not in {unit["key"] for unit in army_options(db, player)}
         db.add(CastleBuilding(player_id=10, building_id="knight_stables"))
         db.flush()
@@ -446,11 +447,28 @@ def test_hunts_and_faction_recruitment(sessions, monkeypatch):
         assert any(entry["type"] == "hunters" and entry["amount"] == 1
                    for entry in battle["result"]["sides"][0]["participants"][0]["rewards"])
         db.refresh(player)
-        assert 132 <= player.gold <= 398
-        assert player.level == 5 and player.pending_attribute_points == 2
+        from backend.services.guild_experience import hero_level_reward
+
+        level_gold = sum(hero_level_reward(level).get("gold", 0) for level in range(5, 9))
+        assert 132 <= player.gold - level_gold <= 398
+        assert player.level == 8 and player.pending_attribute_points == 5
+        level_rewards = [
+            entry["amount"] for entry in battle["result"]["sides"][0]["participants"][0]["rewards"]
+            if entry["type"] == "hero_level" and entry["label"] == "Новий рівень героя"
+        ]
+        assert level_rewards == [5, 6, 7, 8]
+        assert player.singing_resin == player.basalt_bone == 4
+        rewards = {entry["type"]: entry["amount"]
+                   for entry in battle["result"]["sides"][0]["participants"][0]["rewards"]}
+        for resource in ("whisper_dust", "pulse_spark", "brand_salt", "astralit"):
+            balance = db.get(PlayerResourceBalance, (player.id, resource))
+            awarded = sum(hero_level_reward(level).get(resource, 0) for level in range(5, 9))
+            assert balance.quantity == awarded + (2 if resource == "astralit" else 0)
+            assert rewards[resource] == awarded
         before = player.gold
         replay = battle_service.battle_events(db, player, battle["id"], finished_only=True)
         assert replay["initial_state"]["hunt_key"] == "goblin"
+        assert replay["result"] == battle["result"]
         assert player.gold == before
         assert activity_guilds.progress(db, player.id, activity_guilds.HUNTERS)["xp"] == 1
         player.level = 2
@@ -830,6 +848,7 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     with sessions() as db:
         assert db.get(User, 10).gold == 75 and db.get(Item, 103) is None
         assert activity_guilds.workshop_progress(db, 10)["forge"]["xp"] == Decimal("0.3")
+        assert activity_guilds.progress(db, 10, activity_guilds.METALWORKERS)["xp"] == Decimal("0.4")
 
     with sessions.begin() as db:
         db.get(ActivityGuildProgress, (10, activity_guilds.METALWORKERS)).points = 260
@@ -847,6 +866,14 @@ def test_work_and_metalworking_award_points_for_successful_actions(sessions, mon
     assert call("POST", unlock, {"workshop": "enchanting"})[0] == 303
     with sessions() as db:
         assert set(activity_guilds.workshop_progress(db, 10)) == set(activity_guilds.WORKSHOPS)
+    with sessions.begin() as db:
+        workers = db.get(ActivityGuildProgress, (10, activity_guilds.WORKERS))
+        workers.points = 450
+        db.flush()
+        assert activity_guilds.progress(db, 10, activity_guilds.WORKERS)["level"] == 1
+        activity_guilds.award_point(db, 10, activity_guilds.WORKERS)
+        progress = activity_guilds.progress(db, 10, activity_guilds.WORKERS)
+        assert (progress["level"], progress["xp"]) == (4, 1)
     assert [activity_guilds.repair_percent(level) for level in range(11)] == [5, *range(10, 100, 10), 95]
 
 
@@ -1116,7 +1143,10 @@ def test_hero_experience_thresholds_configurable(tmp_path, monkeypatch):
     from backend.services import guild_experience
 
     config = json.loads(guild_experience.TABLE_FILE.read_text(encoding="utf-8"))
-    config["hero"] = {"1": 500, "2": 1200}
+    config["hero_leveling"] = {
+        "2": {"exp": 500, "rewards": {"gold": 55, "singing_resin": 1}},
+        "3": {"exp": 1200, "rewards": {}},
+    }
     path = tmp_path / "experience_tables.json"
     path.write_text(json.dumps(config), encoding="utf-8")
     monkeypatch.setattr(guild_experience, "TABLE_FILE", path)
@@ -1125,5 +1155,7 @@ def test_hero_experience_thresholds_configurable(tmp_path, monkeypatch):
         assert player.PlayerHelper.experience_needed_for_next_level(1) == 500
         assert player.PlayerHelper.experience_needed_for_next_level(2) == 1200
         assert player.PlayerHelper.experience_needed_for_next_level(3) is None
+        assert guild_experience.hero_level_reward(1) == {}
+        assert guild_experience.hero_level_reward(2) == {"gold": 55, "singing_resin": 1}
     finally:
         guild_experience.tables.cache_clear()

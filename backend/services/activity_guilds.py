@@ -49,8 +49,16 @@ def award_point(db, player_id, guild, points=1):
         )
     row = db.get(ActivityGuildProgress, (player_id, guild), populate_existing=True)
     level = row.level if row.level is not None else starting_level
-    if level != max_level and row.points >= spent_points(guild, level) + xp_threshold(level, guild):
-        row.level = level + 1
+    remaining = row.points - spent_points(guild, level)
+    initial_level = level
+    while level != max_level:
+        threshold = xp_threshold(level, guild)
+        if remaining < threshold:
+            break
+        remaining -= threshold
+        level += 1
+    if level != initial_level:
+        row.level = level
         db.flush([row])
 
 

@@ -13,15 +13,17 @@
 
                     Карта
                 </a>
-                <a href="/castle" class="nav-link nav-castle"{% if request.url.path == "/castle" %} aria-current="page"{% endif %}>
-
-                    Замок
+                <div class="nav-castle">
+                    <a href="/castle" class="nav-link"{% if request.url.path == "/castle" %} aria-current="page"{% endif %}>Замок</a>
                     {% if request.state.header_repair_seconds is defined %}
-                    <img class="nav-repair-badge" data-repair-seconds="{{ request.state.header_repair_seconds }}"
-                         src="{{ url_for('static', path='images/guild_icons/guild_metallurgists.png') }}"
-                         alt="Ремонт завершено" title="Ремонт завершено"{% if request.state.header_repair_seconds %} hidden{% endif %}>
+                    <a href="/castle/metalworking" class="nav-repair-badge"
+                       data-repair-seconds="{{ request.state.header_repair_seconds }}"
+                       title="Ремонт завершено · До кузні"{% if request.state.header_repair_seconds %} hidden{% endif %}>
+                        <img src="{{ url_for('static', path='images/guild_icons/guild_metallurgists.png') }}"
+                             alt="Ремонт завершено · До кузні">
+                    </a>
                     {% endif %}
-                </a>
+                </div>
                 <a href="/rating" class="nav-link"{% if request.url.path == "/rating" %} aria-current="page"{% endif %}>
 
                     Рейтинг

@@ -1,12 +1,83 @@
 {
-  "hero": {
-    "1": 1000,
-    "2": 3000,
-    "3": 6000,
-    "4": 10000,
-    "5": 15000,
-    "6": 21000,
-    "7": 28000
+  "hero_leveling": {
+    "2": {
+      "exp": 1000,
+      "rewards": {
+        "gold": 200,
+        "singing_resin": 1,
+        "basalt_bone": 1,
+        "whisper_dust": 1,
+        "pulse_spark": 1,
+        "brand_salt": 1
+      }
+    },
+    "3": {
+      "exp": 3000,
+      "rewards": {
+        "gold": 300,
+        "singing_resin": 1,
+        "basalt_bone": 1,
+        "whisper_dust": 1,
+        "pulse_spark": 1,
+        "brand_salt": 1
+      }
+    },
+    "4": {
+      "exp": 6000,
+      "rewards": {
+        "gold": 400,
+        "singing_resin": 1,
+        "basalt_bone": 1,
+        "whisper_dust": 1,
+        "pulse_spark": 1,
+        "brand_salt": 1
+      }
+    },
+    "5": {
+      "exp": 10000,
+      "rewards": {
+        "gold": 500,
+        "singing_resin": 1,
+        "basalt_bone": 1,
+        "whisper_dust": 1,
+        "pulse_spark": 1,
+        "brand_salt": 1
+      }
+    },
+    "6": {
+      "exp": 15000,
+      "rewards": {
+        "gold": 600,
+        "singing_resin": 1,
+        "basalt_bone": 1,
+        "whisper_dust": 1,
+        "pulse_spark": 1,
+        "brand_salt": 1
+      }
+    },
+    "7": {
+      "exp": 21000,
+      "rewards": {
+        "gold": 700,
+        "singing_resin": 1,
+        "basalt_bone": 1,
+        "whisper_dust": 1,
+        "pulse_spark": 1,
+        "brand_salt": 1
+      }
+    },
+    "8": {
+      "exp": 28000,
+      "rewards": {
+        "gold": 800,
+        "singing_resin": 1,
+        "basalt_bone": 1,
+        "whisper_dust": 1,
+        "pulse_spark": 1,
+        "brand_salt": 1,
+        "astralit": 1
+      }
+    }
   },
   "default": {
     "0": 100,
