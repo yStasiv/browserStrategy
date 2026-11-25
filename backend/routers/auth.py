@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from backend.auth import playable_users
 from backend.engine.data import faction_key
-from backend.routers.char_tasks import TaskHelper
 from backend.services.castle_buildings import grant_starter_buildings
 
 from .. import database, models
@@ -174,14 +173,6 @@ class AuthRotes:
                 user_id=new_user.id, unit_type_id=unit_type.id, quantity=0
             )
             db.add(user_unit)
-
-        # Автоматично додаємо перше завдання користувачу
-        first_task = db.query(models.Task).filter(models.Task.id == 1).first()
-        if first_task:
-            user_task = models.UserTask(
-                user_id=new_user.id, task_id=first_task.id, is_completed=False
-            )
-            db.add(user_task)
 
         db.commit()
 

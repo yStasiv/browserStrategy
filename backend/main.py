@@ -19,7 +19,7 @@ from backend.services.character_profile import resources as character_resources
 from backend.websockets import manager
 from backend.engine import battle_api, battle_service
 
-from .routers import (admin, adventure_guild, auth, castle, char_tasks,
+from .routers import (admin, adventure_guild, auth, castle,
                       enterprise, help, inventory, map, shop, player, presence,
                       item, rating)
 from .routers.battles import battle
@@ -52,8 +52,6 @@ app.include_router(player.router)
 logger.info("Player router registered")
 app.include_router(castle.router)
 logger.info("Castle router registered")
-app.include_router(char_tasks.router)
-logger.info("Char tasks router registered")
 app.include_router(enterprise.router)
 logger.info("Enterprise router registered")
 app.include_router(map.router)
@@ -81,14 +79,16 @@ app.include_router(presence.router)
 @app.middleware("http")
 async def resume_active_battle(request: Request, call_next):
     path = request.url.path
-    page_request = request.method == "GET" and not path.startswith(("/static/", "/avatars/", "/api/"))
+    page_request = request.method == "GET" and not path.startswith(("/static/", "/avatars/", "/api/", "/admin/api/"))
     if page_request and request.cookies.get("session_id"):
         with database.SessionLocal() as session:
             player = session_player(request, session)
             if player:
                 navigation = (request.headers.get("sec-fetch-mode") == "navigate"
                               or "text/html" in request.headers.get("accept", ""))
-                if (navigation and (path != "/battle" or "replay" in request.query_params)
+                admin_view = path == "/admin/stats" or (
+                    path == "/battle" and "admin_replay" in request.query_params)
+                if (navigation and not admin_view and (path != "/battle" or "replay" in request.query_params)
                         and battle_service.get_active_battle_id(session, player.id) is not None):
                     return RedirectResponse("/battle", status_code=303, headers={"Cache-Control": "no-store"})
                 request.state.header_player = player

@@ -16,6 +16,7 @@ from backend.engine.battle_models import ArmySlot, Battle, BattleParticipant
 from backend.engine.events import reconstruct
 from backend.engine.flow import play_turn
 from backend.engine.setup import FieldRules
+from backend.routers import admin
 from backend.models import EquippedItems, Item, RewardTransaction, User
 from backend.config import SYSTEM_PLAYER_ID
 from test_guild import asgi_request
@@ -29,7 +30,7 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     with sessions.begin() as db:
         db.add_all([
             User(id=10, username="fighter", level=4, gold=100, experience=0, physical_defense=2, session_id="fighter-token"),
-            User(id=11, username="outsider", session_id="outsider-token"),
+            User(id=11, username="outsider", session_id="outsider-token", is_admin=True),
         ])
         db.flush()
         db.add_all([
@@ -47,6 +48,7 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
 
     app = FastAPI()
     app.include_router(battle_api.router)
+    app.include_router(admin.router)
 
     def get_db():
         with sessions() as db:
@@ -64,6 +66,8 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     assert status == 200
     root = f"/{battle['id']}"
     assert call("GET", root + "/replay")[0] == 409
+    admin_replay_path = f"/admin/api/stats/replay/{battle['id']}"
+    assert asyncio.run(asgi_request(app, "GET", admin_replay_path, "session_id=outsider-token"))[0] == 409
     assert call("GET", root + "/events", token="outsider-token")[0] == 403
     assert battle["status"] == "deployment"
     obstacles = battle["state"]["obstacles"]
@@ -170,6 +174,11 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
         assert record.rewarded
     status, replay = call("GET", root + "/replay")
     assert status == 200
+    assert call("GET", root + "/replay", token="outsider-token")[0] == 403
+    assert asyncio.run(asgi_request(app, "GET", admin_replay_path, "session_id=fighter-token"))[0] == 403
+    status, admin_payload = asyncio.run(asgi_request(app, "GET", admin_replay_path, "session_id=outsider-token"))
+    assert status == 200
+    assert json.loads(admin_payload)["events"] == replay["events"]
     assert replay["schema_version"] == 1
     assert replay["reward"] == battle["reward"]
     assert replay["result"] == battle["result"]

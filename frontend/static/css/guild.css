@@ -82,5 +82,4 @@
 .guild-board button:disabled { opacity: 0.57; cursor: default; }
 .guild-board button:focus-visible, .guild-board a:focus-visible { outline: 2px solid white; outline-offset: 3px; }
 .guild-board a { color: #f1cf8e; }
-.guild-legacy { display: inline-block; margin-top: 1rem; }
 #guild-feedback { min-height: 1.5em; }

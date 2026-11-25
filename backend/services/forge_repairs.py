@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy import update
 
 from backend.engine.data import CONTENT
+from backend.services.gameplay_events import record
 from backend.models import Item, RepairJob, RewardTransaction
 from backend.services import activity_guilds as guilds
 from backend.services.hero_equipment import change_equipment, equipment_ids, lock_hero
@@ -56,12 +57,15 @@ def start(db, player, item, workshop, level, gold, now, confirmed):
         change_equipment(db, player, item_id=item.id, remove=True)
     item.initial_max_durability = item.initial_max_durability or item.max_durability
     player.gold -= gold
+    succeeded = secrets.randbelow(100) < plan["chance"]
     db.add(RepairJob(
         player_id=player.id, item_id=item.id, token=uuid4().hex, workshop=workshop,
         ready_at=now + timedelta(minutes=plan["minutes"]), gold=gold,
         restored=max(1, item.max_durability * plan["percent"] // 100),
-        succeeded=secrets.randbelow(100) < plan["chance"],
+        succeeded=succeeded,
     ))
+
+    record(db, "repair_started", occurred_at=now, gold=gold, succeeded=succeeded)
 
 
 def repaired_durability(job, item):
@@ -82,9 +86,14 @@ def claim(db, player, token, now):
     db.delete(job)
     db.flush([job])
     if job.succeeded:
+        previous = item.durability
         item.durability, item.max_durability = repaired_durability(job, item)
+        if previous > 0 and item.durability == 0:
+            record(db, "item_broken", occurred_at=now)
     else:
-        player.gold += job.gold // 2
+        refund = job.gold // 2
+        player.gold += refund
+        record(db, "repair_refund", occurred_at=now, gold=refund)
         db.execute(update(RewardTransaction).where(RewardTransaction.item_id == item.id).values(item_id=None))
         db.delete(item)
 

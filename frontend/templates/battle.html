@@ -15,7 +15,7 @@
 <div class="battle-page">
     <header class="battle-heading">
         <h1>Бій</h1>
-        <a id="battle-return" href="/player" class="btn alt">До персонажа</a>
+        <a id="battle-return" href="{{ '/admin/stats' if admin_replay else '/player' }}" class="btn alt">{{ 'До статистики' if admin_replay else 'До персонажа' }}</a>
     </header>
 
     <!-- Вибір бою -->
@@ -143,6 +143,7 @@
 <script>
     // ---------- Конфіг ----------
     const API = '/api/battles';
+    const adminReplay = {{ admin_replay | default(false) | tojson }};
     // Відображення істот. Назви/емодзі лише для клієнта; правила, цифри й розміри живуть на сервері.
     const UNIT_VIEW = Object.create(null);
     const SCENARIOS = [
@@ -188,6 +189,7 @@
     const trackedBattleKey = 'battle-in-view';
 
     function trackBattle(id) {
+        if (adminReplay) return;
         try {
             if (id == null) battleStorage?.removeItem(trackedBattleKey);
             else battleStorage?.setItem(trackedBattleKey, String(id));
@@ -204,7 +206,7 @@
         onContinue: id => {
             if (view?.id !== id) return;
             trackBattle(null);
-            location.assign('/player');
+            location.assign(adminReplay ? '/admin/stats' : '/player');
         },
         fallbackFocus: () => replay ? $('replay-play') : $('battle-return'),
         unitName: key => uv(key).name,
@@ -214,11 +216,11 @@
     });
 
     // ---------- API ----------
-    async function api(path, method = 'GET', body = null) {
+    async function api(path, method = 'GET', body = null, prefix = API) {
         const headers = { 'Content-Type': 'application/json' };
         const token = localStorage.getItem('authToken');
         if (token) headers['Authorization'] = 'Bearer ' + token;
-        const res = await fetch(API + path, {
+        const res = await fetch(prefix + path, {
             method, headers, credentials: 'same-origin',
             body: body ? JSON.stringify(body) : undefined,
         });
@@ -1758,7 +1760,9 @@
     async function openReplay(id, {autoplay = false} = {}) {
         const requestId = ++replayRequest;
         try {
-            const data = await api('/' + id + '/replay');
+            const data = adminReplay
+                ? await api('/' + id, 'GET', null, '/admin/api/stats/replay')
+                : await api('/' + id + '/replay');
             if (requestId !== replayRequest || String(data.battle_id) !== String(id)) return false;
             if (data.schema_version !== 1) throw new Error('Ця версія повтору не підтримується.');
             replay = data;
@@ -1796,7 +1800,8 @@
         pauseReplay();
         replay = null;
         $('replay-controls').classList.add('hidden');
-        showMenu();
+        if (adminReplay) location.assign('/admin/stats');
+        else showMenu();
     });
 
     window.addEventListener('pageshow', event => {
@@ -1807,8 +1812,12 @@
         buildMenu();
         const replayId = new URLSearchParams(location.search).get('replay');
         if (/^\d+$/.test(replayId || '')) {
-            showMenu();
+            if (!adminReplay) showMenu();
             await openReplay(replayId);
+            return;
+        }
+        if (adminReplay) {
+            location.replace('/admin/stats');
             return;
         }
         try {

@@ -216,7 +216,10 @@ def test_purchase_endpoint_and_guild_auth(sessions):
     assert "Системний персонаж" in profile.decode()
     status, page = call("GET", "/guild")
     assert status == 200
-    assert 'id="guild-quests"' in page.decode()
+    assert b'id="guild-quests"' in page
+    assert b"/char_tasks" not in page and b"/guild/scenarios" not in page
+    assert call("GET", "/guild/scenarios")[0] == 404
+    assert call("POST", "/guild/accept-task/1")[0] == 404
     assert call("POST", "/api/guild/initialize")[0] == 200
     assert call("POST", "/api/guild/initialize")[0] == 200
     purchase = "/enterprise/1/buy-resources"
