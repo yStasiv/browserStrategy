@@ -516,21 +516,21 @@
         ];
         const hp = (stack.count - 1) * unit.hp + stack.top_hp;
         const attributes = [
-            ['Істоти', `${stack.count} / ${initial}`, '👥'],
-            ['Загальне здоров’я', hp, '♥'],
-            ['HP пораненої істоти', stack.top_hp, '♥'],
-            ['HP однієї істоти', unit.hp, '♥'],
+            ['Істоти', `${stack.count} / ${initial}`, 'unit_count.png'],
+            ['Загальне здоров’я', hp, 'hp.png'],
+            ['HP пораненої істоти', stack.top_hp, 'hp.png'],
+            ['HP однієї істоти', unit.hp, 'hp.png'],
             ['Атака', unit.attack, 'attack.png'],
             ['Захист', unit.defense, 'defense.png'],
-            ['Постріли', `${stack.shots_left} / ${unit.shots}`, '🏹'],
-            ['Дальність подвійного пострілу', unit.shots ? unit.shooting_range : '—', '🎯'],
+            ['Постріли', `${stack.shots_left} / ${unit.shots}`, 'shots.png'],
+            ['Дальність подвійного пострілу', unit.shots ? unit.shooting_range : '—', 'shooting_range.png'],
             ['Шкода', `${unit.dmg_min}–${unit.dmg_max}`, 'attack.png'],
-            ['Швидкість', unit.speed, '➜'],
+            ['Швидкість', unit.speed, 'speed.png'],
             ['Ініціатива', unit.initiative, 'initiative.png'],
             ['Удача й шанс', chance(luck, stack.luck_streak), luck < 0 ? 'negative_luck.png' : 'luck.png'],
             ['Мораль і шанс', chance(morale, stack.morale_streak), morale < 0 ? 'negative_morale.png' : 'morale.png'],
-            ['Здібності', abilities.join(', ') || '—', '✦'],
-            ['Активні ефекти', effects.join(', ') || '—', '◈'],
+            ['Здібності', abilities.join(', ') || '—', 'abilities.png'],
+            ['Активні ефекти', effects.join(', ') || '—', 'active_effects.png'],
         ];
         $('squad-title').textContent = unit.name;
         const portrait = document.createElement('div');
@@ -540,16 +540,10 @@
         for (const [label, value, icon] of attributes) {
             const term = document.createElement('dt');
             const detail = document.createElement('dd');
-            const isImage = icon.endsWith('.png');
-            const mark = document.createElement(isImage ? 'img' : 'span');
+            const mark = document.createElement('img');
             mark.className = 'squad-stat-icon';
-            if (isImage) {
-                mark.src = '/static/images/hero_stats/' + icon;
-                mark.alt = '';
-            } else {
-                mark.textContent = icon;
-                mark.setAttribute('aria-hidden', 'true');
-            }
+            mark.src = '/static/images/hero_stats/' + icon;
+            mark.alt = '';
             term.append(mark, document.createTextNode(label));
             detail.textContent = value;
             const row = document.createElement('div');

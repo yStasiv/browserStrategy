@@ -4,13 +4,13 @@ import os
 from math import ceil
 
 import uvicorn
-from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, HTTPException, Request, WebSocket
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend import database, utils
-from backend.auth import session_player
+from backend.auth import NicknameResetRequired, session_player
 from backend.config import AVATAR_DIR
 from backend.models import RepairJob
 from backend.services.world import utc_now
@@ -79,15 +79,26 @@ app.include_router(presence.router)
 @app.middleware("http")
 async def resume_active_battle(request: Request, call_next):
     path = request.url.path
-    page_request = request.method == "GET" and not path.startswith(("/static/", "/avatars/", "/api/", "/admin/api/"))
+    page_request = request.method == "GET" and not path.startswith(("/static/", "/avatars/", "/api/", "/admin/api/")) and path != "/choose-nickname"
     if page_request and request.cookies.get("session_id"):
         with database.SessionLocal() as session:
-            player = session_player(request, session)
+            try:
+                player = session_player(request, session)
+            except NicknameResetRequired:
+                if path not in ("/", "/login"):
+                    return RedirectResponse("/choose-nickname", status_code=303, headers={"Cache-Control": "no-store"})
+                player = None
+            except HTTPException as exc:
+                if path not in ("/", "/login"):
+                    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code,
+                                        headers={"Cache-Control": "no-store"})
+                player = None
             if player:
                 navigation = (request.headers.get("sec-fetch-mode") == "navigate"
                               or "text/html" in request.headers.get("accept", ""))
                 admin_view = path == "/admin/stats" or (
-                    path == "/battle" and "admin_replay" in request.query_params)
+                    path == "/battle" and "admin_replay" in request.query_params) or (
+                    (player.is_admin or player.is_moderator) and path in ("/player_info", "/player_info/transfers"))
                 if (navigation and not admin_view and (path != "/battle" or "replay" in request.query_params)
                         and battle_service.get_active_battle_id(session, player.id) is not None):
                     return RedirectResponse("/battle", status_code=303, headers={"Cache-Control": "no-store"})
@@ -105,24 +116,16 @@ async def resume_active_battle(request: Request, call_next):
 
 @app.on_event("startup")
 async def startup_event():
-    # Підключення до бази даних
-    db = database.SessionLocal()
-    try:
-        # Виклик методу під час запуску
-        auth.AuthHelper.add_unit_types(db)
-        logger.info("Unit types added successfully.")
-        # Запускаємо фоновий процес перевірки працівників
-        asyncio.create_task(check_workers())
-    except Exception as e:
-        logger.error(f"An error occurred while adding unit types: {e}")
-    finally:
-        db.close()
+    asyncio.create_task(check_workers())
 
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
     with database.SessionLocal() as session:
-        player = session_player(websocket, session)
+        try:
+            player = session_player(websocket, session)
+        except HTTPException:
+            player = None
         authorized = player is not None and player.id == user_id
     if not authorized:
         await websocket.close(code=1008)

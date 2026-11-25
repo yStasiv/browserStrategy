@@ -16,11 +16,14 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+    nickname_reset_from = Column(String, unique=True, index=True)
     password = Column(String)
     email = Column(String, unique=True, index=True)
     is_active = Column(Boolean, default=True)
     is_system = Column(Boolean, nullable=False, server_default=false())
     is_admin = Column(Boolean, nullable=False, server_default=false())
+    is_moderator = Column(Boolean, nullable=False, server_default=false())
+    ban_reason = Column(String(500), nullable=True)
     avatar_url = Column(String, nullable=True)  # user img path
     fraction = Column(String, default="Elfe")
     gender = Column(String(6), CheckConstraint("gender IN ('male', 'female')", name="ck_users_gender"),
@@ -235,7 +238,7 @@ class Enemy(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
     level = Column(Integer, default=1)
-    image_url = Column(String, default="../static/images/enemy.svg")
+    image_url = Column(String)
     
     # Основні характеристики
     hp = Column(Integer, default=100)
@@ -444,3 +447,14 @@ class GameplayEvent(Base):
     occurred_at = Column(DateTime, nullable=False, index=True)
     kind = Column(String(32), nullable=False)
     payload = Column(JSON, nullable=False)
+
+
+class PlayerModerationEvent(Base):
+    __tablename__ = "player_moderation_events"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    actor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String(12), nullable=False)
+    reason = Column(String(500))
+    created_at = Column(DateTime, nullable=False)

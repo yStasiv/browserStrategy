@@ -28,6 +28,7 @@ def init_db():
         and table.name not in {
             "reward_transactions", "player_travel", "player_resource_balances", "activity_guild_progress",
             "castle_buildings", "enterprise_shifts", "enterprise_events", "enterprise_daily_reports", "repair_jobs", "gameplay_events",
+            "player_moderation_events",
         }
     ]
     Base.metadata.create_all(bind=engine, tables=legacy_tables)

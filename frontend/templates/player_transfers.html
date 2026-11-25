@@ -8,9 +8,10 @@
     <section class="hero-panel">
         <h1>Протокол передач · {{ player.username }}</h1>
         <p><a href="/player_info?id={{ player.id }}">До профілю</a></p>
-        <p>Тут відображаються записані системні нагороди. Передачі між гравцями ще недоступні.</p>
-        {% for entry in entries %}
+        <p>Тут відображаються системні нагороди й дії модерації. Передачі між гравцями ще недоступні.</p>
+        {% for _, entry, moderation in entries %}
         <article class="hero-feature">
+            {% if moderation %}<p>{{ moderation }}</p>{% else %}
             <h3>{{ entry.created_at.strftime('%d.%m.%Y %H:%M') }} UTC</h3>
             {% if entry.source == 'battle_v1' %}<p>Бій №{{ entry.source_key }}</p>
             {% elif entry.source == 'guild_quest' %}<p>Нагорода за квест гільдії</p>
@@ -20,6 +21,7 @@
             {% if entry.stone %}Базальтова кістка · {{ entry.stone }} {% endif %}
             {% if entry.item_id %}<a href="/art_info?id={{ entry.item_id }}">Предмет</a>{% endif %}
             {% if not (entry.gold or entry.wood or entry.stone or entry.item_id) %}Ресурси не нараховано.{% endif %}</p>
+            {% endif %}
         </article>
         {% else %}
         <p>Записів поки немає.</p>

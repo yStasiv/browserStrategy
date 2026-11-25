@@ -18,31 +18,30 @@
     <div class="unit-info-overview">
         {{ portrait(unit) }}
         <section class="unit-info-abilities" aria-label="Здібності">
-            <strong>Здібності</strong>
+            <strong><img class="unit-stat-icon" src="/static/images/hero_stats/abilities.png" alt=""> Здібності</strong>
             <p>{% if unit.skills %}{{ unit.skills | join(', ') }}{% elif 'ranged_attack' in unit.abilities %}Дальня атака{% endif %}{% if 'flying' in unit.abilities %}{% if unit.skills or 'ranged_attack' in unit.abilities %}, {% endif %}Політ{% elif not unit.skills and 'ranged_attack' not in unit.abilities %}—{% endif %}</p>
         </section>
     </div>
     {% if unit.form %}<p>Ранг {{ unit.tier }} · Форма {{ unit.form }}/3</p>{% endif %}
     {% if unit.description %}<p>{{ unit.description }}</p>{% endif %}
     <dl class="unit-info-stats">
-        {% for label, value, icon, symbol in (
-            ('Здоров’я (HP)', unit.hp, '', '♥'),
-            ('Атака', unit.attack, 'hero_stats/attack.png', ''),
-            ('Шкода', unit.dmg_min ~ '–' ~ unit.dmg_max, 'hero_stats/attack.png', ''),
-            ('Захист', unit.defense, 'hero_stats/defense.png', ''),
-            ('Ініціатива', unit.initiative, 'hero_stats/initiative.png', ''),
-            ('Удача', unit.luck, 'hero_stats/luck.png', ''),
-            ('Бойовий дух', unit.morale, 'hero_stats/morale.png', ''),
-            ('Кількість пострілів', unit.shots, '', '🏹'),
-            ('Знання', unit.knowledge, 'hero_stats/knowledge.png', ''),
-            ('Очки найму', unit.recruitment_points, '', '👥'),
-            ('Дальність пострілів', unit.shooting_range if unit.shots else '—', '', '🎯'),
-            ('Швидкість переміщення', unit.speed, '', '➜')
+        {% for label, value, icon in (
+            ('Здоров’я (HP)', unit.hp, 'hero_stats/hp.png'),
+            ('Атака', unit.attack, 'hero_stats/attack.png'),
+            ('Шкода', unit.dmg_min ~ '–' ~ unit.dmg_max, 'hero_stats/attack.png'),
+            ('Захист', unit.defense, 'hero_stats/defense.png'),
+            ('Ініціатива', unit.initiative, 'hero_stats/initiative.png'),
+            ('Удача', unit.luck, 'hero_stats/luck.png'),
+            ('Бойовий дух', unit.morale, 'hero_stats/morale.png'),
+            ('Кількість пострілів', unit.shots, 'hero_stats/shots.png'),
+            ('Знання', unit.knowledge, 'hero_stats/knowledge.png'),
+            ('Очки найму', unit.recruitment_points, 'hero_stats/recruitment_points.png'),
+            ('Дальність пострілів', unit.shooting_range if unit.shots else '—', 'hero_stats/shooting_range.png'),
+            ('Швидкість переміщення', unit.speed, 'hero_stats/speed.png')
         ) %}
         <div>
             <dt>
-                {% if icon %}<img class="unit-stat-icon" src="/static/images/{{ icon }}" alt="">
-                {% else %}<span class="unit-stat-icon" aria-hidden="true">{{ symbol }}</span>{% endif %}
+                <img class="unit-stat-icon" src="/static/images/{{ icon }}" alt="">
                 {{ label }}
             </dt>
             <dd>{{ value }}</dd>

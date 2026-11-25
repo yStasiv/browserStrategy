@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 import sqlalchemy as sa
 from alembic import command
 from alembic.config import Config
@@ -76,11 +76,12 @@ def test_migration_preserves_admin_and_assigns_owners(legacy_db):
         assert db.execute(sa.text("PRAGMA foreign_key_check")).all() == []
         assert system.username == SYSTEM_PLAYER_USERNAME
         assert (system.fraction, system.pending_attribute_points, system.stamina) == ("elfe", 1, 0)
+        request = Request({"type": "http", "headers": []})
         with pytest.raises(HTTPException) as missing_password:
-            AuthRotes.login(SYSTEM_PLAYER_USERNAME, "test-password", db)
+            AuthRotes.login(request, SYSTEM_PLAYER_USERNAME, "test-password", db)
         assert missing_password.value.status_code == 401
         set_password(db, "test-password")
-        response = AuthRotes.login(SYSTEM_PLAYER_USERNAME, "test-password", db)
+        response = AuthRotes.login(request, SYSTEM_PLAYER_USERNAME, "test-password", db)
         assert response.status_code == 303
         db.refresh(system)
         system_session = system.session_id

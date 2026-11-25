@@ -7,6 +7,7 @@ from pydantic import BaseModel, StrictInt
 from backend.auth import playable_users, session_player
 from backend import database, models
 from backend.auth import get_current_user
+from backend.services import player_moderation
 from backend.services.character_profile import dashboard, hero_state
 from backend.routers.item import ITEM_TYPES
 from backend.services.guild_experience import hero_xp_threshold
@@ -30,6 +31,7 @@ class PlayerHelper:
 async def player_info(
     id: int, request: Request, db: Session = Depends(database.get_db)
 ):
+    viewer = session_player(request, db)
     player = playable_users(db).filter(models.User.id == id).first()
     if not player:
         raise HTTPException(status_code=404, detail="Персонажа не знайдено.")
@@ -48,6 +50,7 @@ async def player_info(
 
     profile = dashboard(db, player, PlayerHelper.experience_needed_for_next_level(player.level))
     profile["resources"] = [resource for resource in profile["resources"] if not resource["conditional"]]
+    show_account_status = player_moderation.can_view_account_status(viewer)
     return templates.TemplateResponse(
         "payer_info.html",
         {
@@ -56,8 +59,13 @@ async def player_info(
             "profile": profile,
             "item_types": ITEM_TYPES,
             "read_only": True,
-            "nav_player": session_player(request, db),
-            "player_rating": player_rating
+            "nav_player": viewer,
+            "player_rating": player_rating,
+            "show_account_status": show_account_status,
+            "can_moderate": player_moderation.can_moderate(viewer, player),
+            "can_assign_moderator": player_moderation.can_assign_moderator(viewer, player),
+            "moderation_entries": [player_moderation.display_entry(event)
+                                   for event in player_moderation.history(db, player.id)] if show_account_status else [],
         },
     )
 
@@ -153,6 +161,7 @@ def update_hero_army(body: HeroArmyUpdate, request: Request, db: Session = Depen
 
 @router.get("/player_info/transfers")
 def player_transfer_protocol(id: int, request: Request, db: Session = Depends(database.get_db)):
+    viewer = session_player(request, db)
     player = playable_users(db).filter(models.User.id == id).first()
     if player is None:
         raise HTTPException(404, "Персонажа не знайдено.")
@@ -160,7 +169,11 @@ def player_transfer_protocol(id: int, request: Request, db: Session = Depends(da
     entries = db.query(receipt).filter(receipt.recipient_id == player.id).order_by(
         receipt.created_at.desc(), receipt.id.desc(),
     ).all()
+    combined = [(entry.created_at, entry, None) for entry in entries]
+    combined.extend((event.created_at, None, player_moderation.display_entry(event))
+                    for event in player_moderation.history(db, player.id))
+    combined.sort(key=lambda row: row[0], reverse=True)
     return templates.TemplateResponse("player_transfers.html", {
-        "request": request, "player": player, "nav_player": session_player(request, db),
-        "entries": entries,
+        "request": request, "player": player, "nav_player": viewer,
+        "entries": combined,
     })

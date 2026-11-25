@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from .. import database, models
 from ..engine import battle_service
-from ..services import admin_stats, enterprises, world
+from ..services import admin_stats, enterprises, player_moderation, world
 from ..world_models import SectorConnection, WorldSector
 
 router = APIRouter()
@@ -187,3 +187,35 @@ def stats_replay(battle_id: int, response: Response, db: Session = Depends(datab
         return battle_service.battle_events(db, user, battle_id, finished_only=True, spectate=True)
     except battle_service.BattleError as exc:
         raise HTTPException(exc.status_code, str(exc)) from exc
+
+
+@router.post("/admin/player/{player_id}/block")
+def block_player(player_id: int, reason: str = Form(...), db: Session = Depends(database.get_db),
+                 user: models.User = Depends(database.get_current_user)):
+    player_moderation.set_ban(db, user, player_id, reason)
+    db.commit()
+    return RedirectResponse(f"/player_info?id={player_id}", status_code=303)
+
+
+@router.post("/admin/player/{player_id}/unblock")
+def unblock_player(player_id: int, db: Session = Depends(database.get_db),
+                   user: models.User = Depends(database.get_current_user)):
+    player_moderation.set_ban(db, user, player_id, None)
+    db.commit()
+    return RedirectResponse(f"/player_info?id={player_id}", status_code=303)
+
+
+@router.post("/admin/player/{player_id}/moderator")
+def change_moderator(player_id: int, enabled: bool = Form(...), db: Session = Depends(database.get_db),
+                     user: models.User = Depends(world_admin)):
+    player_moderation.set_moderator(db, user, player_id, enabled)
+    db.commit()
+    return RedirectResponse(f"/player_info?id={player_id}", status_code=303)
+
+
+@router.post("/admin/player/{player_id}/reset-nickname")
+def reset_player_nickname(player_id: int, db: Session = Depends(database.get_db),
+                          user: models.User = Depends(database.get_current_user)):
+    player_moderation.reset_nickname(db, user, player_id)
+    db.commit()
+    return RedirectResponse(f"/player_info?id={player_id}", status_code=303)

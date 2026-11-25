@@ -294,7 +294,7 @@ def _players(db, start, now):
     levels = dict(db.execute(select(func.coalesce(User.level, 1), func.count(User.id))
                               .where(User.is_system.is_(False)).group_by(func.coalesce(User.level, 1))).all())
     active = db.scalar(select(func.count(User.id)).where(
-        User.is_system.is_(False), User.is_active.is_(True), *_range(User.last_seen_at, start, now)))
+        User.is_system.is_(False), User.is_active.is_(True), User.ban_reason.is_(None), *_range(User.last_seen_at, start, now)))
     sessions = dict(db.execute(select(Battle.status, func.count(Battle.id)).where(
         Battle.status.in_(("active", "deployment"))).group_by(Battle.status)).all())
     return {"registered": sum(levels.values()), "active": active, "levels": dict(sorted(levels.items())),
