@@ -50,6 +50,10 @@
                 {% if header_resources %}
                 {% include 'character/nav_resources.html' %}
                 {% endif %}
+                <div class="online-players" title="Гравців онлайн">
+                    <img src="{{ url_for('static', path='images/other_game_icons/online_icon.png') }}" alt="Гравців онлайн">
+                    <output id="online-players">—</output>
+                </div>
                 <div class="nav-item logout">
                     <form action="/logout" method="post">
                         <button type="submit" class="nav-btn logout-btn">
@@ -79,5 +83,23 @@
     // Оновлюємо годинник кожну секунду
     updateClock();
     setInterval(updateClock, 1000);
+
+    async function refreshOnlinePlayers() {
+        const output = document.getElementById('online-players');
+        try {
+            const response = await fetch('/api/presence', {method: 'POST'});
+            if (!response.ok) throw new Error('Presence unavailable');
+            const data = await response.json();
+            output.textContent = data.online;
+        } catch {
+            output.textContent = '—';
+        }
+    }
+
+    refreshOnlinePlayers();
+    setInterval(refreshOnlinePlayers, 30_000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshOnlinePlayers();
+    });
     </script>
     {% endif %}

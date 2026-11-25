@@ -20,7 +20,7 @@ from backend.websockets import manager
 from backend.engine import battle_api, battle_service
 
 from .routers import (admin, adventure_guild, auth, castle, char_tasks,
-                      enterprise, help, inventory, map, shop, player,
+                      enterprise, help, inventory, map, shop, player, presence,
                       item, rating)
 from .routers.battles import battle
 
@@ -75,6 +75,7 @@ logger.info("Battle router registered")
 app.include_router(rating.router)
 logger.info("Rating router registered")
 app.include_router(battle_api.router)
+app.include_router(presence.router)
 
 # TODO: Run this just one time when app start
 @app.middleware("http")

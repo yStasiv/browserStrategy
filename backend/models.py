@@ -58,6 +58,7 @@ class User(Base):
     singing_resin = Column(Integer, default=0)
     basalt_bone = Column(Integer, default=0)
     session_id = Column(String, unique=True, nullable=True)
+    last_seen_at = Column(DateTime, index=True)
 
     map_sector = Column(String, ForeignKey(WorldSector.key, name="fk_users_map_sector"), nullable=False, default="Castle")  # Сектор карти
     map_x = Column(Integer, default=0)  # Координата X на карті
