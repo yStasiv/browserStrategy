@@ -1,167 +1,60 @@
 {% extends 'base.html' %}
 
 {% block title %}Рейтинг гравців{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+<style>
+.rating-page { max-width: 62rem; }
+.rating-panel { overflow-x: auto; }
+.rating-table { width: 100%; border-collapse: collapse; }
+.rating-table th, .rating-table td {
+    padding: clamp(.38rem, 2vw, .75rem);
+    border-bottom: 1px solid #cfbb98;
+    text-align: start;
+}
+.rating-table th {
+    background: #43563a;
+    color: #fff3d8;
+    font-size: .9rem;
+}
+.rating-table tbody tr:last-child td { border-bottom: 0; }
+.rating-table tbody tr:nth-child(even) { background: #fff2d47a; }
+.rating-table tbody tr[aria-current="true"] { background: #dbe2c7; }
+.rating-table tbody tr:hover { background: #e9d2a3; }
+.rating-table td:nth-child(1), .rating-table td:nth-child(3) { font-variant-numeric: tabular-nums; }
+.rating-table td:nth-child(3) { white-space: nowrap; }
+.rating-table td:nth-child(2) { overflow-wrap: anywhere; }
+.rating-table a { font-weight: 700; }
+.rating-level { white-space: nowrap; color: #6c5339; }
+</style>
+{% endblock %}
 
 {% block body %}
-<div class="navigation-panel">
-    <a href="/player" class="nav-link">Мій персонаж</a>
-    <a href="/map" class="nav-link">Карта</a>
-    <a href="/guild" class="nav-link">Гільдія</a>
-    <a href="/char_tasks" class="nav-link">Завдання</a>
-    <a href="/castle" class="nav-link">Замок</a>
-</div>
-
-<div class="rating-container">
+<main class="hero-dashboard rating-page">
     <h1>Рейтинг гравців</h1>
-    
-    <div class="rating-filters">
-        <button class="filter-btn active" data-filter="rating">За рейтингом</button>
-        <button class="filter-btn" data-filter="level">За рівнем</button>
-        <button class="filter-btn" data-filter="experience">За досвідом</button>
-    </div>
-
-    <div class="rating-table">
-        <table>
+    <div class="hero-panel rating-panel">
+        <table class="rating-table" aria-label="Рейтинг за поточним досвідом">
             <thead>
                 <tr>
-                    <th>Місце</th>
-                    <th>Гравець</th>
-                    <th>Рейтинг</th>
-                    <th>Рівень</th>
-                    <th>Досвід</th>
-                    <th>Перемоги</th>
-                    <th>Поразки</th>
+                    <th scope="col">Місце</th>
+                    <th scope="col">Гравець</th>
+                    <th scope="col" aria-sort="descending">Поточний досвід</th>
+                    <th scope="col">Фракція</th>
                 </tr>
             </thead>
             <tbody>
-                {% for currect_player in players %}
-                <tr class="{% if currect_player.id == player.id %}player{% endif %}">
+                {% for ranked in players %}
+                <tr{% if player and ranked.id == player.id %} aria-current="true"{% endif %}>
                     <td>{{ loop.index }}</td>
-                    <td><a href="/player_info?id={{ currect_player.id }}">{{ currect_player.username }}</a></td>
-                    <td>{{ currect_player.rating.rating }}</td>
-                    <td>{{ currect_player.level }}</td>
-                    <td>{{ currect_player.experience }}</td>
-                    <td>{{ currect_player.rating.wins }}</td>
-                    <td>{{ currect_player.rating.losses }}</td>
+                    <td><a href="/player_info?id={{ ranked.id }}">{{ ranked.username }}</a><span class="rating-level">[{{ ranked.level }}]</span></td>
+                    <td>{{ "{:,}".format(ranked.experience or 0) }}</td>
+                    <td>{{ factions[ranked.id] or '—' }}</td>
                 </tr>
+                {% else %}
+                <tr><td colspan="4">Поки немає гравців.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-</div>
-
-<style>
-.rating-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.rating-filters {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    justify-content: center;
-}
-
-.filter-btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    background: #f8f9fa;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.filter-btn.active {
-    background: #007bff;
-    color: white;
-}
-
-.rating-table {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th, td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-}
-
-th {
-    background: #f8f9fa;
-    font-weight: 600;
-}
-
-.current-user {
-    background: #e3f2fd;
-}
-
-tr:hover {
-    background: #f8f9fa;
-}
-
-@media (max-width: 768px) {
-    .rating-table {
-        overflow-x: auto;
-    }
-    
-    table {
-        min-width: 800px;
-    }
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    const tableBody = document.querySelector('tbody');
-    
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Remove active class from all buttons
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            // Add active class to clicked button
-            this.classList.add('active');
-            
-            const filter = this.dataset.filter;
-            const rows = Array.from(tableBody.querySelectorAll('tr'));
-            
-            // Sort rows based on selected filter
-            rows.sort((a, b) => {
-                const aValue = getValue(a, filter);
-                const bValue = getValue(b, filter);
-                return bValue - aValue;
-            });
-            
-            // Reorder rows in the table
-            rows.forEach((row, index) => {
-                row.querySelector('td:first-child').textContent = index + 1;
-                tableBody.appendChild(row);
-            });
-        });
-    });
-    
-    function getValue(row, filter) {
-        switch(filter) {
-            case 'rating':
-                return parseInt(row.querySelector('td:nth-child(3)').textContent);
-            case 'level':
-                return parseInt(row.querySelector('td:nth-child(4)').textContent);
-            case 'experience':
-                return parseInt(row.querySelector('td:nth-child(5)').textContent);
-            default:
-                return 0;
-        }
-    }
-});
-</script>
-{% endblock %} 
+</main>
+{% endblock %}

@@ -49,7 +49,9 @@ const BattleResult = (() => {
         const groups = sections(result).map(side => {
             const section = element('section', 'battle-result-side');
             section.dataset.side = side.side;
-            section.append(element('h3', '', side.heading + ':'));
+            section.dataset.outcome = result.winner_side == null ? 'draw' :
+                side.side === result.winner_side ? 'victory' : 'defeat';
+            section.append(element('h3', '', side.heading));
             for (const participant of side.participants) {
                 const row = element('div', 'battle-result-participant');
                 row.append(element('p', 'battle-result-name', participant.name));
@@ -57,16 +59,18 @@ const BattleResult = (() => {
                     const rewards = element('ul', 'battle-result-rewards');
                     for (const reward of participant.rewards) {
                         const item = element('li');
+                        const label = element('span');
                         if (reward.icon) {
                             const image = element('img');
                             image.src = reward.icon;
                             image.alt = '';
-                            item.append(image);
+                            label.append(image);
                         }
                         const amount = [reward.value, reward.unit].filter(Boolean).join(' ');
-                        item.append(doc.createTextNode(reward.label + ' · ' + amount));
+                        label.append(doc.createTextNode(reward.label));
+                        item.append(label, element('strong', '', amount));
                         if (reward.description) {
-                            item.append(element('span', 'battle-result-reward-note', ' — ' + reward.description));
+                            item.append(element('span', 'battle-result-reward-note', reward.description));
                         }
                         rewards.append(item);
                     }
@@ -114,6 +118,7 @@ const BattleResult = (() => {
     }
 
     function create(dialog, {storage, onReplay, onContinue, fallbackFocus, unitName = key => key}) {
+        const title = dialog.querySelector('#result-title');
         const content = dialog.querySelector('[data-result-content]');
         const replayButton = dialog.querySelector('[data-result-replay]');
         const feedback = dialog.querySelector('[data-result-feedback]');
@@ -134,13 +139,17 @@ const BattleResult = (() => {
             if (!fromReplay && !reopen && hasShown(key)) return false;
             close();
             current = result;
+            const outcome = result.winner_side == null ? 'draw' :
+                mySide == null ? 'finished' : result.winner_side === mySide ? 'victory' : 'defeat';
+            dialog.dataset.outcome = outcome;
+            title.textContent = {victory: 'Перемога', defeat: 'Поразка', draw: 'Нічия', finished: 'Бій завершено'}[outcome];
             render(content, result, damage, mySide, unitName);
             replayButton.disabled = result.replay_available !== true;
             feedback.hidden = !replayButton.disabled;
             feedback.textContent = replayButton.disabled ? 'Запис повтору недоступний.' : '';
             previousFocus = dialog.ownerDocument.activeElement;
             dialog.showModal();
-            dialog.querySelector('#result-title').focus();
+            title.focus();
             shown.add(key);
             try { storage?.setItem('battle-result:' + key, '1'); } catch { /* storage is optional */ }
             return true;

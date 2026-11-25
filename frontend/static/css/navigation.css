@@ -29,13 +29,18 @@
 .main-nav .nav-container {
     max-width: 72rem;
     margin-inline: auto;
+    display: grid;
+    gap: .4rem;
+    padding: .45rem 1rem;
+}
+.main-nav .nav-controls {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: .4rem .75rem;
-    padding: .45rem 1rem;
 }
+.main-nav .nav-container > .player-resources { justify-content: center; }
 .main-nav .nav-left,
 .main-nav .nav-right,
 .main-nav .player-resources {
@@ -45,7 +50,8 @@
     gap: .4rem;
 }
 .main-nav .nav-link,
-.main-nav .nav-btn {
+.main-nav .nav-btn,
+.main-nav .online-players {
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
@@ -88,6 +94,13 @@
 }
 .main-nav a:focus-visible,
 .main-nav button:focus-visible { outline: 2px solid #415537; outline-offset: 2px; }
+.main-nav .online-players {
+    gap: .35rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.main-nav .online-players img { width: 1rem; height: 1rem; object-fit: contain; }
+.main-nav .online-players output { font-weight: 700; }
 .main-nav .current-time {
     padding: .28rem .5rem;
     border: 1px solid #b68a5280;
@@ -106,9 +119,10 @@
 .main-nav .resource-icon { width: 1.24rem; height: 1.24rem; }
 .main-nav form { margin: 0; }
 @media (max-width: 48rem) {
-    .main-nav .nav-container { justify-content: center; padding-inline: .5rem; }
+    .main-nav .nav-container { padding-inline: .5rem; }
+    .main-nav .nav-controls { justify-content: center; }
     .main-nav .nav-left { width: 100%; justify-content: center; }
-    .main-nav .nav-link, .main-nav .nav-btn { height: 2.35rem; }
+    .main-nav .nav-link, .main-nav .nav-btn, .main-nav .online-players { height: 2.35rem; }
 }
 
 

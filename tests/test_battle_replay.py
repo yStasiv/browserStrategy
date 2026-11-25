@@ -71,20 +71,58 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
     active = call("GET", "/active")[1]
     assert active["id"] == battle["id"] and active["state"]["obstacles"] == obstacles
     assert call("POST", root + "/auto", {"version": battle["version"]})[0] == 409
-    placement = {"version": battle["version"], "stack_id": "s0_0", "x": 1, "y": 1, "split_count": 3}
+    assert battle["deployment"]["remaining"] == 0 and battle["deployment"]["can_begin"]
+    initially_placed = battle["state"]["placed_stack_ids"]
+    assert len(initially_placed) == 3
+    auto_path = root + "/deployment/auto"
+    status, battle = call("POST", auto_path, {"version": battle["version"]})
+    assert status == 200 and not battle["deployment"]["restored_previous"]
+    assert battle["state"]["placed_stack_ids"] == initially_placed
+    placement = {"version": battle["version"], "stack_id": "s0_0", "x": 1, "y": 1}
     assert call("POST", root + "/deployment", dict(placement, x=7))[0] == 400
     assert call("POST", root + "/deployment", dict(placement, stack_id="s1_0"))[0] == 400
-    status, battle = call("POST", root + "/deployment", placement)
+    split_path = root + "/deployment/split"
+    split = {"version": battle["version"], "stack_id": "s0_0", "count": 3}
+    assert call("POST", split_path, dict(split, count=20))[0] == 400
+    status, battle = call("POST", split_path, split)
     assert status == 200
     assert battle["state"]["stacks"]["s0_0"]["count"] == 17
-    assert battle["state"]["stacks"]["s0_3"]["count"] == 3
-    assert battle["state"]["placed_stack_ids"] == ["s0_3"]
+    child = battle["state"]["stacks"]["s0_3"]
+    assert (child["count"], child["x"], child["y"]) == (3, -1, -1)
+    assert battle["state"]["placed_stack_ids"] == initially_placed
     assert "s1_0" in battle["state"]["stacks"]
-    assert call("POST", root + "/deployment", placement)[0] == 409
+    assert battle["deployment"]["remaining"] == 1
+    assert call("POST", split_path, split)[0] == 409
+
+    merge_path = root + "/deployment/merge"
+    merge = {"version": battle["version"], "source_id": "s0_3", "target_id": "s0_0"}
+    for invalid in ("s0_3", "s0_1", "s1_0"):
+        assert call("POST", merge_path, dict(merge, target_id=invalid))[0] == 400
+    original_position = tuple(battle["state"]["stacks"]["s0_0"][key] for key in ("x", "y"))
+    status, battle = call("POST", merge_path, merge)
+    assert status == 200
+    merged = battle["state"]["stacks"]["s0_0"]
+    assert (merged["count"], merged["initial_count"]) == (20, 20)
+    assert (merged["x"], merged["y"]) == original_position
+    assert "s0_3" not in battle["state"]["stacks"]
+    assert battle["deployment"]["remaining"] == 0
+    assert call("POST", merge_path, merge)[0] == 409
+    assert call("GET", "/active")[1]["state"] == battle["state"]
+
+    assert battle["deployment"]["can_begin"]
+    status, battle = call("POST", split_path, dict(split, version=battle["version"]))
+    assert status == 200 and battle["deployment"]["remaining"] == 1
+    assert not battle["deployment"]["can_begin"]
+    assert call("POST", root + "/begin", {"version": battle["version"]})[0] == 409
+    assert call("GET", "/active")[1]["state"]["stacks"]["s0_3"]["x"] == -1
+    status, battle = call("POST", root + "/deployment", dict(placement, version=battle["version"], stack_id="s0_3"))
+    assert status == 200 and battle["deployment"]["can_begin"]
+
     begin_payload = {"version": battle["version"]}
     status, battle = call("POST", root + "/begin", begin_payload)
     assert status == 200
     assert call("POST", root + "/begin", begin_payload)[0] == 409
+    assert call("POST", merge_path, dict(merge, version=battle["version"]))[0] == 409
     baseline = call("GET", root + "/events")[1]
     assert baseline["initial_state"]["stacks"]["s0_3"]["count"] == 3
     assert baseline["initial_state"]["seq"] == 0
@@ -185,6 +223,23 @@ def test_completed_battle_replays_through_api(tmp_path, monkeypatch):
         assert db.get(Item, 201).durability == 0
 
 
+    status, next_battle = call("POST", "/pve", {"scenario": "training"})
+    assert status == 200 and next_battle["deployment"]["can_begin"]
+    assert "s0_3" not in next_battle["state"]["stacks"]
+    status, restored = call("POST", f"/{next_battle['id']}/deployment/auto", {
+        "version": next_battle["version"],
+    })
+    assert status == 200 and restored["deployment"]["restored_previous"]
+    assert restored["status"] == "deployment" and restored["deployment"]["can_begin"]
+
+    def formation(state):
+        return {(stack["unit"], stack["count"], stack["x"], stack["y"])
+                for stack in state["stacks"].values() if stack["owner"] == 0}
+
+    assert formation(restored["state"]) == formation(replay["initial_state"])
+    assert call("GET", "/active")[1]["state"] == restored["state"]
+
+
 def test_draw_result_reads_extensible_ledger_metadata(tmp_path, monkeypatch):
     engine = create_engine(f"sqlite:///{tmp_path / 'draw.db'}")
     monkeypatch.setattr(db_base, "engine", engine)
@@ -253,6 +308,10 @@ def test_legacy_active_battle_replays_from_checkpoint(tmp_path, monkeypatch):
     with sessions() as db:
         player = db.get(User, 10)
         battle = battle_service.start_pve(db, player, "training")
+        archer = battle["state"]["stacks"]["s0_0"]
+        battle = battle_service.update_deployment(
+            db, player, battle["id"], battle["version"], (archer["id"], archer["x"], archer["y"])
+        )
         battle = battle_service.update_deployment(db, player, battle["id"], battle["version"])
         old_state = battle["state"]
         if old_state["seq"] == 0:
@@ -307,7 +366,7 @@ def test_pvp_deployment_hides_other_players_until_start(tmp_path, monkeypatch):
 
     with sessions() as db:
         left, right = db.get(User, 10), db.get(User, 11)
-        placed = battle_service.update_deployment(db, left, battle_id, 0, ("s0_0", 1, 2, None))
+        placed = battle_service.update_deployment(db, left, battle_id, 0, ("s0_0", 1, 2))
         assert set(placed["state"]["stacks"]) == {"s0_0"}
         assert placed["state"]["placed_stack_ids"] == ["s0_0"]
         opponent = battle_service.get_battle_view(db, right, battle_id)
@@ -315,7 +374,13 @@ def test_pvp_deployment_hides_other_players_until_start(tmp_path, monkeypatch):
         assert opponent["state"]["placed_stack_ids"] == []
         assert "initial_ready_at" not in opponent["state"]
 
-        started = battle_service.update_deployment(db, right, battle_id, 1)
+        assert not placed["deployment"]["can_begin"] and not opponent["deployment"]["can_begin"]
+        enemy_stack = opponent["state"]["stacks"]["s1_0"]
+        ready = battle_service.update_deployment(db, right, battle_id, 1, (
+            enemy_stack["id"], enemy_stack["x"], enemy_stack["y"],
+        ))
+        assert ready["deployment"]["can_begin"]
+        started = battle_service.update_deployment(db, right, battle_id, ready["version"])
         assert started["status"] == "active"
         assert set(started["state"]["stacks"]) == {"s0_0", "s1_0"}
         assert started["state"]["stacks"]["s0_0"]["x"] == 1

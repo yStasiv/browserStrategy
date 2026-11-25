@@ -26,7 +26,7 @@
     {% if unit.description %}<p>{{ unit.description }}</p>{% endif %}
     <dl class="unit-info-stats">
         {% for label, value, icon, symbol in (
-            ('Здоров’я (HP)', unit.hp, 'attributes/stamina.png', ''),
+            ('Здоров’я (HP)', unit.hp, '', '♥'),
             ('Атака', unit.attack, 'hero_stats/attack.png', ''),
             ('Шкода', unit.dmg_min ~ '–' ~ unit.dmg_max, 'hero_stats/attack.png', ''),
             ('Захист', unit.defense, 'hero_stats/defense.png', ''),
@@ -37,7 +37,7 @@
             ('Знання', unit.knowledge, 'hero_stats/knowledge.png', ''),
             ('Очки найму', unit.recruitment_points, '', '👥'),
             ('Дальність пострілів', unit.shooting_range if unit.shots else '—', '', '🎯'),
-            ('Швидкість переміщення', unit.speed, 'attributes/agility.png', '')
+            ('Швидкість переміщення', unit.speed, '', '➜')
         ) %}
         <div>
             <dt>

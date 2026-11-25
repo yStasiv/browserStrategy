@@ -123,6 +123,19 @@ test('opens once per confirmed battle, ignores stale results and restores focus'
     assert.equal(fixture(storage).controller.present(12, result()), false);
 });
 
+test('styles victory, defeat and draw from the viewer’s side', () => {
+    const {dialog, controller, nodes} = fixture();
+    for (const [battleId, winner, outcome, title] of [
+        [12, 0, 'victory', 'Перемога'],
+        [13, 1, 'defeat', 'Поразка'],
+        [14, null, 'draw', 'Нічия'],
+    ]) {
+        assert.equal(controller.present(battleId, result(battleId, winner), undefined, 0), true);
+        assert.equal(dialog.dataset.outcome, outcome);
+        assert.equal(nodes['#result-title'].textContent, title);
+    }
+});
+
 test('replays the presented battle and continues independently', async () => {
     const {dialog, controller, nodes, watched, continued} = fixture();
     controller.present(12, result());

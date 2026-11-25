@@ -438,6 +438,11 @@ def test_hunts_and_faction_recruitment(sessions, monkeypatch):
         battle = battle_service.start_hunt(db, player, "goblin")
         assert battle["state"]["hunt_key"] == "goblin"
         assert battle["status"] == "deployment"
+        for stack in battle["state"]["stacks"].values():
+            if stack["owner"] == 0:
+                battle = battle_service.update_deployment(
+                    db, player, battle["id"], battle["version"], (stack["id"], stack["x"], stack["y"])
+                )
         battle = battle_service.update_deployment(db, player, battle["id"], battle["version"])
         for _ in range(100):
             if battle["status"] == "finished":
@@ -1002,9 +1007,20 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert (hero["damage_min"], hero["damage_max"]) == (10, 13)
     assert battle["state"]["summoning"]["0"]["elements"] == ["earth", "water"]
     root = f"/api/battles/{battle['id']}"
-    status, body = call("POST", root + "/begin", payload={"version": battle["version"]})
-    assert status == 200
-    battle = json.loads(body)
+    def begin_with_placed_army(current, battle_root):
+        for stack in current["state"]["stacks"].values():
+            if stack["owner"] != current["my_side"]:
+                continue
+            status, body = call("POST", battle_root + "/deployment", payload={
+                "version": current["version"], "stack_id": stack["id"], "x": stack["x"], "y": stack["y"],
+            })
+            assert status == 200
+            current = json.loads(body)
+        status, body = call("POST", battle_root + "/begin", payload={"version": current["version"]})
+        assert status == 200
+        return json.loads(body)
+
+    battle = begin_with_placed_army(battle, root)
 
     def summon(element, version):
         return call("POST", root + "/actions", payload={"version": version, "action": {
@@ -1071,9 +1087,7 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert set(hunt["state"]["heroes"]) == {"hero_0"}
     assert hunt["state"]["summoning"]["0"]["elements"] == ["earth", "water"]
     hunt_root = f"/api/battles/{hunt['id']}"
-    status, body = call("POST", hunt_root + "/begin", payload={"version": hunt["version"]})
-    assert status == 200
-    hunt = advance_to_hero(json.loads(body), hunt_root)
+    hunt = advance_to_hero(begin_with_placed_army(hunt, hunt_root), hunt_root)
     status, body = call("POST", hunt_root + "/actions", payload={
         "version": hunt["version"], "action": {"type": "summon", "element": "water"},
     })

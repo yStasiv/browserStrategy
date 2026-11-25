@@ -1,17 +1,14 @@
 <dialog id="result" class="battle-result" aria-labelledby="result-title">
     <div class="battle-result-frame">
-        {% for corner in ('top-left', 'top-right', 'bottom-left', 'bottom-right') %}
-        <span class="battle-result-corner {{ corner }}" aria-hidden="true"></span>
-        {% endfor %}
         <header class="battle-result-header">
-            <h2 id="result-title" tabindex="-1">БІЙ ЗАВЕРШЕНО</h2>
+            <h2 id="result-title" tabindex="-1">Бій завершено</h2>
             <form method="dialog">
                 <button class="battle-result-close" type="submit" aria-label="Закрити результат бою" title="Закрити">×</button>
             </form>
         </header>
-        <div class="battle-result-content" data-result-content tabindex="0" role="region" aria-label="Сторони й нагороди"></div>
+        <div class="battle-result-content" data-result-content tabindex="0" role="region" aria-label="Учасники, нагороди й завдана шкода"></div>
         <footer class="battle-result-footer">
-            <button type="button" data-result-replay>Переглянути бій</button>
+            <button type="button" data-result-replay>Переглянути повтор</button>
             <button type="button" data-result-continue>Продовжити</button>
             <p data-result-feedback role="status" hidden></p>
         </footer>

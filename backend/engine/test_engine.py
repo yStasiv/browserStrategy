@@ -18,12 +18,12 @@ def put_adjacent(st):
     return a, b
 
 
-def test_height_adapts_to_army_size():
+def test_field_size_is_independent_of_army_size():
     small = create_battle([("peasant", 5)], [("goblin", 5)], 1, level=4, mode="pve")
-    assert (small.width, small.height) == (12, 5)
+    assert (small.width, small.height) == (12, 10)
     army = [("peasant", 1)] * 7
     big = create_battle(army, [("goblin", 1)], 1, level=4, mode="pve")
-    assert big.height == 7
+    assert big.height == 10
     assert len({(s.x, s.y) for s in big.stacks.values()}) == len(big.stacks)
 
 
@@ -157,11 +157,11 @@ def test_human_turn_stops_ai_loop():
     assert st.status == "active" and st.active().owner == 0
 
 
-def test_low_level_pve_is_8x8_with_5_slots():
+def test_low_level_pve_is_12x10_with_5_slots():
     army = [("peasant", 1)] * 5
     st = create_battle(army, army, 1, level=3, mode="pve")
-    assert (st.width, st.height) == (8, 8)
-    assert {s.x for s in st.stacks.values()} == {0, 7}
+    assert (st.width, st.height) == (12, 10)
+    assert {s.x for s in st.stacks.values()} == {0, 11}
     with pytest.raises(ValueError):
         create_battle([("peasant", 1)] * 6, army, 1, level=3, mode="pve")
 
@@ -169,9 +169,9 @@ def test_low_level_pve_is_8x8_with_5_slots():
 def test_pvp_and_level4_allow_8_slots():
     army = [("peasant", 1)] * 8
     pvp = create_battle(army, army, 1, level=1, mode="pvp")
-    assert (pvp.width, pvp.height) == (12, 8)
+    assert (pvp.width, pvp.height) == (12, 10)
     pve4 = create_battle(army, army, 1, level=4, mode="pve")
-    assert (pve4.width, pve4.height) == (12, 8)
+    assert (pve4.width, pve4.height) == (12, 10)
     with pytest.raises(ValueError):
         create_battle([("peasant", 1)] * 9, army, 1, level=4, mode="pvp")
 
@@ -451,14 +451,14 @@ def test_obstacle_generation_varies_with_seed_and_preserves_clear_deployment(lev
 def test_generated_rocks_change_ground_routes_and_only_block_flight_landings():
     state = two_stacks("swordsman", "dragon", seed=2)
     ground, flyer = state.stacks["s0_0"], state.stacks["s1_0"]
-    assert [3, 2] in state.obstacles
-    ground.x, ground.y = 2, 2
+    assert [3, 1] in state.obstacles
+    ground.x, ground.y = 2, 1
     state.active_id = ground.id
     routes = turn_info(state)["move_paths"]
-    assert "3,2" not in routes
-    assert routes["4,2"] == {"cost": 30, "path": [[2, 2], [3, 1], [4, 2]]}
+    assert "3,1" not in routes
+    assert routes["4,1"] == {"cost": 30, "path": [[2, 1], [3, 0], [4, 1]]}
 
-    ground.x, ground.y, flyer.x, flyer.y = 7, 4, 0, 1
+    ground.x, ground.y, flyer.x, flyer.y = 11, 6, 0, 1
     state.active_id = flyer.id
     routes = turn_info(state)["move_paths"]
     assert "3,1" not in routes
@@ -547,3 +547,13 @@ def test_heal_event_replays_with_luck_and_morale():
     replay_events = action_events(state, after, events)
     assert {"LUCK_ROLLED", "MORALE_ROLLED", "UNIT_HEALED"} <= {e["type"] for e in replay_events}
     assert reconstruct(state.to_dict(), replay_events) == after.to_dict()
+
+
+@pytest.mark.parametrize("hero_sides, height", [([0, 1], 10), ([0, 0, 1], 20), ([0, 1, 1], 20), ([0, 0, 1, 1], 20)])
+def test_battle_height_depends_on_the_largest_hero_team(hero_sides, height):
+    heroes = [HeroTurn(f"hero_{i}", side, f"Герой {i}", 1, 10, 0, 0, 0, 0, 5, 8)
+              for i, side in enumerate(hero_sides)]
+    battle = create_battle([("peasant", 1)], [("dragon", 1)], 45, mode="pvp", heroes=heroes)
+    assert (battle.width, battle.height) == (12, height)
+    assert len(battle.heroes) == len(heroes)
+    assert BattleState.from_dict(battle.to_dict()).height == height

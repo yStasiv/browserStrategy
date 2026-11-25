@@ -8,187 +8,44 @@
     <link rel="stylesheet" href="{{ url_for('static', path='css/battle_result.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/navigation.css') }}">
     <script defer src="{{ url_for('static', path='js/dialog.js') }}"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root { --cell: 56px; }
-        body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
-
-        #board-wrap {
-            min-height: 12rem;
-            padding: clamp(0.5rem, 2vw, 1.4rem);
-            border: 1px solid #51432e;
-            border-radius: 0.8rem;
-            background:
-                radial-gradient(ellipse at 50% 85%, #495335 0%, transparent 62%),
-                linear-gradient(160deg, #293b32, #1d2a25 47%, #171e1b);
-        }
-        #board {
-            position: relative;
-            margin: 0 auto;
-            border: 2px solid #a88c56;
-            border-radius: 0.35rem;
-            overflow: hidden;
-            box-shadow: 0 9px 0 #342b1c, 0 18px 24px #0b110d;
-            transform: rotateX(22deg);
-            transform-origin: center bottom;
-            background:
-                radial-gradient(ellipse at 24% 20%, #7e8750a0, transparent 62%),
-                radial-gradient(ellipse at 78% 72%, #99815888, transparent 66%),
-                repeating-linear-gradient(113deg, #d6c29813 0 1px, transparent 1px 6px),
-                #56613a;
-        }
-        #cells { display: grid; position: relative; }
-        .cell {
-            width: var(--cell); height: var(--cell); box-sizing: border-box;
-            border: 1px solid #ece2b331;
-            background: #242c1510;
-        }
-        .cell.alt { background: #ddd4ad14; }
-        .cell.mv { background: #e0c56680; border-color: #f6e397aa; cursor: pointer; }
-        .cell.mv:hover { background: #f5da8799; outline: 1px solid #fff1b5; outline-offset: -2px; }
-        .cell.obstacle { position: relative; background: #303b37; cursor: default; }
-        .cell.obstacle::after {
-            content: "";
-            position: absolute;
-            inset: 15% 12%;
-            background: linear-gradient(140deg, #b7beb1 12%, #737d75 52%, #4b5550 53%);
-            clip-path: polygon(19% 28%, 45% 4%, 76% 15%, 96% 61%, 77% 90%, 12% 88%, 2% 61%);
-            pointer-events: none;
-        }
-        .cell.route { box-shadow: inset 0 0 0 3px #6ddbea; }
-        .cell.deployment-zone { border-color: #e0c56688; }
-        #route-preview, #landing-preview { position: absolute; z-index: 3; pointer-events: none; }
-        #route-preview { inset: 0; }
-        .route-segment {
-            position: absolute;
-            height: 0;
-            border-top: 2px solid #a5f3fc;
-            transform-origin: left center;
-        }
-        .route-segment.flight { border-top-style: dashed; }
-        #landing-preview {
-            box-sizing: border-box;
-            border: 2px solid #a5f3fc;
-            background: #64b6c729;
-        }
-        #landing-preview[data-kind="from"] { border-color: #ffc086; background: #d68b5229; }
-        .cell.ghost { background: #64b6c785; }
-        .cell.hit { background: #ad3f3f9c; border-color: #ff9c8b; }
-        .cell.from { background: #d68b5299; }
-        @media (max-width: 480px) {
-            #board { transform: rotateX(14deg); }
-        }
-
-        #stacks, #popups { position: absolute; inset: 0; pointer-events: none; }
-        .stack { position: absolute; display: flex; align-items: center; justify-content: center;
-                 transition: opacity 0.4s ease; pointer-events: auto; user-select: none; }
-        .stack .icon {
-            width: 78%; height: 78%; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(ellipse at 45% 28%, #374f50, #1a2528 70%);
-            border: 2px solid #79b6c4;
-            box-shadow: 0 5px 0 #172b2d, 0 9px 9px #182416b0;
-            transform: rotateX(-22deg);
-            text-shadow: 0 2px 4px #050a08;
-        }
-        .stack.big .icon { width: 90%; height: 87%; border-radius: 30%; }
-        .stack .unit-portrait, .chip .unit-portrait {
-            display: block; width: 100%; height: 100%; object-fit: contain;
-            border-radius: inherit; pointer-events: none;
-        }
-        .stack.enemy .icon { border-color: #d98f75; background: radial-gradient(ellipse at 45% 28%, #684b38, #302225 70%); }
-        .stack.active .icon { box-shadow: 0 0 0 3px #facc15, 0 0 14px 4px rgba(250, 204, 21, 0.7); }
-        .stack.target { cursor: crosshair; }
-        .stack.melee-target { cursor: crosshair; }
-        .stack.unreachable-target { cursor: not-allowed; }
-        .deployment-unit[aria-pressed="true"] { outline: 2px solid #e0c566; }
-        .deployment-unit.unplaced { opacity: .6; filter: grayscale(1); }
-        .stack.target .icon { box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.85); }
-        .stack.enemy:hover .icon { background: rgba(127, 29, 29, 0.7); box-shadow: 0 0 0 3px #ef4444, 0 0 16px 5px rgba(239, 68, 68, 0.9); }
-        .stack.hl .icon { box-shadow: 0 0 0 3px #fff, 0 0 12px 3px rgba(255, 255, 255, 0.6); }
-        .stack.dead { opacity: 0; }
-        .badge { position: absolute; right: 2px; bottom: 2px; min-width: 1.3rem; padding: 0 4px; text-align: center; font-size: 0.75rem; font-weight: 700;
-                 color: #fff; background: #1e293b; border: 1px solid #94a3b8; border-radius: 9999px; }
-        .flag { position: absolute; left: 3px; top: 1px; font-size: 0.8rem; }
-
-        .popup { position: absolute; transform: translateX(-50%); font-weight: 800; font-size: 1.05rem; color: #fff;
-                 text-shadow: 0 0 4px #000, 0 0 2px #000; opacity: 0; animation: pop 1.3s ease-out forwards; white-space: nowrap; }
-        .popup.ret { color: #fbbf24; }
-        .battle-proc {
-            position: absolute;
-            z-index: 5;
-            pointer-events: none;
-            width: calc(var(--cell) * 2.5);
-            aspect-ratio: 1;
-            transform: translate(-50%, -50%);
-            background-repeat: no-repeat;
-            background-size: 400% 600%;
-        }
-        #squad-details dl { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem .5rem; margin: .5rem 0; }
-        #squad-details dd { text-align: right; }
-        @keyframes pop { 0% { opacity: 0; transform: translate(-50%, 6px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px); } }
-
-        #initiative { display: flex; flex: 1 1 0; min-width: 0; gap: .3rem; overflow-x: auto; padding: .25rem .15rem; }
-        #initiative .chip { position: relative; width: 2.4rem; height: 2.4rem; flex: 0 0 2.4rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-                background: #1e293b; border: 2px solid #3b82f6; border-radius: 0.4rem; }
-        #initiative .chip.enemy { border-color: #ef4444; }
-        #initiative .chip.first { box-shadow: 0 0 0 2px #facc15; }
-        #initiative .chip.wait-destination { border-style: dashed; border-color: #facc15; }
-        #initiative .chip.hl { border-color: #fff; background: #475569; }
-        #battle-result-toggle { position: absolute; inset: .4rem calc(var(--hero-gutter, 0px) + .4rem) auto auto; z-index: 3; }
-        body:has(#result[open]) #battle-result-toggle { visibility: hidden; }
-        .chip .badge { font-size: 0.6rem; min-width: 1rem; }
-
-        #log { height: 14rem; overflow-y: auto; font-size: 0.8rem; line-height: 1.3; }
-        #log div.ally { color: #93c5fd; }
-        #log div.enemy { color: #fca5a5; }
-        #log div.sys { color: #94a3b8; }
-
-        .btn { background: #2563eb; color: #fff; padding: 0.5rem 0.9rem; border-radius: 0.5rem; font-weight: 700; }
-        .btn:hover:not(:disabled) { background: #1d4ed8; }
-        .btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
-        .btn.alt { background: #334155; }
-        .btn.alt:hover:not(:disabled) { background: #475569; }
-        .btn.danger { background: #991b1b; }
-        .btn.danger:hover:not(:disabled) { background: #b91c1c; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/battle.css') }}">
 </head>
 <body>
 {% include 'shared/header.html' %}
-<div class="max-w-6xl mx-auto p-3">
-    <header class="flex items-center justify-between mb-3">
-        <h1 class="text-xl font-bold">Бій</h1>
-        <a id="battle-return" href="/player" class="text-sm text-sky-300 hover:underline">До персонажа</a>
+<div class="battle-page">
+    <header class="battle-heading">
+        <h1>Бій</h1>
+        <a id="battle-return" href="/player" class="btn alt">До персонажа</a>
     </header>
 
     <!-- Вибір бою -->
-    <section id="menu" class="hidden">
-        <p class="mb-3 text-slate-300">Оберіть супротивника:</p>
-        <div id="scenarios" class="flex flex-wrap gap-2 mb-4"></div>
-        <section id="battle-history" class="mt-5" aria-label="Завершені бої"></section>
+    <section id="menu" class="battle-panel battle-menu hidden">
+        <h2>Оберіть супротивника</h2>
+        <div id="scenarios" class="battle-scenario-list"></div>
+        <section id="battle-history" aria-label="Завершені бої"></section>
     </section>
 
     <!-- Бій -->
     <section id="battle" class="hidden">
-        <div id="replay-controls" class="hidden flex flex-wrap items-center gap-2 mb-3">
+        <div id="replay-controls" class="battle-panel hidden">
             <button type="button" class="btn" id="replay-play">Відтворити</button>
             <button type="button" class="btn alt" id="replay-restart">З початку</button>
             <button type="button" class="btn alt" id="replay-next-turn">Наступний хід</button>
-            <label>Швидкість <select id="replay-speed" class="bg-slate-800"><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
+            <label>Швидкість <select id="replay-speed"><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
             <label>Подія <input id="replay-seek" type="range" min="0" value="0"></label>
             <output id="replay-position" aria-live="polite"></output>
             <button type="button" class="btn alt" id="replay-exit">До списку боїв</button>
         </div>
-        <div class="flex items-center gap-2 mb-2">
-            <span class="text-xs text-slate-400 shrink-0" title="Прогноз на 50 ходів: не враховує майбутні втрати та «чекати»">Черга (50):</span>
-            <div id="initiative"></div>
+        <div class="battle-initiative battle-panel">
+            <h2 id="initiative-title" title="Прогноз на 50 ходів">Черга ходів</h2>
+            <div id="initiative" role="region" aria-labelledby="initiative-title" tabindex="0"></div>
+            <button type="button" id="battle-result-toggle" class="btn alt" hidden
+                    title="Підсумок бою" aria-label="Відкрити підсумок бою" aria-haspopup="dialog">Підсумок</button>
         </div>
 
-        <div class="flex flex-col lg:flex-row gap-3">
-            <div id="board-wrap" class="flex-1 min-w-0">
+        <div class="battle-workspace">
+            <div id="board-wrap">
                 <div class="battle-stage" id="battle-stage">
-                    <button type="button" id="battle-result-toggle" class="btn alt" hidden
-                            title="Підсумок бою" aria-label="Відкрити підсумок бою" aria-haspopup="dialog">📜</button>
                     <div id="field-heroes" aria-label="Герої" hidden></div>
                     <div id="board">
                         <div id="cells"></div>
@@ -200,66 +57,50 @@
                 </div>
             </div>
 
-            <aside class="lg:w-72 shrink-0 space-y-3">
-                <div class="bg-slate-800 rounded-lg p-3">
-                    <div id="turn-text" class="font-bold mb-1"></div>
-                    <div id="active-info" class="text-sm text-slate-300 min-h-[2.5rem]"></div>
-                    <output id="attack-preview" class="text-sm text-amber-200" hidden></output>
+            <aside class="battle-sidebar">
+                <div id="deployment-actions" class="battle-panel hidden">
+                    <div id="deployment-army" role="group" aria-label="Загони для розстановки"></div>
+                    <p id="deployment-placement-hint">Обери загін і клітинку в підсвіченій зоні.</p>
+                    <div class="deployment-buttons">
+                        <button id="deployment-auto" type="button" class="btn alt">Автоматична розстановка</button>
+                        <button id="deployment-begin" type="button" class="btn">У бій</button>
+                    </div>
                 </div>
-                <section class="bg-slate-800 rounded-lg p-3" aria-label="Огляд загону">
-                    <label for="squad-inspector">Огляд загону</label>
-                    <select id="squad-inspector" class="block w-full bg-slate-900"></select>
-                    <div id="squad-details" class="text-sm text-slate-300" hidden></div>
-                </section>
-                <div id="deployment-actions" class="hidden space-y-2">
-                    <div id="deployment-army" class="flex flex-wrap gap-2" aria-label="Загони для розстановки"></div>
-                    <label class="block" id="deployment-split-label">Відокремити істот
-                        <input id="deployment-split" class="bg-slate-800 w-16" type="number" min="0" value="0">
-                    </label>
-                    <p class="text-sm text-slate-300">Обери загін і клітинку в підсвіченій зоні. Нуль означає переміщення всього загону.</p>
-                    <button id="deployment-begin" type="button" class="btn">У бій</button>
+                <div id="battle-actions" class="battle-panel">
+                    <button id="btn-auto" type="button" class="btn alt" aria-pressed="false">Авто</button>
+                    <button id="btn-wait" class="btn alt" title="Почекати пів ходу (W)">Чекати</button>
+                    <button id="btn-defend" class="btn alt" title="Захист (D)">Захист</button>
+                    <button id="btn-surrender" class="btn danger" title="Здатися">Здатись</button>
                 </div>
-                <div id="battle-actions" class="flex gap-2">
-                    <button id="btn-auto" type="button" class="btn alt flex-1" aria-pressed="false">Авто</button>
-                    <button id="btn-wait" class="btn alt flex-1" title="Почекати пів ходу (W)">Чекати</button>
-                    <button id="btn-defend" class="btn alt flex-1" title="Захист (D)">Захист</button>
-                    <button id="btn-surrender" class="btn danger flex-1" title="Здатися">Здатись</button>
-                </div>
-                <section id="spell-target-controls" class="bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Ціль закляття" hidden>
+                <section id="spell-target-controls" class="battle-panel" aria-label="Ціль закляття" hidden>
                     <p id="spell-target-status" role="status"></p>
                     <button id="confirm-spell" type="button" class="btn">Застосувати</button>
                     <button id="cancel-spell" type="button" class="btn alt">Скасувати</button>
                 </section>
-                <section id="summon-actions" class="hidden bg-slate-800 rounded-lg p-3 space-y-2" aria-label="Виклик елементалів">
-                    <p id="summon-energy"></p>
-                    <p id="summon-status" aria-live="polite"></p>
-                    <button id="legacy-spellbook" type="button" class="btn">Книга заклять</button>
-                </section>
-                <div id="log" class="bg-slate-800 rounded-lg p-2"></div>
-                <section class="bg-slate-800 rounded-lg p-3" aria-labelledby="creature-damage-title">
-                    <h2 id="creature-damage-title" class="font-bold">Шкода створінь</h2>
-                    <div id="creature-damage" class="text-sm space-y-2"></div>
-                    <p id="creature-damage-partial" class="text-xs text-slate-400 mt-2" hidden>Показано шкоду за доступну частину запису.</p>
+                <button id="legacy-spellbook" type="button" class="btn" hidden>Книга заклять</button>
+                <section class="battle-panel battle-journal" aria-labelledby="battle-log-title">
+                    <h2 id="battle-log-title">Журнал бою</h2>
+                    <div id="log" tabindex="0"></div>
                 </section>
             </aside>
         </div>
     </section>
 
     <dialog id="spellbook" aria-labelledby="spellbook-title">
-        <div class="flex items-center justify-between gap-2 mb-3">
-            <h2 id="spellbook-title" class="font-bold">Книга заклять</h2>
+        <div class="spellbook-heading">
+            <h2 id="spellbook-title">Книга заклять</h2>
             <form method="dialog"><button class="btn alt" type="submit">Закрити</button></form>
         </div>
-        <p id="spellbook-energy" class="mb-3"></p>
+        <p id="spellbook-energy"></p>
         <div id="spell-list"></div>
     </dialog>
 
     <!-- Підтвердження здачі -->
-    <div id="confirm" class="hidden fixed inset-0 z-40 bg-black/70 flex items-center justify-center">
-        <div class="bg-slate-800 rounded-xl p-6 text-center max-w-sm">
-            <div class="text-lg font-bold mb-2">Здатися?</div>
-            <p class="text-sm text-slate-300 mb-4">Бій буде одразу завершено, а перемогу отримає суперник. Нагороду за цей бій ви не отримаєте.</p>
-            <div class="flex gap-2 justify-center">
+    <div id="confirm" class="hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div class="battle-panel battle-confirm">
+            <h2 id="confirm-title">Здатися?</h2>
+            <p>Бій буде одразу завершено, а перемогу отримає суперник. Нагороду за цей бій ви не отримаєте.</p>
+            <div class="confirm-actions">
                 <button id="confirm-yes" class="btn danger">Так, здатись</button>
                 <button id="confirm-no" class="btn alt">Продовжити бій</button>
             </div>
@@ -267,8 +108,34 @@
     </div>
 
     {% include 'components/battle_result.html' %}
+    <dialog id="deployment-split-dialog" class="battle-result split-dialog" aria-labelledby="deployment-split-title">
+        <form class="battle-result-frame" id="deployment-split-form">
+            <header class="battle-result-header"><h2 id="deployment-split-title">Поділ загону</h2></header>
+            <div class="split-dialog-content">
+                <p id="deployment-split-unit"></p>
+                <label for="deployment-split">Скільки істот відокремити</label>
+                <input id="deployment-split" type="number" min="1" step="1" required autofocus>
+            </div>
+            <footer class="battle-result-footer">
+                <button type="button" id="deployment-split-close">Скасувати</button>
+                <button type="submit" data-squad-action>Розділити</button>
+            </footer>
+        </form>
+    </dialog>
+    <dialog id="squad-inspector" class="battle-result squad-dialog" aria-labelledby="squad-title">
+        <div class="battle-result-frame">
+            <header class="battle-result-header">
+                <h2 id="squad-title" tabindex="-1">Огляд загону</h2>
+            </header>
+            <div id="squad-details" class="squad-dialog-content"></div>
+            <footer class="battle-result-footer">
+                <button type="button" data-squad-action hidden></button>
+                <form method="dialog"><button type="submit">Закрити</button></form>
+            </footer>
+        </div>
+    </dialog>
 
-    <div id="toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black/85 text-white text-sm px-4 py-2 rounded"></div>
+    <div id="toast" class="hidden" role="status"></div>
 </div>
 
 <script src="{{ url_for('static', path='js/battle_events.js') }}"></script>
@@ -290,6 +157,8 @@
     let busy = false;
     let auto = false;
     let deploymentStack = null;
+    let deploymentDragId = null;
+    let inspectedSquad = null;
     let hoveredStackId = null;
     let hoveredAttack = null;
     let completedActor = null;
@@ -309,7 +178,7 @@
     const el = {
         menu: $('menu'), battle: $('battle'), scenarios: $('scenarios'),
         cells: $('cells'), stacks: $('stacks'), popups: $('popups'), board: $('board'), wrap: $('board-wrap'),
-        initiative: $('initiative'), turnText: $('turn-text'), activeInfo: $('active-info'),
+        initiative: $('initiative'),
         log: $('log'), toast: $('toast'), confirm: $('confirm'),
         btnWait: $('btn-wait'), btnDefend: $('btn-defend'), btnSurrender: $('btn-surrender'),
     };
@@ -340,7 +209,6 @@
         fallbackFocus: () => replay ? $('replay-play') : $('battle-return'),
         unitName: key => uv(key).name,
     });
-    const damageNumber = new Intl.NumberFormat('en-US');
     $('battle-return').addEventListener('click', () => {
         if (view?.status === 'finished' || replay) trackBattle(null);
     });
@@ -368,10 +236,6 @@
 
     // ---------- Допоміжне ----------
     const uv = (unit) => UNIT_VIEW[unit] || { emoji: '❓', name: unit };
-    const unitTitle = (key) => {
-        const unit = uv(key);
-        return unit.form ? `${unit.name} · ранг ${unit.tier}, форма ${unit.form}/3` : unit.name;
-    };
 
     function toast(text, ms = 2800) {
         el.toast.textContent = text;
@@ -419,19 +283,35 @@
         if (!view || !el.wrap.clientWidth) return;
         const w = view.state.width, h = view.state.height;
         const frame = getComputedStyle(el.wrap);
-        const padding = parseFloat(frame.paddingLeft) + parseFloat(frame.paddingRight) || 0;
+        const paddingX = parseFloat(frame.paddingLeft) + parseFloat(frame.paddingRight);
+        const paddingY = parseFloat(frame.paddingTop) + parseFloat(frame.paddingBottom);
         const gutter = Object.keys(view.state.heroes ?? {}).length
-            ? Math.round(Math.max(30, Math.min(78, el.wrap.clientWidth * 0.12))) : 0;
-        const maxW = Math.min(el.wrap.clientWidth - padding - 4 - 2 * gutter, 960);
-        const maxH = window.innerHeight * 0.62;
-        const cell = Math.max(1, Math.min(72, Math.floor(Math.min(maxW / w, maxH / h)))) + 'px';
+            ? Math.round(Math.max(28, Math.min(100, el.wrap.clientWidth * .085))) : 0;
+        const maxWidth = el.wrap.clientWidth - paddingX - 4 - 2 * gutter;
+        const fixedHeight = matchMedia('(min-width: 64rem) and (min-height: 34rem)').matches;
+        const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+        const maxHeight = (fixedHeight ? el.wrap.clientHeight : viewportHeight) - paddingY - 4;
+        const size = Math.max(1, Math.floor(Math.min(maxWidth / w, maxHeight / (h * 1.2))));
         const stage = $('battle-stage');
-        stage.style.maxWidth = (parseFloat(cell) * w + 4 + 2 * gutter) + 'px';
-        stage.style.marginInline = 'auto';
+        stage.style.width = (size * w + 4 + 2 * gutter) + 'px';
+        stage.style.marginBlockStart = fixedHeight ? '0' : Math.ceil((size * h + 4) * .1) + 'px';
         stage.style.setProperty('--hero-gutter', gutter + 'px');
-        stage.style.setProperty('--hero-height', Math.max(48, Math.min(104, parseFloat(cell) * 1.42)) + 'px');
-        if (el.board.style.getPropertyValue('--cell') !== cell) {
-            el.board.style.setProperty('--cell', cell);
+        stage.style.setProperty('--hero-height', Math.max(42, Math.min(148, size * 1.9)) + 'px');
+        const cell = size + 'px';
+        if (el.board.style.getPropertyValue('--cell') !== cell) el.board.style.setProperty('--cell', cell);
+        alignFieldHeroes();
+    }
+
+    function alignFieldHeroes() {
+        const field = $('field-heroes');
+        if (field.hidden || !el.cells.children.length) return;
+        const stageTop = $('battle-stage').getBoundingClientRect().top;
+        for (const hero of field.children) {
+            const center = Number(hero.dataset.centerRow);
+            const row = cellEl(0, Math.floor(center));
+            if (!row) continue;
+            const bounds = row.getBoundingClientRect();
+            hero.style.top = (bounds.top - stageTop + (center % 1) * bounds.height) + 'px';
         }
     }
 
@@ -495,12 +375,11 @@
         buildCells();
         if (events && events.length) showEvents(events);
         renderPanel();
-        renderCreatureDamage(v.creature_damage);
         renderStacks();
         renderInitiative();
         renderHighlights();
         renderSpellSelection();
-        $('battle-result-toggle').hidden = !(v.status === 'finished' && v.result);
+        $('battle-result-toggle').hidden = v.result?.status !== 'finished';
 
         for (const s of Object.values(v.state.stacks)) lastPos[s.id] = { x: s.x, y: s.y, w: s.w, h: s.h };
 
@@ -511,22 +390,60 @@
         schedulePoll();
     }
 
+    function boardStacks() {
+        const stacks = Object.values(view.state.stacks);
+        if (!view.deployment) return stacks;
+        const placed = new Set(view.state.placed_stack_ids ?? []);
+        return stacks.filter(stack => stack.owner !== view.my_side || placed.has(stack.id));
+    }
+
+    function stackTooltip(stack, unit) {
+        const stats = [`HP: ${stack.top_hp}/${unit.hp}`];
+        if (unit.shots > 0) stats.push(`Стріли: ${stack.shots_left}/${unit.shots}`);
+        if (stack.max_energy > 0 && Number.isFinite(stack.energy)) {
+            stats.push(`Енергія: ${stack.energy}/${stack.max_energy}`);
+        }
+        return stats.join('\n');
+    }
+
     function renderStacks() {
-        const stacks = view.state.stacks;
+        const stacks = boardStacks();
+        const visible = new Set(stacks.map(stack => stack.id));
         const activeId = view.deployment ? deploymentStack : view.state.active_id;
         const targetIds = new Set(view.turn ? view.turn.targets.map((t) => t.id) : []);
 
-        for (const s of Object.values(stacks)) {
+        for (const s of stacks) {
             let d = stackEls[s.id];
             if (!d) {
                 d = document.createElement('div');
-                d.innerHTML = '<div class="icon"></div><span class="flag"></span><span class="badge"></span>';
-                d.addEventListener('click', (event) => onStackClick(s.id, event));
+                d.innerHTML = '<div class="icon"></div><span class="flag"></span><span class="badge"></span><span class="stack-hp" role="tooltip"></span>';
+                const hp = d.querySelector('.stack-hp');
+                hp.id = 'stack-hp-' + s.id;
+                d.setAttribute('aria-describedby', hp.id);
+                d.setAttribute('role', 'button');
+                d.setAttribute('aria-haspopup', 'dialog');
+                d.tabIndex = 0;
+                let inspectGesture = false;
+                d.addEventListener('mousedown', event => {
+                    inspectGesture = event.button === 1 || (event.buttons & 3) === 3;
+                    if (!inspectGesture) return;
+                    event.preventDefault();
+                    openSquadInspector(s.id, squadAction(s.id, event, event.shiftKey));
+                });
+                d.addEventListener('click', event => {
+                    if (!inspectGesture) onStackClick(s.id, event);
+                });
+                d.addEventListener('keydown', event => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openSquadInspector(s.id, squadAction(s.id, null, event.shiftKey));
+                });
                 d.addEventListener('contextmenu', event => {
                     event.preventDefault();
-                    $('squad-inspector').value = s.id;
-                    renderSquadInspector();
+                    if (!$('squad-inspector').open) openSquadInspector(s.id);
                 });
+                d.addEventListener('auxclick', event => event.preventDefault());
                 d.addEventListener('mousemove', (event) => onStackHover(s.id, event));
                 d.addEventListener('mouseenter', (event) => onStackHover(s.id, event));
                 d.addEventListener('mouseleave', () => {
@@ -541,8 +458,7 @@
             d.className = 'stack' + (s.w > 1 || s.h > 1 ? ' big' : '') + (isAlly(s.id) ? '' : ' enemy') +
                           (s.id === activeId ? ' active' : '') + (targetIds.has(s.id) ? ' target' : '');
             d.classList.toggle('hl', s.id === hoveredStackId);
-            const movingStack = view.deployment ? deploymentStack : view.turn?.active;
-            d.style.pointerEvents = s.id === movingStack ? 'none' : '';
+            d.setAttribute('aria-label', `${u.name}, ${s.count} · Огляд загону`);
             d.style.left = 'calc(var(--cell) * ' + s.x + ')';
             d.style.top = 'calc(var(--cell) * ' + s.y + ')';
             d.style.width = 'calc(var(--cell) * ' + s.w + ')';
@@ -551,15 +467,20 @@
             renderUnitPortrait(d.children[0], u);
             d.children[1].textContent = s.defending ? '🛡' : s.summoned ? '✦' : '';
             d.children[2].textContent = s.count;
-            d.title = unitTitle(s.unit) + ': ' + s.count + ' шт., HP верхнього: ' + s.top_hp +
-                      (s.shots_left > 0 ? ', пострілів: ' + s.shots_left : '');
+            d.dataset.tooltipEdge = s.x < 2 ? 'left' : s.x + s.w >= view.state.width - 1 ? 'right' : '';
+            d.toggleAttribute('data-tooltip-bottom', s.y + s.h >= view.state.height);
+            d.querySelector('.stack-hp').textContent = stackTooltip(s, u);
         }
         for (const id of Object.keys(stackEls)) {
-            if (!stacks[id]) {
+            if (!visible.has(id)) {
                 if (hoveredStackId === id) highlightInitiative(null);
                 const d = stackEls[id];
-                d.classList.add('dead');
-                setTimeout(() => d.remove(), 450);
+                if (view.deployment) {
+                    d.remove();
+                } else {
+                    d.classList.add('dead');
+                    setTimeout(() => d.remove(), 450);
+                }
                 delete stackEls[id];
             }
         }
@@ -568,21 +489,15 @@
     }
 
     function renderSquadInspector() {
-        const select = $('squad-inspector');
+        const dialog = $('squad-inspector');
+        if (!dialog.open || !inspectedSquad) return;
+        const stack = view.state.stacks[inspectedSquad.id];
+        if (!stack) { dialog.close(); return; }
         const panel = $('squad-details');
-        const squads = Object.values(view.state.stacks);
-        const labels = squads.map(stack => `${uv(stack.unit).name} · ${stack.owner === view.my_side ? 'Союзний' : 'Ворожий'} · ×${stack.count}`);
-        const selected = select.value;
-        if (select.options.length !== squads.length + 1 ||
-            squads.some((stack, index) => select.options[index + 1].value !== stack.id ||
-                select.options[index + 1].text !== labels[index])) {
-            select.replaceChildren(new Option('Обери загін', ''), ...squads.map((stack, index) =>
-                new Option(labels[index], stack.id)));
-            select.value = view.state.stacks[selected] ? selected : '';
-        }
-        const stack = view.state.stacks[select.value];
-        panel.hidden = !stack;
-        if (!stack) return;
+        const action = dialog.querySelector('[data-squad-action]');
+        const command = inspectedSquad.version === view.version ? inspectedSquad.command : null;
+        action.hidden = !command;
+        action.textContent = command?.label ?? '';
 
         const unit = uv(stack.unit);
         const hero = Object.values(view.state.heroes ?? {}).find(hero => hero.owner === stack.owner);
@@ -599,59 +514,66 @@
         ];
         const hp = (stack.count - 1) * unit.hp + stack.top_hp;
         const attributes = [
-            ['Істоти', `${stack.count} / ${initial}`],
-            ['Загальне здоров’я', hp], ['HP пораненої істоти', stack.top_hp],
-            ['HP однієї істоти', unit.hp], ['Атака', unit.attack], ['Захист', unit.defense],
-            ['Постріли', `${stack.shots_left} / ${unit.shots}`],
-            ['Дальність подвійного пострілу', unit.shots ? unit.shooting_range : '—'],
-            ['Шкода', `${unit.dmg_min}–${unit.dmg_max}`], ['Швидкість', unit.speed],
-            ['Ініціатива', unit.initiative], ['Удача й шанс', chance(luck, stack.luck_streak)],
-            ['Мораль і шанс', chance(morale, stack.morale_streak)],
-            ['Здібності', abilities.join(', ') || '—'], ['Активні ефекти', effects.join(', ') || '—'],
+            ['Істоти', `${stack.count} / ${initial}`, '👥'],
+            ['Загальне здоров’я', hp, '♥'],
+            ['HP пораненої істоти', stack.top_hp, '♥'],
+            ['HP однієї істоти', unit.hp, '♥'],
+            ['Атака', unit.attack, 'attack.png'],
+            ['Захист', unit.defense, 'defense.png'],
+            ['Постріли', `${stack.shots_left} / ${unit.shots}`, '🏹'],
+            ['Дальність подвійного пострілу', unit.shots ? unit.shooting_range : '—', '🎯'],
+            ['Шкода', `${unit.dmg_min}–${unit.dmg_max}`, 'attack.png'],
+            ['Швидкість', unit.speed, '➜'],
+            ['Ініціатива', unit.initiative, 'initiative.png'],
+            ['Удача й шанс', chance(luck, stack.luck_streak), luck < 0 ? 'negative_luck.png' : 'luck.png'],
+            ['Мораль і шанс', chance(morale, stack.morale_streak), morale < 0 ? 'negative_morale.png' : 'morale.png'],
+            ['Здібності', abilities.join(', ') || '—', '✦'],
+            ['Активні ефекти', effects.join(', ') || '—', '◈'],
         ];
-        const heading = document.createElement('h3');
-        heading.textContent = unit.name;
+        $('squad-title').textContent = unit.name;
+        const portrait = document.createElement('div');
+        portrait.className = 'squad-dialog-portrait';
+        renderUnitPortrait(portrait, unit);
         const list = document.createElement('dl');
-        for (const [label, value] of attributes) {
+        for (const [label, value, icon] of attributes) {
             const term = document.createElement('dt');
             const detail = document.createElement('dd');
-            term.textContent = label;
-            detail.textContent = value;
-            list.append(term, detail);
-        }
-        panel.replaceChildren(heading, list);
-    }
-
-    $('squad-inspector').addEventListener('change', renderSquadInspector);
-
-    function renderCreatureDamage(summary) {
-        const sides = summary?.sides ?? [];
-        const ordered = [...sides].sort((a, b) => Number(b.side === view.my_side) - Number(a.side === view.my_side));
-        $('creature-damage-partial').hidden = !summary?.partial;
-        $('creature-damage').replaceChildren(...ordered.map(side => {
-            const group = document.createElement('div');
-            const heading = document.createElement('h3');
-            const allied = side.side === view.my_side;
-            heading.className = allied ? 'font-bold text-sky-300' : 'font-bold text-red-300';
-            heading.textContent = `${allied ? 'Союзники' : 'Вороги'} · ${damageNumber.format(side.total)}`;
-            group.append(heading);
-            if (side.creatures.length) {
-                const list = document.createElement('ul');
-                for (const creature of side.creatures) {
-                    const row = document.createElement('li');
-                    row.className = 'flex justify-between gap-2';
-                    const name = document.createElement('span');
-                    name.textContent = uv(creature.unit).name;
-                    const damage = document.createElement('strong');
-                    damage.textContent = damageNumber.format(creature.amount);
-                    row.append(name, damage);
-                    list.append(row);
-                }
-                group.append(list);
+            const isImage = icon.endsWith('.png');
+            const mark = document.createElement(isImage ? 'img' : 'span');
+            mark.className = 'squad-stat-icon';
+            if (isImage) {
+                mark.src = '/static/images/hero_stats/' + icon;
+                mark.alt = '';
+            } else {
+                mark.textContent = icon;
+                mark.setAttribute('aria-hidden', 'true');
             }
-            return group;
-        }));
+            term.append(mark, document.createTextNode(label));
+            detail.textContent = value;
+            const row = document.createElement('div');
+            row.append(term, detail);
+            list.append(row);
+        }
+        panel.replaceChildren(portrait, list);
     }
+
+    function openSquadInspector(id, command = null) {
+        if (!view?.state.stacks[id]) return;
+        if (replay && playing) pauseReplay();
+        const dialog = $('squad-inspector');
+        inspectedSquad = {id, command, version: view.version};
+        if (!dialog.open) dialog.showModal();
+        renderSquadInspector();
+        $('squad-title').focus();
+    }
+
+    $('squad-inspector').addEventListener('close', schedulePoll);
+    $('squad-inspector').querySelector('[data-squad-action]').addEventListener('click', () => {
+        if (!inspectedSquad || inspectedSquad.version !== view?.version) return;
+        const command = inspectedSquad.command;
+        $('squad-inspector').close();
+        command?.run();
+    });
 
     function highlightInitiative(id) {
         if (hoveredStackId === id) return;
@@ -723,40 +645,51 @@
 
     function deploymentOptions() {
         const actor = view.state.stacks[deploymentStack];
-        const positions = [];
-        if (!actor) return {actor, positions, count: null};
-        const split = $('deployment-split');
-        const count = Number(split.value) || null;
-        if (!split.validity.valid || (count && split.disabled)) return {actor, positions, count};
+        const destinations = new Map();
+        if (!actor) return {actor, destinations};
 
         const zone = view.deployment.zone_width;
         const left = view.my_side === 0 ? 0 : view.state.width - zone;
         const blocked = new Set((view.state.obstacles ?? []).map(cell => cell.join(',')));
-        for (const stack of Object.values(view.state.stacks)) {
-            if (stack.id === actor.id && !count) continue;
+        for (const stack of boardStacks()) {
+            if (stack.id === actor.id) continue;
             for (const cell of footprint(stack.x, stack.y, stack.w, stack.h)) {
                 blocked.add(cell.dataset.x + ',' + cell.dataset.y);
             }
         }
+
+        const [ox, oy] = centerOffset(actor);
+        const distance = (cellX, cellY, [x, y]) => (cellX - x - ox) ** 2 + (cellY - y - oy) ** 2;
         for (let y = 0; y + actor.h <= view.state.height; y++) {
             for (let x = left; x + actor.w <= left + zone; x++) {
                 const cells = footprint(x, y, actor.w, actor.h);
-                if (cells.every(cell => !blocked.has(cell.dataset.x + ',' + cell.dataset.y))) {
-                    positions.push([x, y]);
+                if (cells.some(cell => blocked.has(cell.dataset.x + ',' + cell.dataset.y))) continue;
+                const position = [x, y];
+                for (const cell of cells) {
+                    const cellX = Number(cell.dataset.x), cellY = Number(cell.dataset.y);
+                    const key = cellX + ',' + cellY;
+                    const previous = destinations.get(key);
+                    if (!previous || distance(cellX, cellY, position) < distance(cellX, cellY, previous)) {
+                        destinations.set(key, position);
+                    }
                 }
             }
         }
-        return {actor, positions, count};
+        return {actor, destinations};
     }
 
     function renderHighlights() {
         clearHover();
-        const {actor, positions} = view.deployment ? deploymentOptions() :
-            {actor: activeStack(), positions: view.turn?.move ?? []};
-        const mv = new Set();
-        if (actor) {
-            const [ox, oy] = centerOffset(actor);
-            for (const [x, y] of positions) mv.add((x + ox) + ',' + (y + oy));
+        let mv;
+        if (view.deployment) {
+            mv = deploymentOptions().destinations;
+        } else {
+            const actor = activeStack();
+            mv = new Set();
+            if (actor) {
+                const [ox, oy] = centerOffset(actor);
+                for (const [x, y] of view.turn?.move ?? []) mv.add((x + ox) + ',' + (y + oy));
+            }
         }
         const obstacles = new Set((view.state.obstacles ?? []).map(cell => cell.join(',')));
         el.cells.querySelectorAll('.cell').forEach(cell => {
@@ -871,8 +804,12 @@
         const field = $('field-heroes');
         const heroes = Object.values(st.heroes ?? {});
         field.hidden = heroes.length === 0;
+        const bySide = [0, 1].map(side => heroes.filter(hero => hero.owner === side));
         field.replaceChildren(...heroes.map(hero => {
             const card = document.createElement('div');
+            const sideHeroes = bySide[hero.owner];
+            const sectionHeight = Math.min(10, st.height / sideHeroes.length);
+            card.dataset.centerRow = (sideHeroes.indexOf(hero) + .5) * sectionHeight;
             card.id = 'field-' + hero.id;
             card.dataset.side = hero.owner;
             card.className = 'field-hero' + (st.active_id === hero.id ? ' active' : '');
@@ -914,29 +851,11 @@
             }
             return card;
         }));
-    }
-
-    function renderSummoning(canCast) {
-        const st = view.state;
-        const magic = st.summoning?.[view.my_side];
-        const legacy = Boolean(magic && !st.heroes && !view.deployment);
-        const visible = Boolean(magic?.elements.length && !view.deployment);
-        $('summon-actions').classList.toggle('hidden', !visible);
-        $('summon-energy').hidden = !legacy;
-        $('legacy-spellbook').hidden = !legacy || Boolean(replay) || view.status !== 'active';
-        $('legacy-spellbook').disabled = !canCast;
-        if ($('spellbook').open && !canCast) $('spellbook').close();
-        if (!visible) return;
-        $('summon-energy').textContent = `Енергія ${magic.energy}/${magic.max_energy}`;
-        const summon = Object.values(st.stacks).find(stack => stack.owner === view.my_side && stack.summoned);
-        $('summon-status').textContent = summon
-            ? `${uv(summon.unit).name} ×${summon.count} · HP верхнього ${summon.top_hp}/${uv(summon.unit).hp}`
-            : 'Активного елементаля немає';
+        alignFieldHeroes();
     }
 
     function renderPanel() {
         const st = view.state;
-        const a = activeStack();
         const myTurn = !!view.turn;
         const deploying = Boolean(view.deployment);
         $('battle-actions').classList.toggle('hidden', Boolean(replay) || deploying);
@@ -944,51 +863,70 @@
         const can = myTurn && !busy && !auto;
         const canCast = can && !replay && (view.turn?.hero || !st.heroes);
         renderHeroes(canCast);
-        renderSummoning(canCast);
+        const legacySpellbook = $('legacy-spellbook');
+        legacySpellbook.hidden = Boolean(st.heroes || replay || deploying)
+            || view.status !== 'active' || !st.summoning?.[view.my_side]?.elements.length;
+        legacySpellbook.disabled = !canCast;
+        if ($('spellbook').open && !canCast) $('spellbook').close();
 
         if (deploying) {
             const owned = Object.values(st.stacks).filter(stack => stack.owner === view.my_side);
             if (!owned.some(stack => stack.id === deploymentStack)) deploymentStack = owned[0]?.id;
             const placed = new Set(st.placed_stack_ids ?? []);
-            $('deployment-army').replaceChildren(...owned.map(stack => {
+            const slots = Array.from({length: 8}, (_, index) => {
+                const stack = owned[index];
+                if (!stack) {
+                    const empty = document.createElement('span');
+                    const locked = index >= view.deployment.max_slots;
+                    empty.className = 'deployment-unit empty' + (locked ? ' locked' : '');
+                    empty.title = locked ? 'Слот недоступний у цьому бою' : 'Вільний слот для поділу загону';
+                    empty.setAttribute('role', 'img');
+                    empty.setAttribute('aria-label', empty.title);
+                    empty.textContent = locked ? '🔒' : '+';
+                    return empty;
+                }
                 const chip = document.createElement('button');
                 chip.type = 'button';
-                chip.className = 'btn alt deployment-unit' + (placed.has(stack.id) ? '' : ' unplaced');
-                chip.textContent = `${uv(stack.unit).name} ×${stack.count}`;
+                chip.className = 'deployment-unit' + (placed.has(stack.id) ? '' : ' unplaced');
+                const portrait = document.createElement('span');
+                portrait.className = 'deployment-portrait';
+                renderUnitPortrait(portrait, uv(stack.unit));
+                const count = document.createElement('span');
+                count.className = 'badge';
+                count.textContent = stack.count;
+                chip.append(portrait, count);
                 chip.setAttribute('aria-pressed', String(stack.id === deploymentStack));
-                chip.title = placed.has(stack.id) ? 'Позицію підтверджено' : 'Початкова позиція';
+                const label = `${uv(stack.unit).name} ×${stack.count}`;
+                chip.setAttribute('aria-label', label);
+                chip.title = `${label} · ${placed.has(stack.id) ? 'Позицію підтверджено' : 'Початкова позиція'}`;
                 chip.disabled = busy;
                 chip.addEventListener('click', () => selectDeploymentStack(stack.id));
-                return chip;
-            }));
-            const split = $('deployment-split');
-            const max = owned.length < view.deployment.max_slots ? st.stacks[deploymentStack].count - 1 : 0;
-            split.max = max;
-            split.disabled = busy || max === 0;
-            if (Number(split.value) > max) split.value = 0;
-            $('deployment-begin').disabled = busy;
-            el.turnText.textContent = 'Розстановка загонів';
-            el.activeInfo.textContent = `${owned.length}/${view.deployment.max_slots} слотів зайнято`;
+                const splitButton = document.createElement('button');
+                splitButton.type = 'button';
+                splitButton.className = 'deployment-split-trigger';
+                splitButton.textContent = '⑂';
+                splitButton.title = 'Розділити загін';
+                splitButton.setAttribute('aria-label', `Розділити загін: ${label}`);
+                splitButton.setAttribute('aria-haspopup', 'dialog');
+                splitButton.disabled = busy || stack.count < 2 || owned.length >= view.deployment.max_slots;
+                splitButton.addEventListener('click', () => openDeploymentSplit(stack));
+                const slot = document.createElement('div');
+                slot.className = 'deployment-slot';
+                slot.append(chip, splitButton);
+                chip.draggable = !busy && owned.some(other => other.id !== stack.id && other.unit === stack.unit);
+                if (chip.draggable) chip.title += ' · Перетягни на загін тієї самої форми, щоб об’єднати';
+                bindDeploymentMerge(slot, chip, stack);
+                return slot;
+            });
+            $('deployment-army').replaceChildren(...slots);
+            $('deployment-placement-hint').textContent = view.deployment.remaining
+                ? `Вибери сірий загін і місце на полі · Залишилося виставити ${view.deployment.remaining}`
+                : view.deployment.can_begin ? 'Усі загони виставлено.' : 'Очікуємо на розстановку суперника.';
+            $('deployment-auto').disabled = busy;
+            $('deployment-begin').disabled = busy || !view.deployment.can_begin;
             return;
         }
 
-        if (st.status === 'finished') {
-            el.turnText.textContent = 'Бій завершено';
-            el.activeInfo.textContent = '';
-        } else if (st.heroes?.[st.active_id]) {
-            const hero = st.heroes[st.active_id];
-            el.turnText.textContent = `Хід героя · ${hero.name}`;
-            el.activeInfo.textContent = `Ініціатива ${hero.initiative} · Шкода ${hero.damage_min}–${hero.damage_max}`;
-        } else if (a) {
-            const u = uv(a.unit);
-            el.turnText.textContent = replay ? 'Хід · ' + u.name : (myTurn ? 'Ваш хід' : 'Хід суперника…');
-            el.activeInfo.textContent = u.emoji + ' ' + unitTitle(a.unit) + ' ×' + a.count + ' (HP верхнього: ' + a.top_hp + ')' +
-                (a.shots_left > 0
-                    ? (view.turn && !view.turn.ranged
-                        ? ', ворог поруч — атакуйте врукопашну або відійдіть (постріли: ' + a.shots_left + ')'
-                        : ', постріли: ' + a.shots_left)
-                    : '');
-        }
         $('btn-auto').disabled = view.status !== 'active';
         $('btn-auto').setAttribute('aria-pressed', String(auto));
         $('btn-auto').textContent = auto ? 'Авто увімкнено' : 'Авто';
@@ -999,7 +937,6 @@
 
     // ---------- Наведення ----------
     function clearHover() {
-        $('attack-preview').hidden = true;
         el.stacks.querySelectorAll('.melee-target, .unreachable-target').forEach(
             node => node.classList.remove('melee-target', 'unreachable-target'));
         $('route-preview').replaceChildren();
@@ -1025,7 +962,7 @@
     function drawApproach(actor, destination, kind) {
         drawLanding(actor, destination, kind);
         const movement = view.turn.move_paths?.[destination.join(',')];
-        if (!movement) return 0;
+        if (!movement) return;
         const route = $('route-preview');
         for (let i = 1; i < movement.path.length; i++) {
             const [x, y] = movement.path[i - 1];
@@ -1045,19 +982,19 @@
                 footprint(nextX, nextY, actor.w, actor.h).forEach(cell => cell.classList.add('route'));
             }
         }
-        return movement.cost;
     }
 
     function boardDestination(x, y) {
-        const deployment = view.deployment ? deploymentOptions() : null;
-        const actor = deployment ? deployment.actor : activeStack();
+        if (view.deployment) {
+            const {actor, destinations} = deploymentOptions();
+            const destination = destinations.get(x + ',' + y);
+            return destination ? {actor, destination} : null;
+        }
+        const actor = activeStack();
         if (!actor) return null;
         const [ox, oy] = centerOffset(actor);
         const destination = [x - ox, y - oy];
-        const valid = deployment ?
-            deployment.positions.some(([px, py]) => px === destination[0] && py === destination[1]) :
-            view.turn?.move_paths?.[destination.join(',')];
-        return valid ? {actor, destination, count: deployment?.count} : null;
+        return view.turn?.move_paths?.[destination.join(',')] ? {actor, destination} : null;
     }
 
     function onCellHover(x, y) {
@@ -1073,10 +1010,7 @@
             drawLanding(choice.actor, choice.destination, 'ghost');
             return;
         }
-        const cost = drawApproach(choice.actor, choice.destination, 'ghost');
-        const output = $('attack-preview');
-        output.textContent = `Рух ${cost} / ${view.turn.move_points} очок`;
-        output.hidden = false;
+        drawApproach(choice.actor, choice.destination, 'ghost');
     }
 
     function attackAim(target, event) {
@@ -1123,7 +1057,6 @@
         return {
             from: !view.turn.ranged || forceMelee ? attackOrigin(positions, activeStack(), aim) : null,
             forceMelee,
-            preview: forceMelee ? options.melee_preview : options.preview,
         };
     }
 
@@ -1135,36 +1068,25 @@
         const options = view.turn?.targets.find(entry => entry.id === id);
         if (!options) return;
         const choice = attackChoice(options, aim, shift);
-        const output = $('attack-preview');
         if (!choice) {
             stackEls[id]?.classList.add('unreachable-target');
-            output.textContent = 'Немає досяжної позиції для ближньої атаки.';
-            output.hidden = false;
             return;
         }
         footprint(target.x, target.y, target.w, target.h).forEach(cell => cell.classList.add('hit'));
-        let moveCost = 0;
         if (choice.from) {
-            moveCost = drawApproach(activeStack(), choice.from, 'from');
+            drawApproach(activeStack(), choice.from, 'from');
             stackEls[id]?.classList.add('melee-target');
         }
-        const preview = choice.preview;
-        if (!preview) return;
-        const modifier = new Intl.NumberFormat('uk-UA', {maximumFractionDigits: 3});
-        const roll = preview.roll_scale > 1 ? ` · ${preview.roll_count} кидків × ${modifier.format(preview.roll_scale)}` : '';
-        output.textContent = `Шкода загону ${preview.final_dmg_min}–${preview.final_dmg_max} (оцінка ${preview.average_damage}) · `
-            + `За істоту ${preview.unit_dmg_min}–${preview.unit_dmg_max} · Орієнтовні втрати до ${preview.estimated_kills}${roll}`
-            + (moveCost ? ` · Рух ${moveCost} / ${view.turn.move_points} очок` : '')
-            + (preview.is_double_shot ? ' · Подвійний постріл' : '')
-            + (preview.will_counterattack ? ' · Можлива контратака' : '')
-            + (preview.can_shoot && options.melee_preview ? ' · Shift для ближньої атаки' : '');
-        output.hidden = false;
     }
 
     function onStackHover(id, event) {
         const stack = view?.state.stacks[id];
         highlightInitiative(stack ? id : null);
         if (!stack) return;
+        if (id === (view.deployment ? deploymentStack : view.turn?.active) && !spellSelection) {
+            onCellHover(...stackCell(stack, event));
+            return;
+        }
         const aim = attackAim(stack, event);
         hoveredAttack = {id, aim};
         showAttackHover(id, aim, event.shiftKey);
@@ -1311,13 +1233,56 @@
         }
     }
 
+    function bindDeploymentMerge(slot, chip, target) {
+        function canDrop() {
+            const source = view?.state.stacks[deploymentDragId];
+            return !busy && view?.deployment && source && source.id !== target.id
+                && source.owner === view.my_side && source.unit === target.unit;
+        }
+
+        chip.addEventListener('dragstart', event => {
+            if (!chip.draggable) { event.preventDefault(); return; }
+            deploymentDragId = target.id;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', target.id);
+            chip.classList.add('dragging');
+        });
+        chip.addEventListener('dragend', () => {
+            deploymentDragId = null;
+            chip.classList.remove('dragging');
+            $('deployment-army').querySelectorAll('.merge-target').forEach(node => node.classList.remove('merge-target'));
+        });
+        slot.addEventListener('dragover', event => {
+            if (!canDrop()) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            slot.classList.add('merge-target');
+        });
+        slot.addEventListener('dragleave', event => {
+            if (!slot.contains(event.relatedTarget)) slot.classList.remove('merge-target');
+        });
+        slot.addEventListener('drop', event => {
+            if (!canDrop()) return;
+            event.preventDefault();
+            const sourceId = deploymentDragId;
+            deploymentDragId = null;
+            deploymentCommand('/deployment/merge', {source_id: sourceId, target_id: target.id});
+        });
+    }
+
     async function deploymentCommand(path, fields = {}) {
         if (busy || !view?.deployment) return;
         setBusy(true);
         try {
+            const previousStacks = view.state.stacks;
             const next = await api('/' + view.id + path, 'POST', {version: view.version, ...fields});
-            $('deployment-split').value = 0;
+            if (path === '/deployment/split') {
+                deploymentStack = Object.keys(next.state.stacks).find(key => !previousStacks[key]) ?? fields.stack_id;
+            }
+            if (path === '/deployment/merge') deploymentStack = fields.target_id;
             applyView(next, next.events);
+            if (path === '/deployment/auto') toast(next.deployment.restored_previous
+                ? 'Відновлено розстановку з попереднього бою.' : 'Застосовано стандартну розстановку.');
         } catch (error) {
             toast(error.message);
             if (error.status === 409) await refresh();
@@ -1330,46 +1295,86 @@
     function selectDeploymentStack(id) {
         if (busy || view.state.stacks[id]?.owner !== view.my_side) return;
         deploymentStack = id;
-        $('deployment-split').value = 0;
         renderPanel();
         renderStacks();
         renderHighlights();
     }
 
-    $('deployment-split').addEventListener('input', renderHighlights);
-    $('deployment-begin').addEventListener('click', () => deploymentCommand('/begin'));
+    function openDeploymentSplit(stack) {
+        const dialog = $('deployment-split-dialog');
+        const input = $('deployment-split');
+        dialog.dataset.stackId = stack.id;
+        $('deployment-split-unit').textContent = `${uv(stack.unit).name} ×${stack.count}`;
+        input.max = stack.count - 1;
+        input.value = Math.floor(stack.count / 2);
+        dialog.showModal();
+    }
+
+    $('deployment-split-form').addEventListener('submit', event => {
+        event.preventDefault();
+        const dialog = $('deployment-split-dialog');
+        const input = $('deployment-split');
+        if (!input.reportValidity()) return;
+        dialog.close();
+        deploymentCommand('/deployment/split', {stack_id: dialog.dataset.stackId, count: input.valueAsNumber});
+    });
+    $('deployment-split-close').addEventListener('click', () => $('deployment-split-dialog').close());
+    $('deployment-auto').addEventListener('click', () => deploymentCommand('/deployment/auto'));
+    $('deployment-begin').addEventListener('click', () => {
+        if (view?.deployment?.can_begin) deploymentCommand('/begin');
+    });
 
     function onCellClick(x, y) {
         if (spellSelection) { confirmSpellAt(x, y); return; }
         if (!view || busy || auto || replay) return;
-        if (view.deployment && !$('deployment-split').reportValidity()) return;
         const choice = boardDestination(x, y);
         if (!choice) return;
-        const {actor, destination: [ax, ay], count} = choice;
+        const {actor, destination: [ax, ay]} = choice;
         if (view.deployment) {
-            if (!count && actor.x === ax && actor.y === ay && view.state.placed_stack_ids?.includes(actor.id)) return;
-            deploymentCommand('/deployment', {stack_id: actor.id, x: ax, y: ay, split_count: count});
+            if (actor.x === ax && actor.y === ay && view.state.placed_stack_ids?.includes(actor.id)) return;
+            deploymentCommand('/deployment', {stack_id: actor.id, x: ax, y: ay});
         } else {
             send({type: 'move', x: ax, y: ay});
         }
     }
 
+    function stackCell(stack, event) {
+        const box = event.currentTarget.getBoundingClientRect();
+        const column = Math.floor((event.clientX - box.left) * stack.w / box.width);
+        const row = Math.floor((event.clientY - box.top) * stack.h / box.height);
+        return [stack.x + Math.min(stack.w - 1, Math.max(0, column)),
+                stack.y + Math.min(stack.h - 1, Math.max(0, row))];
+    }
+
+    function squadAction(id, event, shift) {
+        if (!view || busy || auto || replay || spellSelection) return null;
+        const stack = view.state.stacks[id];
+        if (!stack) return null;
+        if (view.deployment && stack.owner === view.my_side && id !== deploymentStack) {
+            return {label: 'Вибрати для розстановки', run: () => selectDeploymentStack(id)};
+        }
+        if (event && id === (view.deployment ? deploymentStack : view.turn?.active)) {
+            const cell = stackCell(stack, event);
+            if (boardDestination(...cell)) {
+                return {label: view.deployment ? 'Поставити сюди' : 'Перемістити сюди', run: () => onCellClick(...cell)};
+            }
+        }
+        const target = view.turn?.targets.find(candidate => candidate.id === id);
+        if (!target) return null;
+        const choice = attackChoice(target, event ? attackAim(stack, event) : null, shift);
+        if (!choice) return null;
+        return {
+            label: choice.from ? 'Атакувати врукопашну' : 'Атакувати',
+            run: () => send({type: 'attack', target_id: id, from_pos: choice.from, force_melee: choice.forceMelee}),
+        };
+    }
+
     function onStackClick(id, event) {
         if (spellSelection) {
-            const stack = view.state.stacks[id];
-            const box = event.currentTarget.getBoundingClientRect();
-            const x = stack.x + Math.floor((event.clientX - box.left) * stack.w / box.width);
-            const y = stack.y + Math.floor((event.clientY - box.top) * stack.h / box.height);
-            confirmSpellAt(x, y);
+            confirmSpellAt(...stackCell(view.state.stacks[id], event));
             return;
         }
-        if (view?.deployment) { selectDeploymentStack(id); return; }
-        if (!view || !view.turn) return;
-        const t = view.turn.targets.find((q) => q.id === id);
-        if (!t) return;
-        const target = view.state.stacks[id];
-        const choice = attackChoice(t, attackAim(target, event), event.shiftKey);
-        if (choice) send({ type: 'attack', target_id: id, from_pos: choice.from, force_melee: choice.forceMelee });
+        squadAction(id, event, event.shiftKey)?.run();
     }
 
     el.btnWait.addEventListener('click', () => send({ type: 'wait' }));
@@ -1377,9 +1382,9 @@
         el.btnWait.addEventListener(type, renderInitiative);
     }
     $('battle-result-toggle').addEventListener('click', () => {
-        if (view?.status === 'finished') {
-            resultModal.present(view.id, view.result, view.creature_damage, view.my_side, {reopen: true});
-        }
+        if (view?.result?.status !== 'finished') return;
+        if (replay && playing) pauseReplay();
+        resultModal.present(view.id, view.result, view.creature_damage, view.my_side, {reopen: true});
     });
     $('legacy-spellbook').addEventListener('click', openSpellbook);
     function cancelSpellSelection() {
@@ -1398,7 +1403,7 @@
     document.addEventListener('keydown', (ev) => {
         if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
         const k = ev.key.toLowerCase();
-        if ($('spellbook').open) return;
+        if (document.querySelector('dialog[open]')) return;
         if (ev.key === 'Escape' && spellSelection) {
             cancelSpellSelection();
             return;
@@ -1409,6 +1414,7 @@
         if (k === 'd' && !el.btnDefend.disabled) send({ type: 'defend' });
     });
     window.addEventListener('resize', layout);
+    window.visualViewport?.addEventListener('resize', layout);
     new ResizeObserver(layout).observe(el.wrap);
 
     // ---------- Синхронізація ----------
@@ -1425,7 +1431,7 @@
 
     // Якщо зараз не наш хід (наприклад, у майбутньому PvP) — опитуємо сервер.
     async function autoTurn() {
-        if (!auto || busy || !view?.turn || view.status !== 'active') return;
+        if (!auto || busy || !view?.turn || view.status !== 'active' || $('squad-inspector').open) return;
         setBusy(true);
         try {
             await animateLive(await api('/' + view.id + '/auto', 'POST', {version: view.version}));
@@ -1449,8 +1455,8 @@
 
     function schedulePoll() {
         clearTimeout(pollTimer);
-        if (replay || busy || !view || view.status !== 'active') return;
-        if (view.turn && auto) pollTimer = setTimeout(autoTurn, 250);
+        if (replay || busy || !view || (view.status !== 'active' && !(view.deployment && view.mode === 'pvp'))) return;
+        if (view.turn && auto && !$('squad-inspector').open) pollTimer = setTimeout(autoTurn, 250);
         else if (!view.turn) pollTimer = setTimeout(async () => {
             await refresh();
             schedulePoll();
@@ -1459,6 +1465,10 @@
 
     // ---------- Старт ----------
     function resetClientState() {
+        if ($('deployment-split-dialog').open) $('deployment-split-dialog').close();
+        deploymentDragId = null;
+        if ($('squad-inspector').open) $('squad-inspector').close();
+        inspectedSquad = null;
         if ($('spellbook').open) $('spellbook').close();
         resultModal.close();
         Object.keys(known).forEach(id => delete known[id]);
@@ -1499,7 +1509,6 @@
                 const link = document.createElement('a');
                 link.href = '/castle?section=army';
                 link.textContent = 'Набрати військо';
-                link.className = 'underline';
                 el.toast.append(' ', link);
             }
             showMenu();
@@ -1527,11 +1536,11 @@
             title.textContent = 'Завершені бої';
             history.append(title);
             const list = document.createElement('ul');
-            list.className = 'space-y-2 my-3';
+            list.className = 'battle-history-list';
             history.append(list);
             for (const battle of battles) {
                 const link = document.createElement('button');
-                link.className = 'btn alt m-1';
+                link.className = 'btn alt';
                 link.textContent = battle.available ? `Повтор №${battle.id}` : `Бій №${battle.id} · повтор недоступний`;
                 link.disabled = !battle.available;
                 link.addEventListener('click', () => openReplay(battle.id));
@@ -1540,7 +1549,7 @@
                 list.append(row);
             }
             const all = document.createElement('a');
-            all.className = 'btn alt inline-block';
+            all.className = 'btn alt';
             all.href = '/battle/history';
             all.textContent = 'Переглянути всі бої';
             history.append(all);
@@ -1677,7 +1686,7 @@
         return {
             id: replay.battle_id, my_side: replay.my_side, state, status: state.status,
             winner_side: state.winner, result: replay.result, turn: null,
-            creature_damage: replay.damage?.summary(),
+            creature_damage: replay.fullDamage,
             forecast: BattleEvents.replayQueue(state, replay.turns, cursor),
         };
     }
@@ -1705,7 +1714,7 @@
         $('replay-seek').value = cursor;
         applyView(replayView(state, cursor), []);
         if (reachedEnd && state.status === 'finished') {
-            resultModal.present(replay.battle_id, replay.result, replay.damage?.summary(), replay.my_side, {fromReplay: true});
+            resultModal.present(replay.battle_id, replay.result, replay.fullDamage, replay.my_side, {fromReplay: true});
         }
         const result = state.status === 'finished' ?
             (state.winner === null ? 'Нічия' : state.winner === replay.my_side ? 'Перемога' : 'Поразка') : '';
@@ -1716,7 +1725,6 @@
     function seekReplay(cursor) {
         pauseReplay();
         const state = structuredClone(replay.initial_state);
-        replay.damage = BattleEvents.damageTracker(replay.partial, state.heroes);
         resetClientState();
         view = replayView(state);
         for (const stack of Object.values(state.stacks)) known[stack.id] = stack;
@@ -1724,7 +1732,6 @@
             replayLog(event);
             BattleEvents.apply(state, event);
             if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
-            replay.damage.apply(event);
         }
         updateReplay(state, cursor);
     }
@@ -1742,7 +1749,6 @@
             if (generation !== playbackGeneration) return;
             BattleEvents.apply(view.state, event);
             if (event.type === 'TURN_ENDED' && event.actor_id) completedActor = event.actor_id;
-            replay.damage.apply(event);
             updateReplay(view.state, replay.cursor + 1);
             await new Promise(resolve => setTimeout(resolve, 100 / speed));
         }
@@ -1758,12 +1764,15 @@
             replay = data;
             replay.turns = [];
             replay.stackIndex = {...replay.initial_state.stacks};
+            const damage = BattleEvents.damageTracker(replay.partial, replay.initial_state.heroes);
             replay.events.forEach((event, index) => {
+                damage.apply(event);
                 if (event.type === 'TURN_STARTED' && event.actor_id && event.sequence !== 1) {
                     replay.turns.push({index, id: event.actor_id});
                 }
                 Object.assign(replay.stackIndex, event.changes?.stacks);
             });
+            replay.fullDamage = damage.summary();
             Object.assign(UNIT_VIEW, replay.units);
             $('replay-controls').classList.remove('hidden');
             $('replay-seek').max = replay.events.length;
