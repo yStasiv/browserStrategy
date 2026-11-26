@@ -22,6 +22,7 @@
     let huntTimer;
     let selectedLocation;
     let moveAnchor;
+    let outlineInnerEdge;
     let fogSignature;
     let fogTimer;
     let travelerMarker;
@@ -137,9 +138,7 @@
         const x = image.left + moveAnchor.x * image.width - bounds.left;
         const y = image.top + moveAnchor.y * image.height - bounds.top;
         const size = moveSelected.offsetWidth;
-        const gap = 8;
-        const position = (value, limit) => Math.max(0, Math.min(limit - size,
-            value + gap + size <= limit ? value + gap : value - gap - size));
+        const position = (value, limit) => Math.max(0, Math.min(limit - size, value - size / 2));
         moveSelected.style.left = `${position(x, viewport.clientWidth)}px`;
         moveSelected.style.top = `${position(y, viewport.clientHeight)}px`;
     }
@@ -192,6 +191,12 @@
         }
     }
 
+    function scaleSectorOutlines() {
+        if (!outlineInnerEdge || !art.clientWidth) return;
+        const scale = state.map.width / art.clientWidth;
+        outlineInnerEdge.setAttribute('radius', 2 * scale);
+    }
+
     function renderGeography() {
         const {map} = state;
         const geo = WorldGeography;
@@ -199,6 +204,14 @@
         renderFog();
         geo.setup(markers, map);
         markers.replaceChildren();
+        const defs = geo.svgNode('defs');
+        const inset = geo.svgNode('filter', {id: 'world-sector-inset', filterUnits: 'userSpaceOnUse',
+            x: 0, y: 0, width: map.width, height: map.height});
+        outlineInnerEdge = geo.svgNode('feMorphology', {in: 'SourceGraphic', operator: 'erode', result: 'inner'});
+        inset.append(outlineInnerEdge, geo.svgNode('feComposite', {in: 'SourceGraphic', in2: 'inner', operator: 'out'}));
+        defs.append(inset);
+        markers.append(defs);
+        scaleSectorOutlines();
 
         for (const sector of mapped) {
             const polygon = geo.svgNode('polygon', {points: geo.points(sector, map), class: 'world-location'});
@@ -222,6 +235,12 @@
                 }
             });
             markers.append(polygon);
+            if (sector.key === state.current_sector || geo.canSelect(state, sector)) {
+                const outline = geo.svgNode('g', {class: 'world-location-outline', 'aria-hidden': 'true'});
+                outline.append(geo.svgNode('polygon', {points: geo.points(sector, map),
+                    filter: 'url(#world-sector-inset)'}));
+                markers.append(outline);
+            }
         }
 
         travelerMarker = geo.svgNode('circle', {r: 11, class: 'world-traveler'});
@@ -350,7 +369,9 @@
             const previous = state.travel;
             const updated = await getState('/api/world');
             render(updated);
-            feedback.textContent = previous && !updated.travel ? `Прибуття · ${name(updated.current_sector)}` : '';
+            feedback.textContent = previous && !updated.travel
+                ? previous.destination === updated.current_sector ? `Прибуття · ${name(updated.current_sector)}` : 'Подорож скасовано.'
+                : '';
         } catch (error) {
             feedback.textContent = error.message;
             refresh.hidden = false;
@@ -406,21 +427,26 @@
 
     byId('world-map-zoom').addEventListener('input', event => {
         WorldGeography.zoom(art, Number(event.target.value));
+        scaleSectorOutlines();
         positionMoveIcon();
     });
     refresh.addEventListener('click', refreshState);
     art.addEventListener('click', () => selectSector(null));
     viewport.addEventListener('scroll', positionMoveIcon, {passive: true});
-    new ResizeObserver(positionMoveIcon).observe(viewport);
+    new ResizeObserver(() => {
+        positionMoveIcon();
+        scaleSectorOutlines();
+    }).observe(art);
     moveSelected.addEventListener('click', () => {
         const destination = state.sectors.find(row => (row.id ?? row.key) === selectedLocation);
         if (WorldGeography.canSelect(state, destination)) requestSector(destination.key);
     });
     setInterval(async () => {
-        if (busy || state.travel || document.hidden) return;
+        if (busy || document.hidden) return;
         try {
             const next = await getState('/api/world/progression');
-            if (!busy && !state.travel && next.unlocked.some(key => !state.sectors.some(old => old.key === key))) {
+            const known = new Set(state.sectors.map(row => row.key));
+            if (!busy && (next.unlocked.length !== known.size || next.unlocked.some(key => !known.has(key)))) {
                 await refreshState();
             }
         } catch { /* manual refresh remains available for an interrupted connection */ }

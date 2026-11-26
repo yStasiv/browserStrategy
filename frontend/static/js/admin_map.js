@@ -56,31 +56,43 @@
             if (details?.unlocked_at) {
                 action.textContent = new Intl.DateTimeFormat('uk-UA', {dateStyle: 'short', timeStyle: 'short',
                     timeZone: 'Europe/Kyiv'}).format(new Date(details.unlocked_at));
+            }
+            if (details?.unlocked && row.id !== world.config.map.starting_location_id) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = 'Закрити';
+                button.disabled = busy;
+                button.addEventListener('click', () => {
+                    if (window.confirm(`Закрити сектор «${row.name}»?`)) {
+                        changeLocation(`/admin/map/locations/${row.id}/close`, true);
+                    }
+                });
+                action.append(' ', button);
             } else if (!details?.unlocked) {
                 const button = document.createElement('button');
                 button.type = 'button';
                 button.textContent = 'Відкрити';
                 button.disabled = busy || !neighbors.some(([key]) => openKeys.has(key));
-                button.addEventListener('click', () => unlock(`/admin/map/locations/${row.id}/unlock`));
+                button.addEventListener('click', () => changeLocation(`/admin/map/locations/${row.id}/unlock`));
                 action.append(button);
             }
         }
     }
 
-    async function unlock(url) {
+    async function changeLocation(url, closing = false) {
         if (busy) return;
         busy = true;
         table();
         try {
             const response = await fetch(url, {method: 'POST'});
             const result = await response.json();
-            if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Не вдалося відкрити локацію.');
+            if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Не вдалося змінити доступність локації.');
             const previouslyOpen = new Set(world.status.filter(row => row.unlocked).map(row => row.id));
             world = result;
             revealing = new Set(result.status.filter(row => row.unlocked && !previouslyOpen.has(row.id)).map(row => row.id));
             feedback.textContent = result.changed
-                ? 'Відкрито · ' + result.config.locations.find(row => row.id === result.location_id).name
-                : 'Локація вже відкрита.';
+                ? (closing ? 'Закрито · ' : 'Відкрито · ') + result.config.locations.find(row => row.id === result.location_id).name
+                : (closing ? 'Локація вже закрита.' : 'Локація вже відкрита.');
             drawMap();
             setTimeout(() => { revealing.clear(); drawMap(); }, world.config.fog_of_war.reveal_duration_ms);
         } catch (error) {
@@ -91,7 +103,7 @@
         }
     }
 
-    next.addEventListener('click', () => unlock('/admin/map/unlock-next'));
+    next.addEventListener('click', () => changeLocation('/admin/map/unlock-next'));
     fog.addEventListener('change', drawMap);
     borders.addEventListener('change', drawMap);
     drawMap();

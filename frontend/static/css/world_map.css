@@ -87,19 +87,24 @@
     pointer-events: all;
     vector-effect: non-scaling-stroke;
 }
-.world-location.is-current {
-    stroke: #ffd078;
-    stroke-width: 3;
+.world-location-outline {
+    pointer-events: none;
+    fill: var(--sector-glow);
+    filter: drop-shadow(0 0 1.2px var(--sector-glow)) drop-shadow(0 0 3.6px var(--sector-glow));
 }
-.world-location.is-adjacent {
-    stroke: #aee5a9;
-    cursor: pointer;
+.world-location.is-current + .world-location-outline { --sector-glow: #fff; }
+.world-location.is-adjacent { cursor: pointer; }
+.world-location.is-adjacent + .world-location-outline {
+    --sector-glow: #50e86b;
+    opacity: .5;
 }
 .world-location.is-adjacent:hover, .world-location.is-adjacent:focus-visible, .world-location.is-selected {
-    fill: #fbe29125;
-    stroke: #fff6c2bb;
+    fill: #50e86b25;
     outline: none;
 }
+.world-location.is-adjacent:hover + .world-location-outline,
+.world-location.is-adjacent:focus-visible + .world-location-outline,
+.world-location.is-selected + .world-location-outline { --sector-glow: #9aff9e; }
 
 .world-traveler { fill: #ffbe57; stroke: #fff0c2; stroke-width: 3; pointer-events: none; }
 .world-traveler[hidden] { display: none; }

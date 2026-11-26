@@ -123,3 +123,30 @@ def test_simultaneous_departures_allow_only_one_journey(sessions):
     with sessions() as db:
         assert db.get(PlayerTravel, 10).destination == accepted[0]
         assert db.get(PlayerTravel, 20) is None
+
+
+def test_close_sector_and_reset_world(sessions):
+    with sessions.begin() as db:
+        world.unlock_sector(db, "Mountain")
+        world.unlock_sector(db, "Forest")
+        db.flush()
+        sector, changed = world.close_location(db, db.get(WorldSector, "Mountain").location_id)
+        assert not sector.unlocked and changed
+        assert not world.close_location(db, sector.location_id)[1]
+        with pytest.raises(HTTPException, match="Стартовий"):
+            world.close_location(db, 1)
+        traveler = db.get(User, 10)
+        world.start_travel(db, traveler, "Forest")
+        db.flush()
+        with pytest.raises(HTTPException, match="подорож"):
+            world.close_location(db, db.get(WorldSector, "Forest").location_id)
+        resident = db.get(User, 20)
+        resident.map_sector = "Forest"
+        db.flush()
+        assert world.close_world_except_start(db) == {"closed": 1, "players": 1, "journeys": 1}
+    with sessions.begin() as db:
+        assert [row.key for row in world.sectors(db) if row.unlocked] == ["Castle"]
+        assert db.get(PlayerTravel, 10) is None
+        player = db.get(User, 20)
+        assert player.map_sector == "Castle"
+        assert (player.map_x, player.map_y) == world.map_config.marker_position("Castle")

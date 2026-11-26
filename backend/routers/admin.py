@@ -148,6 +148,14 @@ def unlock_map_location(location_id: int, db: Session = Depends(database.get_db)
     return unlock_map(db, user, location_id)
 
 
+@router.post("/admin/map/locations/{location_id}/close")
+def close_map_location(location_id: int, db: Session = Depends(database.get_db),
+                       user: models.User = Depends(world_admin)):
+    sector, changed = world.close_location(db, location_id)
+    db.commit()
+    return {"location_id": sector.location_id, "changed": changed, **world.administration_state(db)}
+
+
 @router.get("/admin/map/editor")
 def map_editor(request: Request, db: Session = Depends(database.get_db), user: models.User = Depends(world_admin)):
     return templates.TemplateResponse("admin/map_editor.html", {

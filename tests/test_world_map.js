@@ -154,8 +154,8 @@ test('map clicks update only the confirmation until a single departure is confir
     polygon('Forest').fire('click', {clientX: 110, clientY: 210});
     assert.equal(confirmation.hidden, false);
     assert.match(confirmation.title, /Золотолісся.*4 с/);
-    assert.equal(confirmation.style.left, '108px');
-    assert.equal(confirmation.style.top, '208px');
+    assert.equal(confirmation.style.left, '50.5px');
+    assert.equal(confirmation.style.top, '150.5px');
     polygon('royal_port').fire('click');
     assert.ok(confirmation.hidden);
     polygon('Forest').fire('click');

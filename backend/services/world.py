@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import delete, or_, select, update
 
 from backend.config import ENTERPRISE_SHIFT_DURATION
 from backend.models import Enterprise, User
@@ -78,6 +78,7 @@ def routes_from(db, key):
 
 
 def start_travel(db, player, destination_key):
+    lock_world(db)
     journey, now = resolve_location(db, player)
     if journey is not None:
         raise HTTPException(409, "Подорож уже триває.")
@@ -104,10 +105,15 @@ def unlock_sector(db, key, actor_id=None):
     return unlock_location(db, actor_id, key=key)
 
 
-def unlock_location(db, actor_id, *, location_id=None, key=None):
-    # Serialize manual and next unlocks with the same lock, including on SQLite.
-    db.execute(update(WorldSector).where(WorldSector.key == "Castle")
+def lock_world(db):
+    capital = next(row for row in map_config.by_key().values() if row["unlocked_by_default"])
+    db.execute(update(WorldSector).where(WorldSector.key == capital["key"])
                .values(sort_order=WorldSector.sort_order).execution_options(synchronize_session=False))
+    return capital
+
+
+def unlock_location(db, actor_id, *, location_id=None, key=None):
+    lock_world(db)
     if key is not None:
         statement = select(WorldSector).where(WorldSector.key == key)
     elif location_id is not None:
@@ -136,6 +142,49 @@ def unlock_location(db, actor_id, *, location_id=None, key=None):
     sector.unlocked_at = utc_now()
     sector.unlocked_by = actor_id
     return sector, True
+
+
+def close_location(db, location_id):
+    capital = lock_world(db)
+    if location_id == capital["id"]:
+        raise HTTPException(409, "Стартовий сектор закрити неможливо.")
+    sector = db.scalar(select(WorldSector).where(WorldSector.location_id == location_id)
+                       .execution_options(populate_existing=True))
+    if sector is None:
+        raise HTTPException(404, "Сектор не знайдено.")
+    if not sector.unlocked:
+        return sector, False
+    player = db.scalar(select(User.id).where(User.map_sector == sector.key).limit(1))
+    journey = db.scalar(select(PlayerTravel.player_id).where(or_(
+        PlayerTravel.origin == sector.key, PlayerTravel.destination == sector.key,
+    )).limit(1))
+    if player is not None or journey is not None:
+        raise HTTPException(409, "У секторі є гравці або через нього триває подорож.")
+    sector.unlocked = False
+    sector.unlocked_at = None
+    sector.unlocked_by = None
+    return sector, True
+
+
+def close_world_except_start(db):
+    capital = lock_world(db)
+    key = capital["key"]
+    sector = db.get(WorldSector, key)
+    if sector is None:
+        raise RuntimeError("Стартовий сектор відсутній.")
+    x, y = map_config.marker_position(key)
+    # Lock travelers already at the capital before cancelling their journeys.
+    db.execute(update(User).where(User.id.in_(select(PlayerTravel.player_id)))
+               .values(map_sector=User.map_sector).execution_options(synchronize_session=False))
+    journeys = db.execute(delete(PlayerTravel)).rowcount
+    players = db.execute(update(User).where(User.map_sector != key)
+                         .values(map_sector=key, map_x=x, map_y=y)).rowcount
+    closed = db.execute(update(WorldSector).where(WorldSector.key != key, WorldSector.unlocked.is_(True))
+                        .values(unlocked=False, unlocked_at=None, unlocked_by=None)).rowcount
+    if not sector.unlocked:
+        sector.unlocked = True
+        sector.unlocked_at = utc_now()
+    return {"closed": closed, "players": players, "journeys": journeys}
 
 
 def administration_state(db):
