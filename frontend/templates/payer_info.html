@@ -17,6 +17,56 @@
         </div>
         {% include 'character/army.html' %}
     </div>
+    {% if show_account_status %}
+    <section class="hero-panel hero-screen hero-moderation" aria-labelledby="moderation-title">
+        <div class="hero-moderation-summary">
+            <h2 id="moderation-title">Статус облікового запису</h2>
+            <p>{{ 'Адміністратор' if player.is_admin else 'Модератор' if player.is_moderator else 'Системний персонаж' if player.is_system else 'Гравець' }}
+                · {% if player.ban_reason %}<strong>Заблокований</strong> · {{ player.ban_reason }}{% else %}Активний{% endif %}
+                {% if player.nickname_reset_from is not none %} · Тимчасовий нікнейм{% endif %}</p>
+        </div>
+        {% if can_moderate or can_assign_moderator %}
+        <div class="hero-moderation-actions">
+            {% if can_moderate %}
+                {% if player.ban_reason %}
+                <form method="post" action="/admin/player/{{ player.id }}/unblock">
+                    <button class="hero-link" type="submit">Розблокувати</button>
+                </form>
+                {% else %}
+                <details>
+                    <summary class="hero-link">Заблокувати</summary>
+                    <form method="post" action="/admin/player/{{ player.id }}/block">
+                        <input name="reason" aria-label="Причина блокування" placeholder="Причина блокування" maxlength="500" required>
+                        <button class="hero-link" type="submit">Підтвердити</button>
+                    </form>
+                </details>
+                {% endif %}
+                {% if player.nickname_reset_from is none %}
+                <details>
+                    <summary class="hero-link">Скинути нікнейм</summary>
+                    <form method="post" action="/admin/player/{{ player.id }}/reset-nickname">
+                        <button class="hero-link" type="submit">Підтвердити скидання</button>
+                    </form>
+                </details>
+                {% endif %}
+            {% endif %}
+            {% if can_assign_moderator %}
+            <form method="post" action="/admin/player/{{ player.id }}/moderator">
+                <input type="hidden" name="enabled" value="{{ 'false' if player.is_moderator else 'true' }}">
+                <button class="hero-link" type="submit">{{ 'Відкликати роль модератора' if player.is_moderator else 'Призначити модератором' }}</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if moderation_entries %}
+        <details>
+            <summary>Протокол передач · модерація</summary>
+            <ul>{% for entry in moderation_entries %}<li>{{ entry }}</li>{% endfor %}</ul>
+            <a href="/player_info/transfers?id={{ player.id }}">Повний протокол передач</a>
+        </details>
+        {% endif %}
+    </section>
+    {% endif %}
     <div class="hero-screen hero-equipment-layout hero-equipment-three-columns">
         <div class="hero-public-sidebar">
         {% include 'character/guilds.html' %}

@@ -397,3 +397,14 @@
 @media (max-width: 48rem) {
     .hero-equipment-three-columns { grid-template-columns: minmax(0, 1fr); }
 }
+
+.hero-moderation { padding: .55rem .8rem; font-size: .88rem; }
+.hero-moderation-summary, .hero-moderation-actions, .hero-moderation form {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .65rem;
+}
+.hero-moderation-summary h2 { margin: 0; font-size: 1rem; }
+.hero-moderation-summary p { margin: 0; overflow-wrap: anywhere; }
+.hero-moderation-actions, .hero-moderation details form { margin-top: .35rem; }
+.hero-moderation .hero-link { padding: .2rem .45rem; font: inherit; }
+.hero-moderation input { max-width: 100%; font: inherit; }
+.hero-moderation summary { cursor: pointer; }

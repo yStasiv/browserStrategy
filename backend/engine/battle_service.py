@@ -35,7 +35,7 @@ from .events import SCHEMA_VERSION, initial_events
 from .hero import make_hero
 from .hunting import TARGETS, offers, ready_at as hunt_ready_at, squad_count
 from .roster import saved_army
-from .summoning import available_elements, hp_pool, max_energy
+from .summoning import available_elements, hp_pool, max_energy, spell_options
 
 
 class BattleError(Exception):
@@ -105,7 +105,7 @@ def _view(db, battle_id: int, mode: str, status: str, version: int, winner_side,
         "turn": turn_info(state) if active and active.owner == my_side else None,
         "forecast": forecast(state, 50),   # орієнтовна черга на 50 ходів уперед
         "wait_forecast": forecast(state, 50, after_wait=True)
-        if active and active.owner == my_side and active.id in state.stacks else None,
+        if active and active.owner == my_side else None,
         "events": events,
         "deployment": deployment,
         "event_stream": [e for step in steps for e in step.replay_events],
@@ -225,6 +225,18 @@ def get_battle_view(db: Session, user, battle_id: int) -> dict:
     return _view(db, battle.id, battle.mode, battle.status, battle.version, battle.winner_side,
                  state, side, [], level=battle.level,
                  completion=completion_data(db, battle_id, state, user.id, legacy_battle_experience))
+
+
+def battle_spellbook(db, user, battle_id):
+    battle, side = _owned_battle(db, user, battle_id)
+    if battle.status != "active":
+        raise Conflict("Книга заклять доступна під час бою.")
+    state = BattleState.from_dict(battle.state)
+    magic = state.summoning.get(str(side), {})
+    return {
+        "energy": magic.get("energy", 0), "max_energy": magic.get("max_energy", 0),
+        "spells": spell_options(state, side),
+    }
 
 
 def start_pve(db: Session, user, scenario_key: str, *, hunting=False, expected_difficulty=None) -> dict:
@@ -490,9 +502,20 @@ def replay_history(db, user, limit=20, *, detailed=False):
     return history
 
 
-def battle_events(db, user, battle_id, *, finished_only=False):
-    battle, side = _owned_battle(db, user, battle_id)
-    if finished_only and battle.status != "finished":
+def battle_events(db, user, battle_id, *, finished_only=False, spectate=False):
+    if spectate:
+        if not user.is_admin:
+            raise Forbidden("Потрібні права адміністратора.")
+        battle = db.get(Battle, battle_id)
+        if battle is None:
+            raise NotFound("Бій не знайдено.")
+        part = db.scalars(select(BattleParticipant).where(
+            BattleParticipant.battle_id == battle_id, BattleParticipant.user_id.is_not(None),
+        ).order_by((BattleParticipant.user_id == user.id).desc(), BattleParticipant.side)).first()
+        side = part.side if part else 0
+    else:
+        battle, side = _owned_battle(db, user, battle_id)
+    if (finished_only or spectate) and battle.status != "finished":
         raise Conflict("Повтор доступний після завершення бою.")
     initial = battle.initial_state
     if initial is None:
@@ -504,7 +527,7 @@ def battle_events(db, user, battle_id, *, finished_only=False):
         BattleAction.seq < battle.state["seq"],
     ).order_by(BattleAction.seq).all())
     for action in actions:
-        events.extend(action.replay_events)
+        events.extend(action.replay_events or [])
     completion = completion_data(db, battle_id, BattleState.from_dict(battle.state), user.id, legacy_battle_experience)
     if completion["result"] is None:
         completion["result"] = {"status": battle.status, "winner_side": battle.winner_side}

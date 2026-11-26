@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
+from backend.services.gameplay_events import record
 from backend.models import Item, ShopItem
 from backend.services.hero_attributes import PROFILE_STATS
 from backend.services.hero_equipment import INVENTORY_LIMIT, lock_hero
@@ -95,3 +96,5 @@ def buy(db, player, listing_id):
     ))
     if listing.quantity > 0:
         listing.quantity -= 1
+    record(db, "shop_purchase", name=source.name, item_type=source.item_type,
+           level=listing.level_required, costs=prices)

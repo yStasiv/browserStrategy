@@ -10,7 +10,7 @@
         completed: 'Виконано',
     };
     const resources = [
-        ['gold', 'золота', 'gold-resource-icon.png'],
+        ['gold', 'золота', 'resources/00_gold.png'],
         ['singing_resin', 'співочої смоли', 'resources/01_singing_resin.png'],
         ['basalt_bone', 'базальтової кістки', 'resources/02_basalt_bone.png'],
         ['xp', 'XP гільдії'],

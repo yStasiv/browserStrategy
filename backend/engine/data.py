@@ -8,6 +8,7 @@ FACTION_ROSTERS = json.loads((CONTENT / "faction_creatures.json").read_text(enco
 SUMMONING = json.loads((CONTENT / "elemental_summoning.json").read_text(encoding="utf-8"))
 ELEMENTALS = {row["element"]: row for row in SUMMONING["elementals"]}
 DEFAULT_SHOOTING_RANGE = 6
+DEFENSE_STANCE_MULTIPLIER = 1.3
 
 
 def faction_key(value):
@@ -131,6 +132,7 @@ UNITS = load_creatures()
 UNIT_PRESENTATION = {
     u.key: {
         "name": u.name, "emoji": u.icon, "attack": u.attack, "defense": u.defense,
+        "defending_defense": u.defense * DEFENSE_STANCE_MULTIPLIER,
         "hp": u.hp, "shots": u.shots, "dmg_min": u.dmg_min, "dmg_max": u.dmg_max,
         "speed": u.speed, "initiative": u.initiative, "luck": u.luck, "morale": u.morale,
         "shooting_range": DEFAULT_SHOOTING_RANGE, "abilities": u.abilities,

@@ -16,11 +16,14 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+    nickname_reset_from = Column(String, unique=True, index=True)
     password = Column(String)
     email = Column(String, unique=True, index=True)
     is_active = Column(Boolean, default=True)
     is_system = Column(Boolean, nullable=False, server_default=false())
     is_admin = Column(Boolean, nullable=False, server_default=false())
+    is_moderator = Column(Boolean, nullable=False, server_default=false())
+    ban_reason = Column(String(500), nullable=True)
     avatar_url = Column(String, nullable=True)  # user img path
     fraction = Column(String, default="Elfe")
     gender = Column(String(6), CheckConstraint("gender IN ('male', 'female')", name="ck_users_gender"),
@@ -76,7 +79,6 @@ class User(Base):
 
     units = relationship("UserUnit", back_populates="user")
 
-    user_tasks = relationship("UserTask", back_populates="user")
 
     achievements = relationship("UserAchievement", back_populates="user")
 
@@ -236,7 +238,7 @@ class Enemy(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
     level = Column(Integer, default=1)
-    image_url = Column(String, default="../static/images/enemy.svg")
+    image_url = Column(String)
     
     # Основні характеристики
     hp = Column(Integer, default=100)
@@ -266,48 +268,6 @@ class Enemy(Base):
     
     # Зв'язки
     battles = relationship("BattleState", back_populates="enemy")
-
-# TASKS - QUESTS
-
-class Task(Base):
-    __tablename__ = "tasks"
-
-    id = Column(Integer, primary_key=True, index=True)
-    scenario_id = Column(Integer, ForeignKey("quest_scenarios.id"))
-    title = Column(String)
-    description = Column(String)
-    level_required = Column(Integer, default=1)
-    order_in_scenario = Column(Integer, default=0)
-    reward_gold = Column(Integer, default=0)
-    reward_wood = Column(Integer, default=0)
-    reward_stone = Column(Integer, default=0)
-    reward_exp = Column(Integer, default=0)
-
-    user_tasks = relationship("UserTask", back_populates="task")
-    scenario = relationship("QuestScenario", back_populates="tasks")
-
-
-class UserTask(Base):
-    __tablename__ = "user_tasks"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    task_id = Column(Integer, ForeignKey("tasks.id"))
-    is_completed = Column(Boolean, default=False)
-
-    user = relationship("User", back_populates="user_tasks")
-    task = relationship("Task", back_populates="user_tasks")
-
-class QuestScenario(Base):
-    __tablename__ = "quest_scenarios"
-
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String)  # Назва сценарію
-    description = Column(String)  # Опис сценарію
-    min_level = Column(Integer, default=1)  # Мінімальний рівень для доступу
-    is_active = Column(Boolean, default=True)  # Чи активний сценарій
-    tasks = relationship("Task", back_populates="scenario")
-
 
 class Achievement(Base):
     __tablename__ = "achievements"
@@ -478,3 +438,23 @@ class RepairJob(Base):
     gold = Column(Integer, nullable=False)
     restored = Column(Integer, nullable=False)
     succeeded = Column(Boolean, nullable=False)
+
+
+class GameplayEvent(Base):
+    __tablename__ = "gameplay_events"
+
+    id = Column(Integer, primary_key=True)
+    occurred_at = Column(DateTime, nullable=False, index=True)
+    kind = Column(String(32), nullable=False)
+    payload = Column(JSON, nullable=False)
+
+
+class PlayerModerationEvent(Base):
+    __tablename__ = "player_moderation_events"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    actor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String(12), nullable=False)
+    reason = Column(String(500))
+    created_at = Column(DateTime, nullable=False)

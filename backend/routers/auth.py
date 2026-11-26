@@ -6,12 +6,14 @@ from fastapi import APIRouter, Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from backend.auth import playable_users
+from backend.auth import playable_users, require_unblocked, session_player
 from backend.engine.data import faction_key
-from backend.routers.char_tasks import TaskHelper
 from backend.services.castle_buildings import grant_starter_buildings
+from backend.services.hero_equipment import lock_hero
+from backend.services.nicknames import username_match, validation_error
 
 from .. import database, models
 from ..utils import hash_password, setup_logger, verify_password
@@ -20,117 +22,6 @@ logger = setup_logger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
-
-
-class AuthHelper:
-    def add_unit_types(db: Session):
-        """Add unit types for all fractions"""
-        elfe_unit_types = [
-            {
-                "name": "Baby",
-                "level_required": 1,
-                "fraction": "elfe",
-                "max_quantity": 17,
-                "icon_url": "../static/images/frankenstein.png",
-            },
-            {
-                "name": "Junior",
-                "level_required": 2,
-                "fraction": "elfe",
-                "max_quantity": 12,
-                "icon_url": "../static/images/frankenstein.png",
-            },
-            {
-                "name": "Adult",
-                "level_required": 5,
-                "fraction": "elfe",
-                "max_quantity": 8,
-                "icon_url": "../static/images/frankenstein.png",
-            },
-            {
-                "name": "Old",
-                "level_required": 8,
-                "fraction": "elfe",
-                "max_quantity": 2,
-                "icon_url": "../static/images/frankenstein.png",
-            },
-        ]
-
-        green_elfe_unit_types = [
-            {
-                "name": "green_Baby",
-                "level_required": 1,
-                "fraction": "undergroundElves",
-                "max_quantity": 19,
-                "icon_url": "../static/images/frankenstein.png",
-            },
-            {
-                "name": "green_Junior",
-                "level_required": 2,
-                "fraction": "undergroundElves",
-                "max_quantity": 10,
-                "icon_url": "../static/images/frankenstein.png",
-            },
-            {
-                "name": "green_Adult",
-                "level_required": 5,
-                "fraction": "undergroundElves",
-                "max_quantity": 9,
-                "icon_url": "../static/images/frankenstein.png",
-            },
-            {
-                "name": "green_Old",
-                "level_required": 8,
-                "fraction": "undergroundElves",
-                "max_quantity": 3,
-                "icon_url": "../static/images/frankenstein.png",
-            },
-        ]
-        for unit_types in [elfe_unit_types, green_elfe_unit_types]:
-            for unit in unit_types:
-                unit_type = models.UnitType(
-                    name=unit["name"],
-                    level_required=unit["level_required"],
-                    fraction=unit["fraction"],
-                    max_quantity=unit["max_quantity"],
-                    icon_url=unit["icon_url"],
-                )
-                db.add(unit_type)
-        db.commit()
-
-    def get_default_unit_types(fraction: str, db: Session):
-        """Get unit types by fraction"""
-        return (
-            db.query(models.UnitType).filter(models.UnitType.fraction == fraction).all()
-        )
-
-    def set_default_user_units(user: models.User, db: Session) -> None:
-        """Set default user unit values"""
-        default_units = AuthHelper.get_default_unit_types(user.fraction, db)
-
-        for unit in default_units:
-            unit_type = (
-                db.query(models.UnitType)
-                .filter(models.UnitType.name == unit.name)
-                .first()
-            )
-            if unit_type:  # check if unit was added to avoid duplicates
-                existing_user_unit = (
-                    db.query(models.UserUnit)
-                    .filter(
-                        models.UserUnit.user_id == user.id,
-                        models.UserUnit.unit_type_id == unit_type.id,
-                    )
-                    .first()
-                )
-                if not existing_user_unit:
-                    user_unit = models.UserUnit(
-                        user_id=user.id,
-                        unit_type_id=unit_type.id,
-                        quantity=0,  # unit.max_quantity
-                    )
-                    db.add(user_unit)
-            db.commit()
 
 
 class AuthRotes:
@@ -146,15 +37,9 @@ class AuthRotes:
         fraction = {"elves": "elfe", "underground_elves": "undergroundElves"}.get(faction_key(fraction))
         if fraction is None:
             raise HTTPException(422, "Обери доступну фракцію.")
-        # Перевіряємо чи існує користувач
-        existing_user = (
-            db.query(models.User).filter(models.User.username == username).first()
-        )
-        if existing_user:
-            return templates.TemplateResponse(
-                "register.html",
-                {"request": request, "error": "Користувач з таким ім'ям вже існує"},
-            )
+        username = username.strip()
+        if error := validation_error(db, username):
+            return templates.TemplateResponse("register.html", {"request": request, "error": error}, status_code=422)
 
         # Хешуємо пароль
         hashed_password = hash_password(password)
@@ -162,26 +47,18 @@ class AuthRotes:
         # Створюємо нового користувача
         new_user = models.User(
             username=username, password=hashed_password, fraction=fraction, gender=gender,
+            mind=1 if fraction == "elfe" else 0,
+            melee_attack=1 if fraction == "undergroundElves" else 0,
         )
         db.add(new_user)
-        db.flush()
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            return templates.TemplateResponse("register.html", {
+                "request": request, "error": "Цей нікнейм уже зайнято.",
+            }, status_code=409)
         grant_starter_buildings(db, new_user)
-
-        # Додаємо початкові юніти
-        unit_types = AuthHelper.get_default_unit_types(fraction, db)
-        for unit_type in unit_types:
-            user_unit = models.UserUnit(
-                user_id=new_user.id, unit_type_id=unit_type.id, quantity=0
-            )
-            db.add(user_unit)
-
-        # Автоматично додаємо перше завдання користувачу
-        first_task = db.query(models.Task).filter(models.Task.id == 1).first()
-        if first_task:
-            user_task = models.UserTask(
-                user_id=new_user.id, task_id=first_task.id, is_completed=False
-            )
-            db.add(user_task)
 
         db.commit()
 
@@ -189,23 +66,34 @@ class AuthRotes:
 
     @router.post("/login")
     def login(
-        # request: Request,
+        request: Request,
         username: str = Form(...),
         password: str = Form(...),
         db: Session = Depends(database.get_db),
     ):
-        user = playable_users(db).filter(models.User.username == username).first()
+        user = playable_users(db).filter(username_match(username)).first()
         if not user or not user.password or not verify_password(password, user.password):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        response = RedirectResponse(url="/player", status_code=303)
-
         session_id = str(uuid.uuid4())
-        response.set_cookie(key="session_id", value=session_id)
-
-        user.session_id = session_id
+        try:
+            require_unblocked(user)
+            result = db.execute(update(models.User).where(
+                models.User.id == user.id, models.User.is_active.is_(True), models.User.ban_reason.is_(None),
+                models.User.username == user.username, models.User.nickname_reset_from == user.nickname_reset_from,
+            ).values(session_id=session_id))
+            if not result.rowcount:
+                db.refresh(user)
+                require_unblocked(user)
+                raise HTTPException(403, "Вхід недоступний.")
+        except HTTPException as exc:
+            db.rollback()
+            return templates.TemplateResponse("login.html", {"request": request, "error": exc.detail},
+                                              status_code=exc.status_code, headers={"Cache-Control": "no-store"})
+        destination = "/choose-nickname" if user.nickname_reset_from is not None else "/player"
         db.commit()
-
+        response = RedirectResponse(url=destination, status_code=303)
+        response.set_cookie(key="session_id", value=session_id, httponly=True, samesite="lax")
         return response
 
     @router.post("/logout")
@@ -231,3 +119,42 @@ class AuthRotes:
     @router.get("/login")
     async def show_login_form(request: Request):
         return templates.TemplateResponse("login.html", {"request": request})
+
+@router.get("/choose-nickname")
+def choose_nickname_page(request: Request, db: Session = Depends(database.get_db)):
+    player = session_player(request, db, allow_nickname_reset=True)
+    if player is None:
+        return RedirectResponse("/login", status_code=303)
+    if player.nickname_reset_from is None:
+        return RedirectResponse("/player", status_code=303)
+    return nickname_form(request, player)
+
+
+def nickname_form(request, player, *, error=None, status=200):
+    return templates.TemplateResponse("choose_nickname.html", {
+        "request": request, "temporary_name": player.username, "error": error,
+    }, status_code=status, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/choose-nickname")
+def choose_nickname(request: Request, username: str = Form(...), db: Session = Depends(database.get_db)):
+    player = session_player(request, db, allow_nickname_reset=True)
+    if player is None:
+        raise HTTPException(401, "Увійди до гри.")
+    lock_hero(db, player)
+    require_unblocked(player)
+    if player.session_id != request.cookies.get("session_id"):
+        raise HTTPException(401, "Увійди до гри.")
+    if player.nickname_reset_from is None:
+        raise HTTPException(409, "Заміна нікнейму зараз не потрібна.")
+    username = username.strip()
+    if error := validation_error(db, username):
+        return nickname_form(request, player, error=error, status=422)
+    player.username = username
+    player.nickname_reset_from = None
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return nickname_form(request, player, error="Цей нікнейм уже зайнято.", status=409)
+    return RedirectResponse("/player", status_code=303, headers={"Cache-Control": "no-store"})

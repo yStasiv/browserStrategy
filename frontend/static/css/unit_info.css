@@ -44,6 +44,7 @@
 .unit-info-heading button { padding: .35rem .55rem; border: 1px solid #cbb691; border-radius: .3rem; background: #f9f0de; color: inherit; cursor: pointer; }
 .unit-info-body .unit-portrait { width: min(100%, 9rem); font-size: 3rem; }
 .unit-info-overview { display: grid; grid-template-columns: minmax(0, 9rem) minmax(0, 1fr); align-items: start; gap: .85rem; }
+.unit-info-abilities strong { display: inline-flex; align-items: center; gap: .35rem; }
 .unit-info-abilities p { margin: .35rem 0 0; }
 .unit-info-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: .35rem .8rem; margin-bottom: 0; }
 .unit-info-stats > div { display: flex; justify-content: space-between; gap: .4rem; padding: .3rem 0; border-bottom: 1px solid #cfbb98; }

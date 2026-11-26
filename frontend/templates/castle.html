@@ -10,7 +10,7 @@
     {% if spells is not none %}
         {% if spells %}
         <p>Дозволяє герою вивчити закляття
-            {% for spell in spells %}<a href="/unit_info?key=elemental_{{ spell.element }}">Виклик «{{ spell.name }}»</a>{{ ', ' if not loop.last else '.' }}{% endfor %}
+            {% for spell in spells %}<a href="/castle/magic/spell/{{ spell.id }}">{{ spell.name }}</a>{{ ', ' if not loop.last else '.' }}{% endfor %}
         </p>
         {% else %}
         <p>Закляття для цього рівня будуть додані згодом.</p>
@@ -31,6 +31,7 @@
 <link rel="stylesheet" href="{{ url_for('static', path='css/unit_info.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', path='css/game_panel.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', path='css/castle_army.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/spells.css') }}">
 <script defer src="{{ url_for('static', path='js/castle_army.js') }}"></script>
 {% endblock %}
 {% block body %}
@@ -117,7 +118,8 @@
         ('castle-magic', 'Школа магії', 'Поки немає доступних заклять.')
     ) %}
     {% if id != 'castle-magic' or magic_school_built %}
-    <dialog id="{{ id }}" class="castle-dialog" aria-labelledby="{{ id }}-title">
+    <dialog id="{{ id }}" class="castle-dialog" aria-labelledby="{{ id }}-title"
+            {% if id == 'castle-magic' and request.query_params.get('section') == 'magic' %}data-open-on-load{% endif %}>
         <header>
             <h2 id="{{ id }}-title">{{ title }}</h2>
             <form method="dialog"><button class="castle-section" type="submit">Закрити</button></form>
@@ -125,13 +127,23 @@
         {% if id == 'castle-magic' %}
         <p>Рівень школи {{ school_level }} / 7</p>
         {% endif %}
-        {% if id == 'castle-magic' and elementals %}
-        <ul class="castle-elementals">
-            {% for element, spell in elementals.items() %}
-            <li>
-                <a href="/unit_info?key=elemental_{{ element }}">{{ spell.icon }} {{ spell.name }}</a>
-                {% if spell.school_level <= school_level %}<span>Доступний у бою</span>
-                {% else %}<span>Рівень школи {{ spell.school_level }}</span>{% endif %}
+        {% if id == 'castle-magic' and spells %}
+        {% if faction != 'elves' %}<p>Закляття виклику доступні ельфійським героям.</p>{% endif %}
+        <ul class="spell-grid">
+            {% for spell in spells %}
+            <li class="spell-entry">
+                <a class="spell-tile{% if not spell.unlocked %} spell-locked{% endif %}"
+                   href="/castle/magic/spell/{{ spell.id }}" aria-describedby="tip-{{ spell.id }}">
+                    <span class="spell-art"><img src="{{ spell.icon_url }}" alt="" loading="lazy" width="80" height="80"></span>
+                    <strong>{{ spell.name }}</strong>
+                    <span class="spell-badge">{{ spell.energy_cost }} енергії</span>
+                    <small>Рівень {{ spell.required_school_level }} · {{ 'Вивчено' if spell.unlocked else 'Закрито' }}</small>
+                </a>
+                <div class="spell-tooltip" id="tip-{{ spell.id }}" role="tooltip">
+                    <strong>{{ spell.name }}</strong>
+                    <span>{{ spell.energy_cost }} енергії</span>
+                    <span>{{ spell.short_description }}</span>
+                </div>
             </li>
             {% endfor %}
         </ul>

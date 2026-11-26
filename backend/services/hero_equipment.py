@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
+from backend.services.gameplay_events import record
 from backend.models import EquippedItems, Item, RepairJob, User
 
 INVENTORY_LIMIT = 30
@@ -61,8 +62,10 @@ def wear_battle_equipment(db, player, item_ids):
     ))
     for item in items:
         item.durability -= 1
-        if item.durability == 0 and item.id in slots:
-            apply_equipment(equipped, player, slots[item.id], item, False)
+        if item.durability == 0:
+            record(db, "item_broken")
+            if item.id in slots:
+                apply_equipment(equipped, player, slots[item.id], item, False)
 
 
 def replacement_slot(candidates, same_type, free, previous):

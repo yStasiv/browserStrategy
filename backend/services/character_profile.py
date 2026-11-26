@@ -122,7 +122,6 @@ SERVICES = (
     Service("shop", "Магазин артефактів", "/shop", 20),
     Service("battle", "Почати бій", "/battle", 30),
     Service("battle_history", "Історія боїв", "/battle/history", 40),
-    Service("quests", "Журнал завдань", "/char_tasks", 50),
     Service("help", "Довідка по грі", "/help", 60),
 )
 

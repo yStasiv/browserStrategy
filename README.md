@@ -6,10 +6,6 @@ Main User Page after registr
 ![alt text](AboutImg/MainScreen.png)
 
 
-Tasks for user via some rewards
-![alt text](AboutImg/CharTasksPage.png)
-Note: Just admin can add new tasks
-
 User can update  characteristics as he wish
 ![alt text](AboutImg/CharacteristicsUpdateImg.png)
 

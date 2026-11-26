@@ -18,11 +18,15 @@ templates = Jinja2Templates(directory="frontend/templates")
 # Словник для зберігання активних битв
 active_battles = {}
 @router.get("/battle")
-async def battle_page(request: Request, db: Session = Depends(database.get_db)):
+async def battle_page(request: Request, admin_replay: bool = False, db: Session = Depends(database.get_db)):
     player = await get_current_user(request, db)
     if not player:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return templates.TemplateResponse("battle.html", {"request": request, "player": player})
+    if admin_replay and not player.is_admin:
+        raise HTTPException(403, "Потрібні права адміністратора.")
+    return templates.TemplateResponse("battle.html", {
+        "request": request, "player": player, "admin_replay": admin_replay,
+    })
 
 @router.get("/battle/history")
 async def battle_history(request: Request, db: Session = Depends(database.get_db), player_id: int | None = None):

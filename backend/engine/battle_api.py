@@ -65,6 +65,11 @@ async def get_battle(battle_id: int, request: Request, db: Session = Depends(dat
     return _call(svc.get_battle_view, db, user, battle_id)
 
 
+@router.get("/{battle_id}/spells")
+async def get_spellbook(battle_id: int, request: Request, db: Session = Depends(database.get_db)):
+    return _call(svc.battle_spellbook, db, await _user(request, db), battle_id)
+
+
 @router.post("/{battle_id}/actions")
 async def post_action(battle_id: int, body: ActionIn, request: Request,
                       db: Session = Depends(database.get_db)):

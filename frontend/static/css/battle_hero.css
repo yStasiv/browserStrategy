@@ -1,6 +1,6 @@
 .battle-stage { position: relative; display: grid; place-items: center; perspective: 1000px; }
 #field-heroes { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-#field-heroes[hidden], #spell-target-controls[hidden] { display: none; }
+#field-heroes[hidden], #battle-spellbook[hidden] { display: none; }
 .field-hero {
     position: absolute;
     top: 50%;
@@ -8,6 +8,7 @@
     inset-inline-start: 0;
     width: var(--hero-gutter, 3rem);
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     justify-items: center;
     gap: .2rem;
     color: #f5e6b8;
@@ -29,18 +30,22 @@
 .field-hero.active .field-hero-sprite { filter: drop-shadow(0 0 5px #facc15); }
 .field-hero.hl .field-hero-sprite { filter: drop-shadow(0 0 5px #fff); }
 .field-hero small { font-size: .7rem; overflow-wrap: anywhere; }
-.field-hero button { padding: .25rem .35rem; font-size: .8rem; }
+
 #initiative .chip img { width: 100%; height: 100%; object-fit: cover; border-radius: .2rem; }
 #initiative .chip img.hero-default-portrait { object-position: center 12%; }
 #initiative .chip.completed { opacity: .6; border-style: dashed; }
 #initiative .chip[aria-current="step"] { box-shadow: 0 0 0 2px #facc15; }
 #spellbook {
     position: fixed;
-    inset: 0;
-    width: min(30rem, calc(100% - 1.5rem));
-    max-height: min(36rem, calc(100dvh - 1.5rem));
+    inset: auto;
+    top: var(--spellbook-top);
+    left: var(--spellbook-left);
+    box-sizing: border-box;
+    width: min(30rem, var(--spellbook-width));
+    max-width: none;
+    max-height: min(36rem, var(--spellbook-height));
     overflow-y: auto;
-    margin: auto;
+    margin: 0;
     padding: 1rem;
     border: 1px solid #9a6b3b;
     border-radius: .45rem;
@@ -48,7 +53,7 @@
     box-shadow: inset 0 0 0 2px #fff0cb, 0 .6rem 2rem #20150888;
     color: var(--battle-ink);
 }
-#spellbook::backdrop { background: #24190caa; }
+#spellbook::backdrop { background: transparent; }
 .spellbook-heading {
     display: flex;
     align-items: center;
@@ -59,34 +64,32 @@
 }
 .spellbook-heading h2 { margin: 0; font-size: 1.25rem; }
 #spellbook-energy { margin: .65rem 0; color: var(--battle-green); }
-#spell-list { display: grid; gap: .5rem; }
-.spell-option {
-    width: 100%;
+#battle-spellbook {
+    position: absolute;
+    inset-block-start: .5rem;
+    inset-inline-start: .5rem;
+    z-index: 3;
     display: grid;
-    gap: .15rem;
-    padding: .5rem .65rem;
-    background: #ffefce;
-    color: var(--battle-ink);
-    border: 1px solid #bf9c6b;
-    border-radius: .35rem;
-    text-align: start;
-    overflow-wrap: anywhere;
+    place-items: center;
+    box-sizing: border-box;
+    width: 4rem;
+    height: 4rem;
+    padding: 0;
+    border: 1px solid #ac8251;
+    border-radius: .3rem;
+    background: #372d22;
     cursor: pointer;
 }
-.spell-option:not(:disabled):hover { background: #e9efda; border-color: #697e54; }
-.spell-option:disabled { color: var(--battle-muted); background: #e9dbc0; cursor: not-allowed; }
-.spell-option small { color: var(--battle-muted); }
-.spell-option .spell-unavailable { color: #813e31; }
-.spell-option:focus-visible, #spell-target-controls button:focus-visible, .field-hero button:focus-visible {
-    outline: 2px solid #ecd088;
+#battle-spellbook img { display: block; width: 52px; height: 52px; object-fit: contain; }
+#battle-spellbook:hover:not(:disabled) { background: #564331; }
+#battle-spellbook:disabled { opacity: .55; cursor: not-allowed; }
+#spellbook .spell-unavailable { color: #813e31; }
+#spellbook .spell-tile:not(:disabled) { cursor: pointer; }
+#spellbook .spell-tile:disabled { cursor: not-allowed; }
+#spellbook .spell-tile:focus-visible, #battle-spellbook:focus-visible {
+    outline: 2px solid #976022;
     outline-offset: 2px;
 }
-.cell.spell-cell { background: #1a8764bd; box-shadow: inset 0 0 0 2px #9cf3c6; cursor: crosshair; }
-.cell.spell-cell.enemy-spell-cell { background: #9d4545bd; box-shadow: inset 0 0 0 2px #ffc0b8; }
-.stack.spell-target-stack { cursor: crosshair; }
-#stacks.spell-aiming .stack.target:not(.spell-target-stack) { cursor: default; }
-#stacks.spell-aiming .stack.target:not(.spell-target-stack) .icon { box-shadow: none; }
-#stacks .stack.spell-target-stack .icon { box-shadow: 0 0 0 2px #9cf3c6; }
 .battle-hero-effect {
     position: fixed;
     z-index: 15;

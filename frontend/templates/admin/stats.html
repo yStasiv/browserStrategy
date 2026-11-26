@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Статистика гри{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/admin_stats.css') }}">
+<script async id="stats-chart-library" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+<script defer src="{{ url_for('static', path='js/admin_stats.js') }}"></script>
+{% endblock %}
+{% block body %}
+<main class="hero-dashboard admin-stats">
+    <header class="hero-panel stats-header">
+        <h1>Статистика гри</h1>
+        <div class="stats-controls" role="group" aria-label="Період статистики">
+            <button type="button" data-period="24h" aria-pressed="false">24 год</button>
+            <button type="button" data-period="7d" aria-pressed="true">7 днів</button>
+            <button type="button" data-period="30d" aria-pressed="false">30 днів</button>
+            <button type="button" data-period="all" aria-pressed="false">Увесь час</button>
+            <button type="button" id="stats-refresh">Оновити</button>
+        </div>
+        <p id="stats-status" role="status"></p>
+        <noscript>Для завантаження статистики потрібен JavaScript.</noscript>
+    </header>
+    <div class="stats-grid" id="stats-grid" aria-busy="true">
+        {% for key, title in [
+            ('combat', 'Результати й тривалість боїв'),
+            ('hunting', 'Полювання й рівні складності'),
+            ('effects', 'Удача, мораль і виклик елементалів'),
+            ('shop', 'Популярність артефактів'),
+            ('economy', 'Рух ресурсів і ремонти'),
+            ('players', 'Гравці й незавершені бої'),
+            ('integrity', 'Цілісність каталогу й зображень'),
+            ('replays', 'Останні повтори боїв')
+        ] %}
+        <section class="hero-panel stats-card stats-{{ key }}" aria-labelledby="title-{{ key }}">
+            <h2 id="title-{{ key }}">{{ title }}</h2>
+            <div id="stats-{{ key }}"></div>
+        </section>
+        {% endfor %}
+        {% for key, title in [
+            ('battle-trend', 'Динаміка боїв'),
+            ('economy-trend', 'Динаміка надходжень і витрат золота'),
+            ('item-trend', 'Популярні артефакти й частки категорій')
+        ] %}
+        <section class="hero-panel stats-card stats-wide" aria-labelledby="title-{{ key }}">
+            <h2 id="title-{{ key }}">{{ title }}</h2>
+            <div id="stats-{{ key }}"></div>
+        </section>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}
