@@ -4,7 +4,7 @@ from engine import (Attack, BattleState, Defend, IllegalAction, Move, Wait,
                     apply, create_battle, forecast, reachable, run_ai, turn_info)
 from engine.data import UNITS
 from engine.events import action_events, reconstruct
-from engine.rules import _hurt, cheb, expected_damage, init_timeline
+from engine.rules import _hurt, cheb, expected_damage, init_timeline, period
 from engine.state import HeroTurn, Stack
 
 
@@ -122,6 +122,23 @@ def test_wait_repeats_and_delays_by_half_period():
         st, _ = apply(st, Defend())
     next_state, _ = apply(st, Wait())
     assert next_state.stacks[actor.id].ready == st.stacks[actor.id].ready + wait_delay(actor)
+
+
+def test_hero_wait_uses_half_interval_and_matches_replay_and_forecast():
+    hero = HeroTurn("hero_0", 0, "Ельф", 4, 11, 0, 0, 1, 2, 5, 8, faction="elves")
+    state = create_battle([("archer", 10)], [("goblin", 20)], seed=37, heroes=[hero])
+    state.active_id = hero.id
+    hero = state.heroes[hero.id]
+    assert turn_info(state)["can_wait"] is True
+    expected = forecast(state, 12, after_wait=True)
+    waited, events = apply(state, Wait())
+    attacked, _ = apply(state, Attack("s1_0"))
+    assert waited.heroes[hero.id].ready == hero.ready + period(hero) // 2
+    assert waited.heroes[hero.id].ready < attacked.heroes[hero.id].ready
+    assert expected == forecast(waited, 12)
+    recorded = action_events(state, waited, events)
+    assert any(event["type"] == "UNIT_WAITED" and event["actor_id"] == hero.id for event in recorded)
+    assert reconstruct(state.to_dict(), recorded) == waited.to_dict()
 
 
 def test_input_state_not_mutated_and_roundtrip():
@@ -254,6 +271,18 @@ def test_attack_previews_match_defended_shot_and_forced_melee():
     from engine.rules import attack_preview
     knight = Stack("knight", "knight", 0, 1, UNITS["knight"].hp, 0, 0)
     assert attack_preview(knight, target, ranged=False)["mult"] == pytest.approx(1.02)
+
+
+def test_spellbook_school_levels_and_negative_stat_clamp():
+    from engine.summoning import SPELLS, hp_pool, max_energy, school_spells
+
+    expected = [set(), {"geolith"}, {"geolith", "hydro"}, {"geolith", "hydro", "aero"},
+                {"geolith", "hydro", "aero", "pyro"}, set(SPELLS) - {"volt"},
+                set(SPELLS) - {"volt"}, set(SPELLS)]
+    for level, unlocked in enumerate(expected):
+        assert {spell["id"] for spell in school_spells(level, is_elf=True) if spell["unlocked"]} == unlocked
+    assert not any(spell["unlocked"] for spell in school_spells(7, is_elf=False))
+    assert (hp_pool(-1), hp_pool(-3), max_energy(-1), max_energy(-3)) == (10, 0, 0, 0)
 
 
 def test_elf_summon_with_full_slots_replaces_and_replays_until_battle_end():

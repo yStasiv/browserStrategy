@@ -71,7 +71,7 @@ button, select, input { font: inherit; }
 .battle-workspace { flex: 1; display: grid; gap: .75rem; min-width: 0; min-height: 0; }
 .battle-sidebar { display: flex; flex-direction: column; align-items: stretch; gap: .65rem; min-width: 0; }
 #battle-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
-#deployment-placement-hint, #spell-target-status { color: var(--battle-muted); margin: .6rem 0; font-size: .9rem; }
+#deployment-placement-hint { color: var(--battle-muted); margin: .6rem 0; font-size: .9rem; }
 .deployment-buttons, .confirm-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
 .deployment-buttons .btn { flex: 1 1 auto; }
 .battle-journal h2 { padding-bottom: .38rem; border-bottom: 1px solid #cfb589; }
@@ -90,6 +90,7 @@ button, select, input { font: inherit; }
 }
 
 #board-wrap {
+    position: relative;
     display: grid;
     grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     place-items: center;

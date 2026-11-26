@@ -953,6 +953,28 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     status, body = call("GET", "/castle?section=army")
     assert status == 200 and b'name="form:elves_sylven"' not in body
     assert b'name="form:underground_elves_shade"' not in body
+    from pathlib import Path
+
+    expected_spells = {"geolith": 1, "hydro": 2, "aero": 3, "pyro": 4, "miasmo": 5, "volt": 7}
+    assert (Path("frontend/static/images/spells") / "spellbook.png").is_file()
+    for spell_id in expected_spells:
+        assert f"/castle/magic/spell/{spell_id}".encode() in body
+    status, body = call("GET", "/api/castle/magic/spells")
+    magic = json.loads(body)
+    assert status == 200 and (magic["school_level"], magic["max_energy"], magic["summon_hp"]) == (2, 20, 70)
+    assert {spell["id"]: spell["required_school_level"] for spell in magic["spells"]} == expected_spells
+    assert {spell["id"] for spell in magic["spells"] if spell["unlocked"]} == {"geolith", "hydro"}
+    for spell in magic["spells"]:
+        assert spell["icon_url"] == f"/static/images/spells/spell_{spell['id']}.png"
+        assert (Path("frontend") / spell["icon_url"].lstrip("/")).is_file()
+        assert spell["energy_cost"] == 10 and spell["duration_turns"] is None
+    status, page = call("GET", "/castle/magic/spell/aero")
+    assert status == 200 and b"/static/images/spells/spell_aero.png" in page
+    assert b"<strong>20</strong>" in page and b"<strong>70</strong>" in page and "10 енергії".encode() in page
+    for icon in ("attack", "defense", "initiative", "speed", "hp", "knowledge", "spell_power"):
+        assert f"/static/images/hero_stats/{icon}.png".encode() in page
+    assert call("GET", "/castle/magic/spell/resurrection")[0] == 404
+
     assert call("POST", "/castle/build", form={"building_id": "magic_school_4"})[0] == 403
     status, body = call("POST", "/api/battles/pve", payload={"scenario": "training"})
     assert status == 400 and json.loads(body)["detail"]["code"] == "army_required"
@@ -1041,14 +1063,23 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
             current = json.loads(body)
         pytest.fail("Герой не отримав хід.")
 
+    status, body = call("GET", root + "/spells")
+    assert status == 200 and all(not spell["can_cast"] for spell in json.loads(body)["spells"])
     assert not battle["turn"].get("hero")
     assert any(entry["id"] == "hero_0" for entry in battle["forecast"])
     assert summon("earth", battle["version"])[0] == 400
     battle = advance_to_hero(battle, root)
+    assert battle["turn"]["can_wait"] and battle["wait_forecast"]
     options = {spell["element"]: spell for spell in battle["turn"]["spells"]}
     assert set(options) == {"earth", "water"}
-    assert options["earth"]["energy_cost"] == 10
+    assert options["earth"]["energy_cost"] == 10 and options["earth"]["duration_turns"] is None
+    assert options["earth"]["id"] == "geolith" and options["earth"]["can_cast"]
+    assert options["earth"]["icon_url"] == "/static/images/spells/spell_geolith.png"
+    status, body = call("GET", root + "/spells")
+    assert status == 200 and json.loads(body)["spells"] == battle["turn"]["spells"]
     assert options["earth"]["target"]["side"] == 0
+    assert options["earth"]["summon_count"] == 3
+    assert options["water"]["summon_count"] == 4
     assert options["earth"]["description"] and options["earth"]["target_label"]
     assert summon("fire", battle["version"])[0] == 400
     first_version = battle["version"]
@@ -1056,7 +1087,7 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert status == 200
     battle = json.loads(body)
     first = next(stack for stack in battle["state"]["stacks"].values() if stack.get("summoned"))
-    assert (first["count"], first["top_hp"], first["x"], first["y"]) == (3, 20, 0, 0)
+    assert (first["count"], first["top_hp"], first["x"], first["y"]) == (options["earth"]["summon_count"], 20, 0, 0)
     assert options["earth"]["target"]["cell"] == [first["x"], first["y"]]
     assert battle["state"]["summoning"]["0"]["energy"] == 10
     assert summon("earth", first_version)[0] == 409
@@ -1069,10 +1100,10 @@ def test_faction_forms_school_summoning_and_replay(sessions, monkeypatch):
     assert len(summons) == 1 and first["id"] not in battle["state"]["stacks"]
     assert summons[0]["unit"] == "elemental_water"
     summoned = next(event["payload"] for event in battle["event_stream"] if event["type"] == "ELEMENTAL_SUMMONED")
-    assert (summoned["count"], summoned["top_hp"]) == (4, 10)
+    assert (summoned["count"], summoned["top_hp"]) == (options["water"]["summon_count"], 10)
     assert battle["state"]["summoning"]["0"]["energy"] == 0
     battle = advance_to_hero(battle, root)
-    assert all("target" not in spell and "Недостатньо енергії" in spell["unavailable"]
+    assert all(not spell["can_cast"] and "target" not in spell and "Недостатньо енергії" in spell["unavailable"]
                for spell in battle["turn"]["spells"])
     status, body = summon("earth", battle["version"])
     assert status == 400 and "Недостатньо енергії" in body.decode()
@@ -1106,6 +1137,7 @@ def test_registration_grants_only_own_faction_starter_buildings(sessions):
     app = FastAPI()
     app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
     app.include_router(auth.router)
+    app.include_router(player.router)
 
     def get_db():
         with sessions() as db:
@@ -1119,15 +1151,29 @@ def test_registration_grants_only_own_faction_starter_buildings(sessions):
         assert asyncio.run(asgi_request(app, "POST", "/register", "", {
             "username": username, "password": "test-password", "fraction": fraction, "gender": gender,
         }))[0] == 303
-        with sessions() as db:
+        with sessions.begin() as db:
             user = db.scalar(select(User).where(User.username == username))
             assert user.fraction == fraction
             assert user.gender == gender
+            innate = (1, 0) if group == "elves" else (0, 1)
+            assert (user.mind, user.melee_attack) == innate
+            assert user.attribute_allocations == {}
+            user.session_id = username + "-session"
             ids = db.scalars(select(CastleBuilding.building_id).where(CastleBuilding.player_id == user.id))
             assert set(ids) == {f"{group}_recruitment_tier_{tier}" for tier in (1, 2)}
             assert saved_army(db, user.id) == []
             options = castle.army_options(db, user)
             assert [(item["unit"].tier, item["unit"].form) for item in options] == [(1, 1), (2, 1)]
+
+        cookie = f"session_id={username}-session"
+        attribute = "knowledge" if group == "elves" else "attack"
+        assert asyncio.run(asgi_request(app, "POST", "/update-attribute", cookie, {"attribute": attribute}))[0] == 303
+        assert asyncio.run(asgi_request(app, "POST", "/reset-attributes", cookie))[0] == 303
+        with sessions() as db:
+            user = db.scalar(select(User).where(User.username == username))
+            assert (user.mind, user.melee_attack) == innate
+            assert user.pending_attribute_points == 1
+            assert user.attribute_allocations == {}
 
 
 def test_hunt_cooldown_after_defeat_is_shared_and_expires(sessions, monkeypatch):

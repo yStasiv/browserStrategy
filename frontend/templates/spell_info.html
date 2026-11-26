@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ spell.name }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/spells.css') }}">
+{% endblock %}
+{% block body %}
+<main class="hero-dashboard spell-info">
+    <p><a href="/castle?section=magic">До Школи магії</a></p>
+    <section class="hero-panel">
+        <div class="spell-info-heading">
+            <span class="spell-art"><img src="{{ spell.icon_url }}" alt="" width="128" height="128"></span>
+            <div>
+                <h1>{{ spell.name }}</h1>
+                <p>Школа виклику · потрібен рівень {{ spell.required_school_level }}</p>
+                <p>{{ 'Вивчено' if spell.unlocked else 'Закрито' }} · твій рівень школи {{ magic.school_level }}</p>
+                <p class="spell-badge">{{ spell.energy_cost }} енергії</p>
+            </div>
+        </div>
+        <h2>Енергія та здоров’я загону</h2>
+        <p>Енергія на початку бою · <strong>{{ magic.max_energy }}</strong> (макс. із 0 та 10 + 10 × Знання). <img class="spell-stat-icon" src="/static/images/hero_stats/knowledge.png" alt=""> Твої знання · {{ magic.knowledge }}.</p>
+        <p>Запас HP викликаного загону · <strong>{{ magic.summon_hp }}</strong> (макс. із 0 та 20 + 10 × Сила магії). <img class="spell-stat-icon" src="/static/images/hero_stats/spell_power.png" alt=""> Твоя сила магії · {{ magic.spell_power }}.</p>
+        <h2>Характеристики елементаля</h2>
+        <dl class="spell-unit-stats">
+            {% for label, value, icon in [
+                ('Атака', unit.attack, 'attack'), ('Захист', unit.defense, 'defense'),
+                ('Ініціатива', unit.initiative, 'initiative'), ('Швидкість', unit.speed, 'speed'),
+                ('Шкода', unit.dmg_min ~ '–' ~ unit.dmg_max, 'attack'), ('HP істоти', unit.hp, 'hp')
+            ] %}
+            <div>
+                <dt><img class="spell-stat-icon" src="/static/images/hero_stats/{{ icon }}.png" alt=""> {{ label }}</dt>
+                <dd>{{ value }}</dd>
+            </div>
+            {% endfor %}
+        </dl>
+        <p><a href="/unit_info?key={{ spell.summon_unit_id }}">Картка істоти</a></p>
+        <h2>Правила виклику</h2>
+        <p>{{ spell.full_description }}</p>
+    </section>
+</main>
+{% endblock %}

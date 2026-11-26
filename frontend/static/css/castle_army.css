@@ -133,8 +133,6 @@
 .army-form-option input:checked + .unit-portrait { border-color: #365036; box-shadow: 0 0 0 2px #365036; }
 .army-form-option input:focus-visible + .unit-portrait { outline: 1px dashed #382918; outline-offset: 3px; }
 .army-unit-summary, .army-option-controls { display: grid; gap: .2rem; min-width: 0; }
-.castle-elementals { display: grid; gap: .55rem; padding-inline-start: 1.25rem; }
-.castle-elementals li span { display: block; }
 .army-option-controls { justify-items: center; }
 .army-unit-preview {
     box-sizing: border-box;

@@ -15,7 +15,7 @@ from heapq import heappop, heappush
 from typing import Dict, List, Optional, Tuple
 
 from .actions import Attack, Defend, Move, Skip, Summon, Wait
-from .data import DEFAULT_SHOOTING_RANGE, UNITS
+from .data import DEFAULT_SHOOTING_RANGE, DEFENSE_STANCE_MULTIPLIER, UNITS
 from .state import ATB_SCALE, MAX_ACTIONS, BattleState, HeroTurn, Stack
 from .squad_effects import roll_squad_stat, squad_stat, total_hp
 from .summoning import spell_options, summon_plan
@@ -136,7 +136,7 @@ def _multiplier(att_stack: Stack, def_stack: Stack) -> float:
 
 def effective_defense(target: Stack) -> float:
     defense = UNITS[target.unit].defense
-    return defense * 1.3 if target.defending else defense
+    return defense * DEFENSE_STANCE_MULTIPLIER if target.defending else defense
 
 
 def scaled_damage(base, multiplier):
@@ -203,7 +203,7 @@ def period(actor: Stack | HeroTurn) -> int:
     return ATB_SCALE // initiative
 
 
-def wait_delay(actor: Stack) -> int:
+def wait_delay(actor: Stack | HeroTurn) -> int:
     return max(1, period(actor) // 2)
 
 
@@ -388,7 +388,7 @@ def _hero_action(state, hero, action, rng, events):
     elif isinstance(action, Skip):
         events.append({"type": "skip", "stack": hero.id})
     else:
-        raise IllegalAction("Герой може атакувати або застосувати закляття.")
+        raise IllegalAction("Герой може атакувати, чекати або застосувати закляття.")
     _end_turn(state, hero, events)
 
 
@@ -401,7 +401,11 @@ def apply(state: BattleState, action) -> Tuple[BattleState, List[dict]]:
     actor = st.active()
     events: List[dict] = []
 
-    if isinstance(actor, HeroTurn):
+    if isinstance(action, Wait):
+        actor.ready += wait_delay(actor)
+        events.append({"type": "wait", "stack": actor.id})
+        _advance(st, events)
+    elif isinstance(actor, HeroTurn):
         _hero_action(st, actor, action, rng, events)
     elif isinstance(action, Move):
         _do_move(st, actor, action, events)
@@ -413,10 +417,6 @@ def apply(state: BattleState, action) -> Tuple[BattleState, List[dict]]:
         actor.defending = True
         events.append({"type": "defend", "stack": actor.id})
         _end_turn(st, actor, events)
-    elif isinstance(action, Wait):
-        actor.ready += wait_delay(actor)
-        events.append({"type": "wait", "stack": actor.id})
-        _advance(st, events)
     elif isinstance(action, Skip):          # у UI немає; лишається для автоходу при таймауті
         events.append({"type": "skip", "stack": actor.id})
         _end_turn(st, actor, events)
@@ -450,7 +450,7 @@ def turn_info(state: BattleState) -> Optional[dict]:
         return {
             "active": actor.id, "owner": actor.owner, "hero": True, "move": [],
             "targets": [{"id": stack.id, "from": []} for stack in state.stacks.values() if stack.owner != actor.owner],
-            "can_wait": False, "ranged": True,
+            "can_wait": True, "ranged": True,
             "spells": spell_options(state, actor.owner),
         }
     dist, parents = _movement(state, actor)
@@ -498,7 +498,7 @@ def forecast(state: BattleState, n: int = 50, *, after_wait: bool = False) -> Li
     cur = state.active_id
     seq = state.seq
     if after_wait:
-        actor = state.stacks.get(cur)
+        actor = state.active()
         if actor is None or seq + 1 >= MAX_ACTIONS:
             return []
         ready[cur] += wait_delay(actor)

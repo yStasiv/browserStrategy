@@ -9,7 +9,9 @@ from sqlalchemy.orm import Session
 from .. import database
 from ..auth import session_player
 from ..engine.battle_service import get_active_battle_id, user_level
-from ..engine.data import ELEMENTALS, UNITS, faction_key
+from ..engine.data import UNITS, faction_key
+from ..engine.hero import make_hero
+from ..engine.summoning import SPELLS, hp_pool, max_energy, school_spells
 from ..guild_models import ActivityGuildProgress
 from ..models import Item, RepairJob
 from ..services import activity_guilds, castle_buildings, forge_repairs
@@ -35,14 +37,15 @@ def render_castle(request, db, player, error=None, building_error=None):
     entries, resource_catalog = castle_buildings.catalog()
     built = castle_buildings.built_ids(db, player, entries)
     faction = faction_key(player.fraction)
-    elementals = ELEMENTALS if faction == "elves" else {}
+    school_level = castle_buildings.school_level(built)
+    spells = school_spells(school_level, is_elf=faction == "elves")
     recruits_by_building = {}
     for unit in UNITS.values():
         recruitment = unit.recruitment
         if recruitment and (not recruitment.factions or faction in map(faction_key, recruitment.factions)):
             recruits_by_building.setdefault(recruitment.building, []).append(unit)
     spells_by_building = {
-        key: [spell for spell in elementals.values() if spell["school_level"] == level]
+        key: [spell for spell in spells if faction == "elves" and spell["required_school_level"] == level]
         for key, level in castle_buildings.MAGIC_SCHOOL_LEVELS.items()
     }
     forms_by_line = {(unit.line, unit.form): unit for unit in UNITS.values() if unit.line and unit.form}
@@ -73,8 +76,7 @@ def render_castle(request, db, player, error=None, building_error=None):
         "built": built, "resource_catalog": resource_catalog, "build_icon": build_icon,
         "forge_built": castle_buildings.FORGE in built,
         "magic_school_built": castle_buildings.MAGIC_SCHOOL in built,
-        "school_level": castle_buildings.school_level(built),
-        "elementals": elementals,
+        "school_level": school_level, "spells": spells,
         "recruits_by_building": recruits_by_building, "spells_by_building": spells_by_building,
         "previous_forms": previous_forms,
         "building_names": {key: building.name for key, building in entries.items()},
@@ -87,6 +89,35 @@ def render_castle(request, db, player, error=None, building_error=None):
 def castle_page(request: Request, db: Session = Depends(database.get_db)):
     player = require_player(request, db)
     return render_castle(request, db, player)
+
+
+def magic_school_data(db, player):
+    entries, _ = castle_buildings.catalog()
+    level = castle_buildings.school_level(castle_buildings.built_ids(db, player, entries))
+    hero = make_hero(db, player, 0, user_level(player))
+    return {
+        "school_level": level, "spell_power": hero.spell_power, "knowledge": hero.knowledge,
+        "summon_hp": hp_pool(hero.spell_power), "max_energy": max_energy(hero.knowledge),
+        "spells": school_spells(level, is_elf=hero.faction == "elves"),
+    }
+
+
+@router.get("/api/castle/magic/spells")
+def castle_spells(request: Request, db: Session = Depends(database.get_db)):
+    return magic_school_data(db, require_player(request, db))
+
+
+@router.get("/castle/magic/spell/{spell_id}", response_class=HTMLResponse)
+def spell_info(spell_id: str, request: Request, db: Session = Depends(database.get_db)):
+    player = require_player(request, db)
+    if spell_id not in SPELLS:
+        raise HTTPException(404, "Закляття не знайдено.")
+    magic = magic_school_data(db, player)
+    spell = next(row for row in magic["spells"] if row["id"] == spell_id)
+    return templates.TemplateResponse("spell_info.html", {
+        "request": request, "player": player, "spell": spell, "magic": magic,
+        "unit": UNITS[spell["summon_unit_id"]],
+    })
 
 
 @router.get("/unit_info", response_class=HTMLResponse)

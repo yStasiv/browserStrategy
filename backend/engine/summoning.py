@@ -1,13 +1,38 @@
 """Battle-only elemental resources and placement."""
 from .data import ELEMENTALS, SUMMONING, UNITS
+from .state import HeroTurn
+
+SPELL_IDS = {"earth": "geolith", "water": "hydro", "air": "aero", "fire": "pyro", "poison": "miasmo", "energy": "volt"}
+SPELLS = {
+    spell_id: {
+        "id": spell_id, "element": element, "name": f"Виклик «{ELEMENTALS[element]['name']}»",
+        "school": "summoning", "required_school_level": ELEMENTALS[element]["school_level"],
+        "energy_cost": SUMMONING["energy_cost"], "duration_turns": None,
+        "icon_url": f"/static/images/spells/spell_{spell_id}.png",
+        "short_description": SUMMONING["description"],
+        "full_description": (
+            "Ельфійський герой викликає елементаля до кінця поточного бою. "
+            "Вільний слот армії не потрібен. Новий елементаль замінює попереднього активного елементаля "
+            "на стороні героя. Елементаль з’являється на першій вільній клітинці своєї половини поля "
+            "під час пошуку згори вниз і зліва направо."
+        ),
+        "summon_unit_id": f"elemental_{element}",
+    }
+    for element, spell_id in SPELL_IDS.items()
+}
+
+
+def school_spells(school_level, *, is_elf):
+    return [{**spell, "unlocked": is_elf and spell["required_school_level"] <= school_level}
+            for spell in SPELLS.values()]
 
 
 def max_energy(knowledge):
-    return SUMMONING["base_energy"] + max(0, int(knowledge)) * SUMMONING["energy_per_knowledge"]
+    return max(0, int(SUMMONING["base_energy"] + knowledge * SUMMONING["energy_per_knowledge"]))
 
 
 def hp_pool(spell_power):
-    return SUMMONING["base_hp_pool"] + max(0, int(spell_power)) * SUMMONING["hp_pool_per_spell_power"]
+    return max(0, int(SUMMONING["base_hp_pool"] + spell_power * SUMMONING["hp_pool_per_spell_power"]))
 
 
 def squad_health(total_hp, unit_hp):
@@ -58,17 +83,25 @@ def spell_options(state, side):
     magic = state.summoning.get(str(side))
     if not magic:
         return []
+    actor = state.active()
+    can_act = (state.status == "active" and actor is not None and actor.owner == side
+               and (isinstance(actor, HeroTurn) or not state.heroes))
     options = []
     for element in magic["elements"]:
-        unit = UNITS[f"elemental_{element}"]
+        catalog_entry = SPELLS[SPELL_IDS[element]]
+        count, _ = squad_health(magic["hp_pool"], UNITS[catalog_entry["summon_unit_id"]].hp)
         spell = {
-            "element": element, "name": unit.name, "icon": unit.icon, "energy_cost": magic["cost"],
+            **catalog_entry, "energy_cost": magic["cost"], "can_cast": False, "summon_count": count,
             "description": SUMMONING["description"], "target_label": "Клітинка для союзного загону",
         }
-        try:
-            _, _, position, _, _ = summon_plan(state, side, element)
-            spell["target"] = {"cell": position, "size": unit.size, "side": side}
-        except ValueError as exc:
-            spell["unavailable"] = str(exc)
+        if not can_act:
+            spell["unavailable"] = "Потрібно дочекатися ходу героя."
+        else:
+            try:
+                _, unit, position, _, _ = summon_plan(state, side, element)
+                spell["target"] = {"cell": position, "size": unit.size, "side": side}
+                spell["can_cast"] = True
+            except ValueError as exc:
+                spell["unavailable"] = str(exc)
         options.append(spell)
     return options

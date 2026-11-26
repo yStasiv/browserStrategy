@@ -47,6 +47,8 @@ class AuthRotes:
         # Створюємо нового користувача
         new_user = models.User(
             username=username, password=hashed_password, fraction=fraction, gender=gender,
+            mind=1 if fraction == "elfe" else 0,
+            melee_attack=1 if fraction == "undergroundElves" else 0,
         )
         db.add(new_user)
         try:
