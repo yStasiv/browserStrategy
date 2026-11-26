@@ -307,6 +307,7 @@ def test_world_locations_protect_enterprises_and_guild(sessions, monkeypatch):
         form = {"amount": 1} if endpoint == "/buy-resources" else None
         assert call(method, "/enterprise/2" + endpoint, form)[0] == 403
 
+    assert call("POST", "/admin/map/locations/3/unlock")[0] == 200
     status, response = call("POST", "/move-to-sector", payload={"sector": "Forest", "x": 0, "y": 0})
     assert status == 200
     assert json.loads(response)["enterprises"] == []
@@ -329,7 +330,7 @@ def test_world_locations_protect_enterprises_and_guild(sessions, monkeypatch):
     with sessions() as db:
         traveler = db.get(User, 10)
         assert (traveler.map_sector, traveler.map_x, traveler.map_y, traveler.gold, traveler.basalt_bone) == (
-            "Forest", 83, 50, 97, 1
+            "Forest", *world.map_config.marker_position("Forest"), 97, 1
         )
         assert db.get(User, 2).map_sector == "Castle"
 
@@ -431,6 +432,8 @@ def test_hunts_and_faction_recruitment(sessions, monkeypatch):
             battle_service.start_hunt(db, other, "dragon")
         with pytest.raises(battle_service.NotFound):
             battle_service.start_hunt(db, other, "archer")
+        world.unlock_sector(db, "Forest")
+        db.flush()
         world.start_travel(db, other, "Forest")
     with sessions() as db:
         with pytest.raises(battle_service.Conflict, match="подорожі"):

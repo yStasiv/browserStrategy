@@ -2,6 +2,7 @@
 {% block title %}Карта світу{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/world_map.css') }}">
+<script defer src="{{ url_for('static', path='js/world_geography.js') }}"></script>
 <script defer src="{{ url_for('static', path='js/world_map.js') }}"></script>
 {% endblock %}
 {% block body %}
@@ -9,11 +10,22 @@
     <section class="world-board" aria-labelledby="world-title">
         <h1 id="world-title">Карта світу</h1>
         <p id="world-current"></p>
+        <p id="world-location-detail" aria-live="polite"></p>
         <p id="world-work-notice" hidden>Під час роботи залишити сектор неможливо.</p>
-        <div class="world-art">
-            <img src="{{ url_for('static', path='images/map_v1.png') }}" alt="Ілюстрація карти світу">
-            <div id="world-markers"></div>
+        <div class="world-map-container" id="world-map-container">
+            <div class="world-map-viewport" id="world-map-viewport">
+                <div class="world-art" id="world-art">
+                    <img src="{{ world.map.image }}" width="{{ world.map.width }}" height="{{ world.map.height }}" alt="Ілюстрація карти світу" draggable="false">
+                    <svg id="world-fog" aria-hidden="true"></svg>
+                    <svg id="world-markers" aria-label="Відкриті локації"></svg>
+                </div>
+            </div>
+            <button type="button" class="map-movement-confirmation" id="world-travel-selected"
+                    aria-label="Переміститися" hidden>
+                <img src="{{ url_for('static', path='images/map/move_icon_human.png') }}" width="36" height="36" alt="">
+            </button>
         </div>
+        <label>Масштаб карти <input type="range" id="world-map-zoom" min="1" max="2.5" step=".25" value="1"></label>
         <div class="world-travel" id="world-travel" hidden>
             <label for="world-progress" id="world-travel-label"></label>
             <progress id="world-progress" value="0" max="1"></progress>

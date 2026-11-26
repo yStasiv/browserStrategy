@@ -2,6 +2,9 @@
     const byId = id => document.getElementById(id);
     const current = byId('world-current');
     const markers = byId('world-markers');
+    const fogLayer = byId('world-fog');
+    const art = byId('world-art');
+    const viewport = byId('world-map-viewport');
     const sectors = byId('world-sectors');
     const enterpriseTabs = [...document.querySelectorAll('[data-production-type]')];
     const hunts = byId('world-hunts');
@@ -9,6 +12,7 @@
     const huntCooldown = byId('world-hunt-cooldown');
     const feedback = byId('world-feedback');
     const refresh = byId('world-refresh');
+    const moveSelected = byId('world-travel-selected');
     const number = new Intl.NumberFormat('en-US');
     const enterpriseIcon = '/static/images/buildings/build.png';
     let state;
@@ -16,6 +20,16 @@
     let busy = false;
     let timer;
     let huntTimer;
+    let selectedLocation;
+    let moveAnchor;
+    let fogSignature;
+    let fogTimer;
+    let travelerMarker;
+    let travelerPosition;
+    let travelFrame;
+    const revealed = new Map();
+    const featureLabels = {castle: 'Замок', enterprises: 'Підприємства', hunting: 'Полювання',
+        guilds: 'Гільдії', market: 'Магазин', port: 'Порт'};
 
     function name(key) {
         return state.sectors.find(sector => sector.key === key)?.name ?? key;
@@ -30,50 +44,41 @@
     function render(next) {
         clearTimeout(timer);
         clearTimeout(huntTimer);
+        if (travelFrame !== undefined) cancelAnimationFrame(travelFrame);
+        travelFrame = undefined;
+        const known = state && new Set(state.sectors.map(row => row.id));
+        const changedOrigin = state && state.current_sector !== next.current_sector;
         state = next;
+        if (state.travel || changedOrigin) selectedLocation = null;
+        if (known) {
+            for (const row of state.sectors) {
+                if (row.id && !known.has(row.id)) revealed.set(row.id, performance.now());
+            }
+        }
         readAt = performance.now();
         current.textContent = `Поточний сектор · ${name(state.current_sector)}`;
         byId('world-work-notice').hidden = !state.work_blocks_travel;
-        markers.replaceChildren();
+        renderGeography();
+        selectSector(state.sectors.find(row => (row.id ?? row.key) === selectedLocation));
         sectors.replaceChildren();
         const canTravel = !state.travel && !state.work_blocks_travel;
         for (const sector of state.sectors) {
             const here = sector.key === state.current_sector;
-            const adjacent = sector.unlocked && sector.duration_seconds !== null;
+            const adjacent = sector.duration_seconds !== null;
             const card = element('li');
             card.classList.toggle('is-current', here);
             card.classList.toggle('is-adjacent', adjacent && canTravel);
-            const detail = here ? 'Поточний сектор' : !sector.unlocked ? 'Заблокований' :
+            const detail = here ? 'Поточний сектор' :
                 adjacent ? `У дорозі ${sector.duration_seconds} с` : 'Поза прямим маршрутом';
             card.append(element('strong', sector.name), element('p', detail));
             if (adjacent) {
-                const button = element('button', 'Вирушити');
+                const button = element('button', 'Обрати');
                 button.type = 'button';
                 button.disabled = !canTravel;
-                button.addEventListener('click', () => requestSector(sector.key));
+                button.addEventListener('click', () => selectSector(sector));
                 card.append(button);
             }
             sectors.append(card);
-
-            if (sector.map_x === null || sector.map_y === null) continue;
-            const interactive = adjacent && canTravel;
-            const marker = element(interactive ? 'button' : 'span');
-            marker.className = 'world-marker';
-            marker.classList.toggle('is-current', here);
-            marker.classList.toggle('is-adjacent', interactive);
-            marker.classList.toggle('is-locked', !sector.unlocked);
-            marker.classList.toggle('is-destination', sector.key === state.travel?.destination);
-            marker.style.left = `${sector.map_x}%`;
-            marker.style.top = `${sector.map_y}%`;
-            marker.title = sector.name;
-            if (interactive) {
-                marker.type = 'button';
-                marker.setAttribute('aria-label', `Вирушити до сектора «${sector.name}», ${sector.duration_seconds} с`);
-                marker.addEventListener('click', () => requestSector(sector.key));
-            } else {
-                marker.setAttribute('aria-hidden', 'true');
-            }
-            markers.append(marker);
         }
 
         renderEnterprises();
@@ -114,14 +119,138 @@
         }));
         huntFeedback.textContent = state.travel ? 'Недоступно під час подорожі.' : '';
         tickHuntCooldown();
-        const guildAvailable = !state.travel && state.current_sector === 'Castle';
+        const guildAvailable = !state.travel && state.sectors.some(row => row.key === state.current_sector && row.features?.guilds);
         byId('world-guild-link').hidden = !guildAvailable;
         byId('world-guild-name').hidden = guildAvailable;
         byId('world-travel').hidden = !state.travel;
         if (state.travel) {
             byId('world-travel-label').textContent = `${name(state.travel.origin)} → ${name(state.travel.destination)}`;
+            animateTraveler();
             tick();
         }
+    }
+
+    function positionMoveIcon() {
+        if (!moveAnchor) return;
+        const image = art.getBoundingClientRect();
+        const bounds = viewport.getBoundingClientRect();
+        const x = image.left + moveAnchor.x * image.width - bounds.left;
+        const y = image.top + moveAnchor.y * image.height - bounds.top;
+        const size = moveSelected.offsetWidth;
+        const gap = 8;
+        const position = (value, limit) => Math.max(0, Math.min(limit - size,
+            value + gap + size <= limit ? value + gap : value - gap - size));
+        moveSelected.style.left = `${position(x, viewport.clientWidth)}px`;
+        moveSelected.style.top = `${position(y, viewport.clientHeight)}px`;
+    }
+
+    function selectSector(sector, event) {
+        const available = WorldGeography.canSelect(state, sector);
+        const id = available ? (sector.id ?? sector.key) : null;
+        if (available && Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY)) {
+            const image = art.getBoundingClientRect();
+            moveAnchor = {x: (event.clientX - image.left) / image.width, y: (event.clientY - image.top) / image.height};
+        } else if (!available || id !== selectedLocation) {
+            moveAnchor = available ? (sector.marker ?? {x: .5, y: .5}) : null;
+        }
+        selectedLocation = id;
+        moveSelected.hidden = !available;
+        moveSelected.disabled = busy;
+        if (available) {
+            const label = `Переміститися · ${sector.name} (${sector.duration_seconds} с)`;
+            moveSelected.title = label;
+            moveSelected.setAttribute('aria-label', label);
+            positionMoveIcon();
+        }
+        const detail = sector ?? state.sectors.find(row => row.key === state.current_sector);
+        byId('world-location-detail').textContent = !detail?.features ? '' : [
+            detail.description,
+            Object.keys(detail.features).filter(key => detail.features[key]).map(key => featureLabels[key]).join(', '),
+        ].filter(Boolean).join(' · ');
+        for (const polygon of markers.querySelectorAll('[data-sector]')) {
+            polygon.classList.toggle('is-selected', available && polygon.dataset.sector === sector.key);
+        }
+    }
+
+    function renderFog() {
+        const {map, fog_of_war: settings} = state;
+        const mapped = state.sectors.filter(row => row.geometry);
+        const signature = mapped.map(row => row.id).join(',');
+        if (signature === fogSignature) return;
+        fogSignature = signature;
+        clearTimeout(fogTimer);
+        const animation = new Set([...revealed].filter(([, began]) =>
+            performance.now() - began < settings.reveal_duration_ms).map(([id]) => id));
+        revealed.clear();
+        WorldGeography.setup(fogLayer, map);
+        fogLayer.replaceChildren();
+        if (settings.enabled || animation.size) {
+            WorldGeography.fog(fogLayer, map, {...settings, enabled: true}, mapped, animation);
+        }
+        if (!settings.enabled && animation.size) {
+            fogTimer = setTimeout(() => fogLayer.replaceChildren(), settings.reveal_duration_ms);
+        }
+    }
+
+    function renderGeography() {
+        const {map} = state;
+        const geo = WorldGeography;
+        const mapped = state.sectors.filter(row => row.geometry);
+        renderFog();
+        geo.setup(markers, map);
+        markers.replaceChildren();
+
+        for (const sector of mapped) {
+            const polygon = geo.svgNode('polygon', {points: geo.points(sector, map), class: 'world-location'});
+            if (geo.canSelect(state, sector)) {
+                polygon.setAttribute('tabindex', 0);
+                polygon.setAttribute('role', 'button');
+                polygon.setAttribute('aria-label', sector.name);
+            }
+            polygon.dataset.sector = sector.key;
+            polygon.classList.toggle('is-current', sector.key === state.current_sector);
+            polygon.classList.toggle('is-adjacent', geo.canSelect(state, sector));
+            const title = geo.svgNode('title');
+            title.textContent = sector.duration_seconds === null ? sector.name : `${sector.name} · ${sector.duration_seconds} с`;
+            polygon.append(title);
+            polygon.addEventListener('click', event => { event.stopPropagation(); selectSector(sector, event); });
+            polygon.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    selectSector(sector);
+                    if (!moveSelected.hidden) moveSelected.focus();
+                }
+            });
+            markers.append(polygon);
+        }
+
+        travelerMarker = geo.svgNode('circle', {r: 11, class: 'world-traveler'});
+        markers.append(travelerMarker);
+        const origin = state.sectors.find(row => row.key === (state.travel?.origin ?? state.current_sector))?.marker;
+        const destination = state.sectors.find(row => row.key === state.travel?.destination)?.marker ?? origin;
+        travelerPosition = origin ? geo.routeSampler(origin, destination, state.travel?.waypoints ?? [], map) : null;
+        travelerMarker.toggleAttribute('hidden', !travelerPosition);
+        placeTraveler(0);
+    }
+
+    function placeTraveler(progress) {
+        if (!travelerPosition) return;
+        const [cx, cy] = travelerPosition(progress);
+        travelerMarker.setAttribute('cx', cx);
+        travelerMarker.setAttribute('cy', cy);
+    }
+
+    function animateTraveler() {
+        if (!travelerPosition) return;
+        const starts = Date.parse(state.travel.started_at);
+        const ends = Date.parse(state.travel.arrives_at);
+        const serverTime = Date.parse(state.server_time);
+        function frame() {
+            const now = serverTime + performance.now() - readAt;
+            placeTraveler((now - starts) / (ends - starts));
+            travelFrame = now < ends ? requestAnimationFrame(frame) : undefined;
+        }
+        frame();
     }
 
     function renderEnterprises() {
@@ -181,7 +310,8 @@
         const starts = Date.parse(state.travel.started_at);
         const now = Date.parse(state.server_time) + performance.now() - readAt;
         const remaining = Math.max(0, ends - now);
-        byId('world-progress').value = Math.max(0, Math.min(1, (now - starts) / (ends - starts)));
+        const progress = Math.max(0, Math.min(1, (now - starts) / (ends - starts)));
+        byId('world-progress').value = progress;
         byId('world-time').textContent = remaining ? `Залишилось ${Math.ceil(remaining / 1000)} с` : 'Перевіряємо прибуття…';
         timer = setTimeout(remaining ? tick : refreshState, remaining ? Math.min(200, remaining + 10) : 50);
     }
@@ -254,7 +384,8 @@
     async function requestSector(key) {
         if (busy) return;
         busy = true;
-        const buttons = [...sectors.querySelectorAll('button'), ...markers.querySelectorAll('button')];
+        const buttons = [...sectors.querySelectorAll('button:not(:disabled)')];
+        if (!moveSelected.hidden && !moveSelected.disabled) buttons.push(moveSelected);
         buttons.forEach(button => { button.disabled = true; });
         try {
             render(await getState('/move-to-sector', {
@@ -269,9 +400,30 @@
             buttons.forEach(button => { button.disabled = false; });
         } finally {
             busy = false;
+            moveSelected.disabled = false;
         }
     }
 
+    byId('world-map-zoom').addEventListener('input', event => {
+        WorldGeography.zoom(art, Number(event.target.value));
+        positionMoveIcon();
+    });
     refresh.addEventListener('click', refreshState);
+    art.addEventListener('click', () => selectSector(null));
+    viewport.addEventListener('scroll', positionMoveIcon, {passive: true});
+    new ResizeObserver(positionMoveIcon).observe(viewport);
+    moveSelected.addEventListener('click', () => {
+        const destination = state.sectors.find(row => (row.id ?? row.key) === selectedLocation);
+        if (WorldGeography.canSelect(state, destination)) requestSector(destination.key);
+    });
+    setInterval(async () => {
+        if (busy || state.travel || document.hidden) return;
+        try {
+            const next = await getState('/api/world/progression');
+            if (!busy && !state.travel && next.unlocked.some(key => !state.sectors.some(old => old.key === key))) {
+                await refreshState();
+            }
+        } catch { /* manual refresh remains available for an interrupted connection */ }
+    }, 5000);
     render(JSON.parse(byId('world-state').textContent));
 })();

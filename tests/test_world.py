@@ -32,6 +32,10 @@ def test_travel_persistence_timing_and_isolation(sessions, monkeypatch):
     monkeypatch.setattr(world, "utc_now", lambda: now)
 
     with sessions.begin() as db:
+        world.unlock_sector(db, "Mountain")
+        db.flush()
+        world.unlock_sector(db, "Forest")
+        db.flush()
         player = db.get(User, 10)
         journey, started = world.start_travel(db, player, "Mountain")
         assert journey.arrives_at - started == timedelta(seconds=2)
@@ -80,8 +84,7 @@ def test_new_sector_is_global_and_connection_can_be_one_way(sessions, monkeypatc
         with pytest.raises(HTTPException, match="заблокований"):
             world.start_travel(db, player, "Ruins")
         state = world.map_state(db, player, None, now)
-        assert state["sectors"][-1]["key"] == "Ruins"
-        assert state["sectors"][-1]["duration_seconds"] == 6
+        assert not any(row["key"] == "Ruins" for row in state["sectors"])
         world.unlock_sector(db, "Ruins")
 
     with sessions.begin() as db:
@@ -97,6 +100,10 @@ def test_new_sector_is_global_and_connection_can_be_one_way(sessions, monkeypatc
 
 
 def test_simultaneous_departures_allow_only_one_journey(sessions):
+    with sessions.begin() as db:
+        world.unlock_sector(db, "Mountain")
+        db.flush()
+        world.unlock_sector(db, "Forest")
     barrier = Barrier(2)
 
     def depart(destination):

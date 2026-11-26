@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.database import get_current_user, get_db
 from backend.models import User
+from backend.world_models import WorldSector
 from backend.engine.battle_service import hunting_options
 from backend.engine.hunting import ready_at
 from backend.engine.roster import saved_army
@@ -21,7 +23,8 @@ class TravelRequest(BaseModel):
 
 def map_state(db, player, journey, now):
     state = world.map_state(db, player, journey, now)
-    state["hunts"] = hunting_options(db, player, journey is not None)
+    state["hunts"] = (hunting_options(db, player, journey is not None)
+                      if world.location_available(db, player.map_sector, "hunting") else [])
     state["hunt_has_army"] = bool(saved_army(db, player.id))
     deadline = ready_at(db, player.id, now)
     state["hunt_ready_at"] = world.utc_timestamp(deadline) if deadline else None
@@ -47,6 +50,13 @@ def world_status(db: Session = Depends(get_db), player: User = Depends(get_curre
     if player is None:
         raise HTTPException(401, "Увійдіть до гри.")
     return location_state(db, player)
+
+
+@router.get("/api/world/progression")
+def world_progression(db: Session = Depends(get_db), player: User = Depends(get_current_user)):
+    if player is None:
+        raise HTTPException(401, "Увійдіть до гри.")
+    return {"unlocked": db.scalars(select(WorldSector.key).where(WorldSector.unlocked.is_(True))).all()}
 
 
 @router.post("/move-to-sector")

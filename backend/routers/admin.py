@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from .. import database, models
 from ..engine import battle_service
 from ..services import admin_stats, enterprises, player_moderation, world
-from ..world_models import SectorConnection, WorldSector
+from ..world_models import WorldSector
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
@@ -122,8 +122,36 @@ def save_world(db):
 @router.get("/admin/world")
 def admin_world(request: Request, db: Session = Depends(database.get_db), user: models.User = Depends(world_admin)):
     return templates.TemplateResponse("admin/world.html", {
-        "request": request, "player": user, "sectors": world.sectors(db),
-        "connections": db.query(SectorConnection).order_by(SectorConnection.origin, SectorConnection.destination).all(),
+        "request": request, "player": user, "world": world.administration_state(db),
+    })
+
+
+@router.get("/admin/map/locations")
+def world_locations(db: Session = Depends(database.get_db), user: models.User = Depends(world_admin)):
+    return world.administration_state(db)
+
+
+def unlock_map(db, user, location_id=None):
+    sector, changed = world.unlock_location(db, user.id, location_id=location_id)
+    db.commit()
+    return {"location_id": sector.location_id, "changed": changed, **world.administration_state(db)}
+
+
+@router.post("/admin/map/unlock-next")
+def unlock_next_location(db: Session = Depends(database.get_db), user: models.User = Depends(world_admin)):
+    return unlock_map(db, user)
+
+
+@router.post("/admin/map/locations/{location_id}/unlock")
+def unlock_map_location(location_id: int, db: Session = Depends(database.get_db),
+                        user: models.User = Depends(world_admin)):
+    return unlock_map(db, user, location_id)
+
+
+@router.get("/admin/map/editor")
+def map_editor(request: Request, db: Session = Depends(database.get_db), user: models.User = Depends(world_admin)):
+    return templates.TemplateResponse("admin/map_editor.html", {
+        "request": request, "player": user, "world": world.administration_state(db),
     })
 
 
@@ -148,7 +176,7 @@ def add_sector(
 
 @router.post("/admin/world/sectors/{key}/unlock")
 def unlock_sector(key: str, db: Session = Depends(database.get_db), user: models.User = Depends(world_admin)):
-    world.unlock_sector(db, key)
+    world.unlock_sector(db, key, user.id)
     return save_world(db)
 
 

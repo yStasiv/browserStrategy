@@ -241,10 +241,12 @@ def battle_spellbook(db, user, battle_id):
 
 def start_pve(db: Session, user, scenario_key: str, *, hunting=False, expected_difficulty=None) -> dict:
     if hunting:
-        from backend.services.world import resolve_location
+        from backend.services.world import location_available, resolve_location
         journey, now = resolve_location(db, user)
         if journey is not None:
             raise Conflict("Полювання недоступне під час подорожі.")
+        if not location_available(db, user.map_sector, "hunting"):
+            raise Forbidden("Полювання недоступне в цьому секторі.")
     else:
         db.execute(update(models.User).where(models.User.id == user.id).values(map_sector=models.User.map_sector))
     existing = get_active_battle_id(db, user.id)

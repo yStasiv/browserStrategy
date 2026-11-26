@@ -13,6 +13,7 @@ from backend.auth import playable_users, require_unblocked, session_player
 from backend.engine.data import faction_key
 from backend.services.castle_buildings import grant_starter_buildings
 from backend.services.hero_equipment import lock_hero
+from backend.services.map_config import marker_position
 from backend.services.nicknames import username_match, validation_error
 
 from .. import database, models
@@ -45,8 +46,10 @@ class AuthRotes:
         hashed_password = hash_password(password)
 
         # Створюємо нового користувача
+        map_x, map_y = marker_position("Castle")
         new_user = models.User(
             username=username, password=hashed_password, fraction=fraction, gender=gender,
+            map_x=map_x, map_y=map_y,
             mind=1 if fraction == "elfe" else 0,
             melee_attack=1 if fraction == "undergroundElves" else 0,
         )

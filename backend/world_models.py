@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer, String, false
 
 from .db_base import Base
 
@@ -15,6 +15,9 @@ class WorldSector(Base):
 
     key = Column(String, primary_key=True)
     name = Column(String, nullable=False)
+    location_id = Column(Integer, unique=True, index=True)
+    unlocked_at = Column(DateTime)
+    unlocked_by = Column(Integer)
     unlocked = Column(Boolean, nullable=False)
     sort_order = Column(Integer, nullable=False)
     map_x = Column(Integer)
@@ -31,6 +34,7 @@ class SectorConnection(Base):
     origin = Column(String, ForeignKey("world_sectors.key"), primary_key=True)
     destination = Column(String, ForeignKey("world_sectors.key"), primary_key=True)
     duration_seconds = Column(Integer, nullable=False)
+    managed_by_config = Column(Boolean, nullable=False, server_default=false())
 
 
 class PlayerTravel(Base):
