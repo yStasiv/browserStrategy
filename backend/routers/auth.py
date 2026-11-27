@@ -161,3 +161,54 @@ def choose_nickname(request: Request, username: str = Form(...), db: Session = D
         db.rollback()
         return nickname_form(request, player, error="Цей нікнейм уже зайнято.", status=409)
     return RedirectResponse("/player", status_code=303, headers={"Cache-Control": "no-store"})
+
+
+def account_settings_form(request, player, *, error=None, updated=False, status=200):
+    return templates.TemplateResponse("account_settings.html", {
+        "request": request, "player": player, "error": error, "updated": updated,
+    }, status_code=status, headers={"Cache-Control": "no-store"})
+
+
+@router.get("/settings")
+def account_settings(request: Request, updated: bool = False, db: Session = Depends(database.get_db)):
+    player = session_player(request, db)
+    if player is None:
+        return RedirectResponse("/login", status_code=303, headers={"Cache-Control": "no-store"})
+    return account_settings_form(request, player, updated=updated)
+
+
+@router.post("/settings/password")
+def change_account_password(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(database.get_db),
+):
+    player = session_player(request, db)
+    if player is None:
+        raise HTTPException(401, "Увійди до гри.")
+    if not player.password or not verify_password(current_password, player.password):
+        return account_settings_form(request, player, error="Поточний пароль неправильний.", status=400)
+    if len(new_password) < 8 or len(new_password.encode("utf-8")) > 72:
+        return account_settings_form(request, player, error="Новий пароль має містити від 8 символів і до 72 байтів.",
+                                     status=422)
+    if new_password != confirm_password:
+        return account_settings_form(request, player, error="Новий пароль і підтвердження не збігаються.",
+                                     status=422)
+    session_id = str(uuid.uuid4())
+    result = db.execute(update(models.User).where(
+        models.User.id == player.id,
+        models.User.session_id == request.cookies.get("session_id"),
+        models.User.password == player.password,
+        models.User.is_active.is_(True),
+        models.User.ban_reason.is_(None),
+        models.User.nickname_reset_from.is_(None),
+    ).values(password=hash_password(new_password), session_id=session_id))
+    if not result.rowcount:
+        db.rollback()
+        raise HTTPException(409, "Сесія змінилася. Увійди ще раз.")
+    db.commit()
+    response = RedirectResponse("/settings?updated=1", status_code=303, headers={"Cache-Control": "no-store"})
+    response.set_cookie("session_id", session_id, httponly=True, samesite="lax")
+    return response

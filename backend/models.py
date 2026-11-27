@@ -2,10 +2,9 @@ from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import (JSON, BigInteger, Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Index, Integer,
-                        String, Text, UniqueConstraint, false, text)
+                        String, Text, UniqueConstraint, false, select, text)
 from sqlalchemy.orm import relationship
 
-from .config import SYSTEM_PLAYER_ID
 from .db_base import Base
 from .world_models import WorldSector
 
@@ -291,6 +290,10 @@ class UserAchievement(Base):
 
 # ENTERPRISES - STORES - BUILDINGS
 
+def system_owner_default(context):
+    return context.connection.execute(select(User.id).where(User.is_system.is_(True))).scalar_one()
+
+
 class Enterprise(Base):
     __tablename__ = "enterprises"
 
@@ -298,7 +301,7 @@ class Enterprise(Base):
     name = Column(String, index=True)  # Назва підприємства (sawmill, mine, etc.)
     owner_id = Column(
         Integer, ForeignKey("users.id", name="fk_enterprises_owner_id_users"), nullable=False,
-        server_default=text(str(SYSTEM_PLAYER_ID)), index=True,
+        default=system_owner_default, index=True,
     )
     owner = relationship("User")
     sector = Column(String, ForeignKey(WorldSector.key, name="fk_enterprises_sector"), nullable=False, default="Castle")

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Налаштування{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+{% endblock %}
+{% block body %}
+<main class="hero-dashboard account-settings">
+    <p><a class="hero-link" href="/player">До персонажа</a></p>
+    <section class="hero-panel">
+        <h1>Налаштування</h1>
+        <h2>Зміна пароля</h2>
+        {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+        {% if updated %}<p role="status">Пароль змінено.</p>{% endif %}
+        <form class="account-password-form" method="post" action="/settings/password">
+            <label>Поточний пароль
+                <input name="current_password" type="password" autocomplete="current-password" required>
+            </label>
+            <label>Новий пароль
+                <input name="new_password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+            </label>
+            <label>Підтвердження нового пароля
+                <input name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+            </label>
+            <button class="hero-link" type="submit">Змінити пароль</button>
+        </form>
+    </section>
+</main>
+{% endblock %}

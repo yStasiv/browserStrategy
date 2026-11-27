@@ -3,7 +3,6 @@ import sys
 
 from sqlalchemy import update
 
-from backend.config import SYSTEM_PLAYER_ID, SYSTEM_PLAYER_USERNAME
 from backend.db_base import SessionLocal
 from backend.models import User
 from backend.utils import hash_password
@@ -14,8 +13,6 @@ def set_password(db, password: str):
         raise ValueError("Введіть непорожній пароль довжиною до 72 байтів.")
     result = db.execute(
         update(User).where(
-            User.id == SYSTEM_PLAYER_ID,
-            User.username == SYSTEM_PLAYER_USERNAME,
             User.is_system.is_(True),
         ).values(password=hash_password(password), session_id=None)
     )
@@ -26,7 +23,7 @@ def set_password(db, password: str):
 def main():
     if not sys.stdin.isatty():
         raise SystemExit("Запустіть команду в інтерактивному терміналі.")
-    password = getpass("Новий пароль для персонажа «володар лісу»: ")
+    password = getpass("Новий пароль для системного персонажа: ")
     if password != getpass("Повторіть пароль: "):
         raise SystemExit("Паролі не збігаються.")
     try:

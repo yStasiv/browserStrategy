@@ -179,3 +179,22 @@ def test_nickname_reset_and_replacement(moderation_app, sessions, staff):
         subject = db.get(User, 2)
         assert subject.username == "Новий Мисливець" and subject.nickname_reset_from is None
         assert subject.gold == 100
+
+
+def test_authenticated_player_can_change_password(moderation_app, sessions):
+    app = moderation_app
+    assert "/settings".encode() in call(app, "GET", "/player")[1]
+    assert call(app, "GET", "/settings", account=None)[0] == 303
+    assert call(app, "GET", "/settings")[0] == 200
+    form = {"current_password": "known-password", "new_password": "new-password", "confirm_password": "new-password"}
+    assert call(app, "POST", "/settings/password", account=None, form=form)[0] == 401
+    assert call(app, "POST", "/settings/password", form={**form, "current_password": "wrong"})[0] == 400
+    assert call(app, "POST", "/settings/password", form={**form, "confirm_password": "different"})[0] == 422
+    assert call(app, "POST", "/settings/password", form=form)[0] == 303
+    assert call(app, "GET", "/settings")[0] == 303
+    with sessions() as db:
+        session_id = db.get(User, 2).session_id
+    status, page = asyncio.run(asgi_request(app, "GET", "/settings?updated=1", f"session_id={session_id}"))
+    assert status == 200 and "Пароль змінено.".encode() in page
+    assert call(app, "POST", "/login", account=None, form={"username": "other", "password": "known-password"})[0] == 401
+    assert call(app, "POST", "/login", account=None, form={"username": "other", "password": "new-password"})[0] == 303

@@ -1,10 +1,13 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from backend.config import SYSTEM_PLAYER_ID
 from backend.models import RewardTransaction, User
+
+
+def system_player_id(db):
+    return db.execute(select(User.id).where(User.is_system.is_(True))).scalar_one()
 
 
 def issue_system_resources(
@@ -13,7 +16,7 @@ def issue_system_resources(
 ):
     """Record and credit a validated reward in the caller's transaction."""
     db.add(RewardTransaction(
-        issuer_id=SYSTEM_PLAYER_ID, recipient_id=recipient_id, source=source,
+        issuer_id=system_player_id(db), recipient_id=recipient_id, source=source,
         source_key=source_key, gold=gold, wood=wood, stone=stone,
         reward_entries=reward_entries,
         created_at=datetime.now(timezone.utc).replace(tzinfo=None),

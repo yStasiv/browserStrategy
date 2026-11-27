@@ -12,7 +12,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, Field, StrictInt
 from sqlalchemy import func, select
 
-from backend.config import RESOURCE_FILE, SYSTEM_PLAYER_ID
+from backend.config import RESOURCE_FILE
 from backend.models import (
     ConstructionContribution, Enterprise, EnterpriseDailyReport, EnterpriseEvent, EnterpriseShift,
     EventConstruction, EventReward, GlobalEvent, GlobalEventAudit, Item, News, PlayerResourceBalance,
@@ -20,7 +20,7 @@ from backend.models import (
 )
 from backend.services import economy, world
 from backend.services.resource_balances import resource_definitions, resource_owners, resource_quantity
-from backend.services.rewards import issue_system_resources
+from backend.services.rewards import issue_system_resources, system_player_id
 
 EVENT_TYPE = "ENTERPRISE_CONSTRUCTION"
 FRAME_TIME = timedelta(hours=72)
@@ -175,7 +175,7 @@ def save_draft(db, admin, draft, event_id=None):
 
 def placeholder_safe(db, site, definition, sector):
     if (site.id != definition.get("placeholder_id") or sector != "Castle" or site.sector != sector
-            or site.name != definition["name"] or site.owner_id != SYSTEM_PLAYER_ID
+            or site.name != definition["name"] or not site.owner or not site.owner.is_system
             or site.resource_type != "gold" or site.production_type != "mine"
             or site.workers_count or site.resource_stored or site.input_stock or site.last_production_time
             or site.balance != 1000 or site.salary != 30 or site.item_price != 11):
@@ -251,7 +251,7 @@ def start(db, event_id, admin):
     for project, definition, images, site in selections:
         original = None
         if site is None:
-            site = Enterprise(name=project.name.strip() or definition["name"], sector=event.sector, owner_id=SYSTEM_PLAYER_ID,
+            site = Enterprise(name=project.name.strip() or definition["name"], sector=event.sector, owner_id=system_player_id(db),
                               production_type="mine", resource_stored=0, workers_count=0, balance=0)
             db.add(site)
             db.flush()

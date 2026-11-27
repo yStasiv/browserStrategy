@@ -124,6 +124,7 @@ SERVICES = (
     Service("shop", "Магазин артефактів", "/shop", 20),
     Service("battle_history", "Історія боїв", "/battle/history", 40),
     Service("help", "Довідка по грі", "/help", 60),
+    Service("settings", "Налаштування", "/settings", 70),
 )
 
 

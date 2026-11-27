@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import or_, select, update
 
 from backend.config import ENTERPRISE_SHIFT_DURATION as SHIFT_DURATION
-from backend.config import LEGACY_BALANCES, RESOURCE_FILE, SYSTEM_PLAYER_ID
+from backend.config import LEGACY_BALANCES, RESOURCE_FILE
 from backend.engine.battle_models import Battle, BattleParticipant
 from backend.models import Enterprise, EnterpriseDailyReport, EnterpriseEvent, EnterpriseShift, PlayerResourceBalance, User
 from backend.services import economy
@@ -306,7 +306,7 @@ def previous_employment(db, worker_id, site_id, request_key):
 
 
 def can_procure(site, worker):
-    return site.owner_id == worker.id or (site.owner_id == SYSTEM_PLAYER_ID and worker.is_admin)
+    return site.owner_id == worker.id or (worker.is_admin and site.owner is not None and site.owner.is_system)
 
 
 def trade(db, seller, worker, amount, shown_price, shown_total, request_key, now, *, target=None):
