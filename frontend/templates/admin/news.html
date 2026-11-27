@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Новини{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+{% endblock %}
+{% block body %}
+<main class="hero-dashboard news-admin">
+    <h1>Новини</h1>
+    <div class="news-admin-grid">
+        <section class="hero-panel">
+            <h2>{{ 'Редагувати новину' if editing else 'Нова чернетка' }}</h2>
+            {% if error %}<p class="news-error" role="alert">{{ error }}</p>{% endif %}
+            <form class="news-form" method="post" enctype="multipart/form-data"
+                  action="{{ '/admin/news/' ~ editing.id ~ '/edit' if editing else '/admin/news' }}">
+                <label>Заголовок <input name="title" maxlength="200" required value="{{ values.title|default('', true) }}"></label>
+                <label>Текст <textarea id="news-editor-text" name="text" aria-describedby="news-link-hint" rows="10" maxlength="30000" required>{{ values.text|default('', true) }}</textarea></label>
+                <div class="news-editor-tools">
+                    <button type="button" id="news-insert-link">Вставити посилання в текст</button>
+                    <small id="news-link-hint">Виділи слова для посилання або введи <code>[текст](https://example.com)</code>.</small>
+                    <span id="news-link-error" class="news-error" role="status"></span>
+                </div>
+                <label>Посилання <input name="link_url" type="url" maxlength="2048" value="{{ values.link_url|default('', true) }}"></label>
+                <label>Зображення <input type="file" name="image" id="news-image-input" accept=".png,.jpg,.jpeg,.webp,.gif"></label>
+                <img class="news-image news-preview" id="news-image-preview" alt="Попередній перегляд зображення"
+                     {% if editing and editing.image_url %}src="{{ editing.image_url }}"{% else %}hidden{% endif %}>
+                <button type="submit">{{ 'Зберегти зміни' if editing else 'Зберегти чернетку' }}</button>
+            </form>
+            {% if editing %}
+            <div class="news-admin-actions">
+                <a href="/news/{{ editing.id }}">Попередній перегляд</a>
+                {% if editing.status == 'draft' %}
+                <form method="post" action="/admin/news/{{ editing.id }}/publish">
+                    <button type="submit">Опублікувати</button>
+                </form>
+                {% endif %}
+                <a href="/admin/news">Нова чернетка</a>
+            </div>
+            {% endif %}
+        </section>
+        <section class="hero-panel">
+            <h2>Усі новини</h2>
+            <ul class="news-list">
+                {% for item in articles %}
+                <li><a href="/admin/news/{{ item.id }}/edit">{{ item.title }}</a>
+                    <span>{{ 'Опубліковано' if item.status == 'published' else 'Чернетка' }} · {{ news_date(item.published_at or item.created_at) }}</span></li>
+                {% else %}<li>Новин поки немає.</li>{% endfor %}
+            </ul>
+        </section>
+    </div>
+</main>
+{% endblock %}

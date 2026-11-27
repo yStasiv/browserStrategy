@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}{{ article.title }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/character_dashboard.css') }}">
+{% endblock %}
+{% block body %}
+<main class="hero-dashboard news-page">
+    <p><a href="/player">До персонажа</a>{% if player and player.is_admin %} · <a href="/admin/news/{{ article.id }}/edit">Редагувати</a>{% endif %}</p>
+    <article class="hero-panel">
+        <h1>{{ article.title }}</h1>
+        {% if article.published_at %}<time>{{ news_date(article.published_at) }}</time>{% else %}<p>Чернетка</p>{% endif %}
+        {% if article.image_url %}<img class="news-image" src="{{ article.image_url }}" alt="">{% endif %}
+        <p class="news-text">{% for part in text_parts %}{% if part.url %}<a href="{{ part.url }}" rel="noopener noreferrer" target="_blank">{{ part.text }}</a>{% else %}{{ part.text }}{% endif %}{% endfor %}</p>
+        {% if article.link_url %}<p><a href="{{ article.link_url }}" rel="noopener noreferrer" target="_blank">Перейти за посиланням</a></p>{% endif %}
+    </article>
+</main>
+{% endblock %}

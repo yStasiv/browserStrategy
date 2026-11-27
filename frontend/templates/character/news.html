@@ -1,0 +1,21 @@
+{% macro entries(items) %}
+<ul class="news-list">
+    {% for item in items %}
+    <li><a href="/news/{{ item.id }}">{{ item.title }}</a><time>{{ news_date(item.published_at) }}</time></li>
+    {% endfor %}
+</ul>
+{% endmacro %}
+<details class="hero-panel news-section" open>
+    <summary>Новини</summary>
+    {% if news_items %}
+        {{ entries(news_items[:3]) }}
+        {% if news_items|length > 3 %}
+        <details class="news-more">
+            <summary><span class="news-expand">Показати всі</span><span class="news-collapse">Згорнути</span></summary>
+            {{ entries(news_items[3:]) }}
+        </details>
+        {% endif %}
+    {% else %}
+    <p>Новин поки немає.</p>
+    {% endif %}
+</details>

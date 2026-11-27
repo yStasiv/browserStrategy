@@ -1,0 +1,35 @@
+.news-section > summary { font-weight: bold; font-size: 1.25rem; }
+.news-list { list-style: none; padding: 0; margin: .45rem 0; }
+.news-list li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .3rem 1rem;
+    padding: .45rem 0; border-bottom: 1px solid #cfbb98; }
+.news-list time, .news-list span, .news-page time, .news-popup time { color: #695138; font-size: .85rem; }
+.news-collapse, .news-more[open] > summary .news-expand { display: none; }
+.news-more[open] > summary .news-collapse { display: inline; }
+.news-page { max-width: 54rem; }
+.news-image { display: block; max-width: 100%; max-height: 25rem; object-fit: contain; margin: .65rem auto; }
+.news-image[hidden], #news-popup-link[hidden] { display: none; }
+.news-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+.news-text a { text-decoration: underline; }
+.news-popup {
+    box-sizing: border-box; width: min(43rem, calc(100% - 1.5rem)); max-height: calc(100dvh - 1.5rem);
+    overflow: auto; padding: clamp(.9rem, 2vw, 1.4rem);
+    background: #f4e7c6; border: 1px solid #a67a39; color: #392718; font-family: Georgia, serif;
+    border-radius: .35rem; box-shadow: inset 0 0 0 2px #fff2d2, inset 0 0 0 3px #d2ae76;
+}
+.news-popup::backdrop { background: #24190caa; }
+.news-popup h2 { margin: .25rem 0; }
+.news-popup h2, .news-page h1 { text-align: center; }
+.news-editor-tools { display: flex; flex-wrap: wrap; gap: .4rem .7rem; align-items: center; }
+.news-popup a { color: #35502f; }
+.news-popup p:empty { display: none; }
+.news-button { background: #3e5537; color: white; border: 0; border-radius: .35rem;
+    padding: .4rem .7rem; font: inherit; cursor: pointer; }
+.news-admin-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: .85rem; align-items: start; }
+.news-form { display: grid; gap: .65rem; }
+.news-form label { display: grid; gap: .2rem; }
+.news-form input, .news-form textarea { box-sizing: border-box; width: 100%; font: inherit; }
+.news-form button { justify-self: start; }
+.news-preview { max-height: 12rem; margin-inline: 0; }
+.news-admin-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; margin-top: .7rem; }
+.news-error, #news-popup-feedback { color: #8b3229; }
+@media (max-width: 42rem) { .news-admin-grid { grid-template-columns: minmax(0, 1fr); } }
