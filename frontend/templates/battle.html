@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', path='css/navigation.css') }}">
     <script defer src="{{ url_for('static', path='js/dialog.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', path='css/battle.css') }}">
+    {% include 'shared/news_head.html' %}
 </head>
 <body>
 {% include 'shared/header.html' %}
@@ -1788,5 +1789,6 @@
         }
     })();
 </script>
+{% include 'shared/news_popup.html' %}
 </body>
 </html>

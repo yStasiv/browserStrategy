@@ -14,7 +14,10 @@
     </div>
     <div class="hero-screen">
         <div class="hero-equipment-layout hero-equipment-three-columns">
-            {% include 'character/guilds.html' %}
+            <div class="hero-own-sidebar">
+                {% include 'character/guilds.html' %}
+                {% include 'character/news.html' %}
+            </div>
             {% include 'character/equipment.html' %}
             {% include 'character/services.html' %}
         </div>

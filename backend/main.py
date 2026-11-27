@@ -20,7 +20,7 @@ from backend.websockets import manager
 from backend.engine import battle_api, battle_service
 
 from .routers import (admin, adventure_guild, auth, castle,
-                      enterprise, help, inventory, map, shop, player, presence,
+                      enterprise, help, inventory, map, news, shop, player, presence,
                       item, rating)
 from .routers.battles import battle
 
@@ -38,7 +38,8 @@ app.add_middleware(
     expose_headers=["*"]  # Дозволяємо доступ до всіх заголовків
 )
 
-app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+app.include_router(news.router)
+app.mount("/static", news.PublicStaticFiles(directory="frontend/static"), name="static")
 AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/avatars", StaticFiles(directory=AVATAR_DIR), name="avatars")
 
@@ -97,10 +98,10 @@ async def resume_active_battle(request: Request, call_next):
                 navigation = (request.headers.get("sec-fetch-mode") == "navigate"
                               or "text/html" in request.headers.get("accept", ""))
                 admin_view = path == "/admin/stats" or (
-                    player.is_admin and path in ("/admin/world", "/admin/map/editor")) or (
+                    player.is_admin and (path in ("/admin/world", "/admin/map/editor") or path.startswith("/admin/news"))) or (
                     path == "/battle" and "admin_replay" in request.query_params) or (
                     (player.is_admin or player.is_moderator) and path in ("/player_info", "/player_info/transfers"))
-                if (navigation and not admin_view and (path != "/battle" or "replay" in request.query_params)
+                if (navigation and not admin_view and not path.startswith("/news/") and (path != "/battle" or "replay" in request.query_params)
                         and battle_service.get_active_battle_id(session, player.id) is not None):
                     return RedirectResponse("/battle", status_code=303, headers={"Cache-Control": "no-store"})
                 request.state.header_player = player

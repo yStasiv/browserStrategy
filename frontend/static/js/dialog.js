@@ -1,4 +1,4 @@
-for (const dialog of document.querySelectorAll('dialog')) {
+for (const dialog of document.querySelectorAll('dialog:not([data-confirm-only])')) {
     function isBackdrop(event) {
         const {left, right, top, bottom} = dialog.getBoundingClientRect();
         return event.target === dialog && (

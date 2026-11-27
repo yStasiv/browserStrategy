@@ -7,7 +7,7 @@ from pydantic import BaseModel, StrictInt
 from backend.auth import playable_users, session_player
 from backend import database, models
 from backend.auth import get_current_user
-from backend.services import player_moderation
+from backend.services import news, player_moderation
 from backend.services.character_profile import dashboard, hero_state
 from backend.routers.item import ITEM_TYPES
 from backend.services.guild_experience import hero_xp_threshold
@@ -82,7 +82,8 @@ class PlayerRotes(PlayerHelper):
 
         return templates.TemplateResponse("player.html", {
             "request": request, "player": user, "profile": dashboard(db, user, next_level_exp),
-            "item_types": ITEM_TYPES,
+            "item_types": ITEM_TYPES, "news_items": db.scalars(news.published()).all(),
+            "news_date": news.display_date,
         })
 
     @router.post("/update-attribute", response_class=RedirectResponse)

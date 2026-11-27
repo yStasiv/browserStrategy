@@ -385,7 +385,7 @@
     .artifact-display img { width: min(100%, 7rem); }
 }
 
-.hero-public-sidebar { display: grid; gap: .8rem; min-width: 0; }
+.hero-public-sidebar, .hero-own-sidebar { display: grid; gap: .8rem; min-width: 0; }
 
 .hero-equipment-three-columns {
     grid-template-columns: minmax(11rem, 1fr) minmax(0, 2.6fr) minmax(11rem, 1fr);

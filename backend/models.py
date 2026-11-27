@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import (JSON, BigInteger, Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Index, Integer,
-                        String, UniqueConstraint, false, text)
+                        String, Text, UniqueConstraint, false, text)
 from sqlalchemy.orm import relationship
 
 from .config import SYSTEM_PLAYER_ID
@@ -458,3 +458,27 @@ class PlayerModerationEvent(Base):
     action = Column(String(12), nullable=False)
     reason = Column(String(500))
     created_at = Column(DateTime, nullable=False)
+
+class News(Base):
+    __tablename__ = "news"
+    __table_args__ = (
+        CheckConstraint("(status = 'draft' AND published_at IS NULL) OR "
+                        "(status = 'published' AND published_at IS NOT NULL)", name="ck_news_publication"),
+        Index("ix_news_publication", "status", "published_at", "id"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(200), nullable=False)
+    text = Column(Text, nullable=False)
+    image_url = Column(String(255))
+    link_url = Column(String(2048))
+    status = Column(String(16), nullable=False, server_default="draft")
+    created_at = Column(DateTime, nullable=False)
+    published_at = Column(DateTime)
+
+
+class NewsAcknowledgment(Base):
+    __tablename__ = "news_acknowledgments"
+
+    player_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    news_id = Column(Integer, ForeignKey("news.id", ondelete="CASCADE"), primary_key=True)

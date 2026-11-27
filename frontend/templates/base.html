@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script defer src="{{ url_for('static', path='js/dialog.js') }}"></script>
     {% block head %}{% endblock %}
+    {% include 'shared/news_head.html' %}
 </head>
 <body>
     {% include 'shared/header.html' %}
@@ -58,5 +59,6 @@ window.addEventListener('pageshow', event => {
 });
 </script>
 {% endif %}
+{% include 'shared/news_popup.html' %}
 </body>
 </html>
