@@ -32,6 +32,10 @@ def test_travel_persistence_timing_and_isolation(sessions, monkeypatch):
     monkeypatch.setattr(world, "utc_now", lambda: now)
 
     with sessions.begin() as db:
+        world.unlock_sector(db, "Mountain")
+        db.flush()
+        world.unlock_sector(db, "Forest")
+        db.flush()
         player = db.get(User, 10)
         journey, started = world.start_travel(db, player, "Mountain")
         assert journey.arrives_at - started == timedelta(seconds=2)
@@ -80,8 +84,7 @@ def test_new_sector_is_global_and_connection_can_be_one_way(sessions, monkeypatc
         with pytest.raises(HTTPException, match="заблокований"):
             world.start_travel(db, player, "Ruins")
         state = world.map_state(db, player, None, now)
-        assert state["sectors"][-1]["key"] == "Ruins"
-        assert state["sectors"][-1]["duration_seconds"] == 6
+        assert not any(row["key"] == "Ruins" for row in state["sectors"])
         world.unlock_sector(db, "Ruins")
 
     with sessions.begin() as db:
@@ -97,6 +100,10 @@ def test_new_sector_is_global_and_connection_can_be_one_way(sessions, monkeypatc
 
 
 def test_simultaneous_departures_allow_only_one_journey(sessions):
+    with sessions.begin() as db:
+        world.unlock_sector(db, "Mountain")
+        db.flush()
+        world.unlock_sector(db, "Forest")
     barrier = Barrier(2)
 
     def depart(destination):
@@ -116,3 +123,30 @@ def test_simultaneous_departures_allow_only_one_journey(sessions):
     with sessions() as db:
         assert db.get(PlayerTravel, 10).destination == accepted[0]
         assert db.get(PlayerTravel, 20) is None
+
+
+def test_close_sector_and_reset_world(sessions):
+    with sessions.begin() as db:
+        world.unlock_sector(db, "Mountain")
+        world.unlock_sector(db, "Forest")
+        db.flush()
+        sector, changed = world.close_location(db, db.get(WorldSector, "Mountain").location_id)
+        assert not sector.unlocked and changed
+        assert not world.close_location(db, sector.location_id)[1]
+        with pytest.raises(HTTPException, match="Стартовий"):
+            world.close_location(db, 1)
+        traveler = db.get(User, 10)
+        world.start_travel(db, traveler, "Forest")
+        db.flush()
+        with pytest.raises(HTTPException, match="подорож"):
+            world.close_location(db, db.get(WorldSector, "Forest").location_id)
+        resident = db.get(User, 20)
+        resident.map_sector = "Forest"
+        db.flush()
+        assert world.close_world_except_start(db) == {"closed": 1, "players": 1, "journeys": 1}
+    with sessions.begin() as db:
+        assert [row.key for row in world.sectors(db) if row.unlocked] == ["Castle"]
+        assert db.get(PlayerTravel, 10) is None
+        player = db.get(User, 20)
+        assert player.map_sector == "Castle"
+        assert (player.map_x, player.map_y) == world.map_config.marker_position("Castle")

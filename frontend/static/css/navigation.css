@@ -68,6 +68,13 @@
     font: 600 .875rem Georgia, serif;
 }
 .main-nav .nav-btn { cursor: pointer; }
+.main-nav .nav-service-icon {
+    flex: none;
+    width: 1.4rem;
+    height: 1.4rem;
+    margin-inline-end: .32rem;
+    object-fit: contain;
+}
 .nav-admin { position: relative; }
 .nav-admin summary::-webkit-details-marker { display: none; }
 .nav-admin summary:focus-visible { outline: 2px solid #415537; outline-offset: 2px; }

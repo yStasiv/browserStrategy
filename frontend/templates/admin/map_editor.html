@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Редактор карти світу{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/world_map.css') }}">
+<script defer src="{{ url_for('static', path='js/world_geography.js') }}"></script>
+<script defer src="{{ url_for('static', path='js/world_editor.js') }}"></script>
+{% endblock %}
+{% block body %}
+<main class="world-admin world-board">
+    <h1>Редактор карти світу</h1>
+    <p><a href="/admin/world">До керування мапою</a></p>
+    <div class="map-editor-layout">
+        <div>
+            <div class="map-editor-canvas"><div class="world-art">
+                <img src="{{ world.config.map.image }}" width="{{ world.config.map.width }}" height="{{ world.config.map.height }}" alt="Карта світу">
+                <svg id="map-editor-layer" aria-label="Редагування геометрії"></svg>
+            </div></div>
+            <label>Масштаб <input id="editor-zoom" type="range" min="1" max="3" step=".25" value="1"></label>
+        </div>
+        <section class="map-editor-tools">
+            <label>Локація <select id="editor-location"></select></label>
+            <div class="world-admin-controls">
+                <button type="button" id="editor-add-sector">Додати сектор</button>
+                <button type="button" id="editor-delete-sector">Видалити сектор</button>
+            </div>
+            <label>Назва <input id="editor-name" maxlength="100"></label>
+            <label>Порядок відкриття <input type="number" id="editor-order" min="1"></label>
+            <p>Вибери локацію та клацай по мапі, щоб накреслити її межу. Нові вершини прив’язуються до найближчих спільних і берегових точок.</p>
+            <div class="world-admin-controls">
+                <button type="button" id="editor-add" aria-pressed="false">Додати вершину</button>
+                <button type="button" id="editor-delete">Видалити вершину</button>
+                <button type="button" id="editor-load-boundaries">Заповнити порожні межі з чинної мапи</button>
+                <button type="button" id="editor-redraw" aria-pressed="false">Накреслити заново</button>
+            </div>
+            <p>Вершини: <select id="editor-vertices" aria-label="Вершини полігона"></select></p>
+            <output id="editor-area"></output>
+            <h2>Сусіди</h2>
+            <ul id="editor-neighbors"></ul>
+            <label>Маршрут до <select id="editor-neighbor"></select></label>
+            <label>Час у дорозі (с) <input type="number" id="editor-time" value="2" min="1" max="86400"></label>
+            <div class="world-admin-controls">
+                <button type="button" id="editor-draw-route" aria-pressed="false">Накреслити шлях</button>
+                <button type="button" id="editor-undo-route">Прибрати останню точку</button>
+                <button type="button" id="editor-save-route">Зберегти маршрут</button>
+                <button type="button" id="editor-delete-route">Видалити маршрут</button>
+            </div>
+            <h2>Попередній перегляд розвитку</h2>
+            <label><input type="checkbox" id="editor-preview"> Туман війни</label>
+            <label>Етап <input id="editor-stage" type="range" min="1" value="1"> <output id="editor-stage-value">1</output></label>
+            <div class="world-admin-controls">
+                <button type="button" id="editor-save-draft">Зберегти чернетку</button>
+                <button type="button" id="editor-export">Експортувати map_location.json</button>
+            </div>
+            <p id="editor-feedback" role="status"></p>
+        </section>
+    </div>
+    <script type="application/json" id="map-editor-data">{{ world.config | tojson }}</script>
+</main>
+{% endblock %}

@@ -10,15 +10,18 @@
             <div class="nav-controls">
                 <div class="nav-left">
                     <a href="/player" class="nav-link"{% if request.url.path == "/player" %} aria-current="page"{% endif %}>
-
+                        <img class="nav-service-icon" src="{{ url_for('static', path='images/hero_stats/service_character.png') }}" alt="">
                         Персонаж
                     </a>
                     <a href="/map" class="nav-link"{% if request.url.path == "/map" %} aria-current="page"{% endif %}>
-
-                        Карта
+                        <img class="nav-service-icon" src="{{ url_for('static', path='images/hero_stats/service_map.png') }}" alt="">
+                        Мапа
                     </a>
                     <div class="nav-castle">
-                        <a href="/castle" class="nav-link"{% if request.url.path == "/castle" %} aria-current="page"{% endif %}>Замок</a>
+                        <a href="/castle" class="nav-link"{% if request.url.path == "/castle" %} aria-current="page"{% endif %}>
+                            <img class="nav-service-icon" src="{{ url_for('static', path='images/hero_stats/service_castle.png') }}" alt="">
+                            Замок
+                        </a>
                         {% if request.state.header_repair_seconds is defined %}
                         <a href="/castle/metalworking" class="nav-repair-badge"
                            data-repair-seconds="{{ request.state.header_repair_seconds }}"
@@ -29,7 +32,7 @@
                         {% endif %}
                     </div>
                     <a href="/rating" class="nav-link"{% if request.url.path == "/rating" %} aria-current="page"{% endif %}>
-
+                        <img class="nav-service-icon" src="{{ url_for('static', path='images/hero_stats/service_ranking.png') }}" alt="">
                         Рейтинг
                     </a>
                     {% if navigation_player.is_admin %}
@@ -38,7 +41,7 @@
                         <div class="nav-admin-links">
                             {% for url, label in [
                                 ('/admin/enterprises', 'Підприємства'),
-                                ('/admin/world', 'Сектори й маршрути')
+                                ('/admin/world', 'Керування мапою')
                             ] %}
                             <a href="{{ url }}" class="nav-link"{% if request.url.path == url %} aria-current="page"{% endif %}>{{ label }}</a>
                             {% endfor %}

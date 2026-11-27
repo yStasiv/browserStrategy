@@ -105,3 +105,5 @@ python -m backend.scripts.set_system_player_password
 
 Гільдії, фракційні вміння та сервіси реєструються в
 [backend/services/character_profile.py](backend/services/character_profile.py).
+
+[Карта світу, відкриття локацій і редактор](docs/world-map.md)

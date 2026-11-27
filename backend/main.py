@@ -97,6 +97,7 @@ async def resume_active_battle(request: Request, call_next):
                 navigation = (request.headers.get("sec-fetch-mode") == "navigate"
                               or "text/html" in request.headers.get("accept", ""))
                 admin_view = path == "/admin/stats" or (
+                    player.is_admin and path in ("/admin/world", "/admin/map/editor")) or (
                     path == "/battle" and "admin_replay" in request.query_params) or (
                     (player.is_admin or player.is_moderator) and path in ("/player_info", "/player_info/transfers"))
                 if (navigation and not admin_view and (path != "/battle" or "replay" in request.query_params)

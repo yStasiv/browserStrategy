@@ -24,7 +24,7 @@ def context(request, db, enterprise_id):
     site = db.get(models.Enterprise, enterprise_id)
     if site is None:
         raise HTTPException(404, "Підприємство не знайдено.")
-    require_presence(db, user, site.sector)
+    require_presence(db, user, site.sector, "enterprises")
     return user, site
 
 
