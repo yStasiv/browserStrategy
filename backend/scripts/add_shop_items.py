@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from backend import database, models
 from backend.services.artifact_shop import BONUS_LABELS
+from backend.services.combat_effects import EFFECT_LABELS
 from backend.services.hero_equipment import ITEM_SLOTS
 from backend.services.resource_balances import resource_definitions
 
@@ -20,7 +21,7 @@ ARTIFACTS_FILE = PROJECT_ROOT / "content" / "artifacts.json"
 STATIC_ITEMS = PROJECT_ROOT / "frontend" / "static" / "images" / "items"
 
 
-def add_shop_items(db: Session, *, sync_existing=False):
+def add_shop_items(db: Session, *, sync_existing=False, replace_catalog=False):
     artifacts = json.loads(ARTIFACTS_FILE.read_text(encoding="utf-8"))
     resource_ids = resource_definitions().keys() - {"gold"}
     for item in artifacts:
@@ -52,11 +53,20 @@ def add_shop_items(db: Session, *, sync_existing=False):
             raise ValueError(f"Некоректна ціна артефакту «{item['name']}».")
 
     existing = {}
-    if sync_existing:
+    if replace_catalog:
+        allowed = {(item["name"], item["item_type"]) for item in artifacts}
+        for listing in db.scalars(select(models.ShopItem).order_by(models.ShopItem.id)):
+            template = listing.item_template
+            key = (template.name, template.item_type) if template and template.owner_id is None else None
+            if key not in allowed or key in existing:
+                db.delete(listing)
+            else:
+                existing[key] = [listing]
+    elif sync_existing:
         listings = db.scalars(select(models.ShopItem).join(models.ShopItem.item_template)
                              .where(models.Item.owner_id.is_(None))).all()
         for listing in listings:
-            existing.setdefault(listing.item_template.name, []).append(listing)
+            existing.setdefault((listing.item_template.name, listing.item_template.item_type), []).append(listing)
     for artifact in artifacts:
         item_data = {key: value for key, value in artifact.items() if key not in ("shop_data", "repair_cost", "name_en")}
         shop = artifact["shop_data"]
@@ -68,13 +78,25 @@ def add_shop_items(db: Session, *, sync_existing=False):
                 models.Item.name == artifact["name"],
                 models.Item.item_type == artifact["item_type"],
             ).values(image_url=artifact["image_url"]))
-        if previous := existing.get(artifact["name"]):
+        if sync_existing:
+            effects = {key: value for key, value in artifact["stats"].items() if key in EFFECT_LABELS}
+            if effects:
+                owned_copies = db.scalars(select(models.Item).where(
+                    models.Item.owner_id.is_not(None),
+                    models.Item.name == artifact["name"],
+                    models.Item.item_type == artifact["item_type"],
+                ))
+                for copy in owned_copies:
+                    copy.stats = {**(copy.stats or {}), **effects}
+        if previous := existing.get((artifact["name"], artifact["item_type"])):
             for listing in previous:
                 for key, value in item_data.items():
                     setattr(listing.item_template, key, value)
                 listing.price = shop["price"]
                 listing.resource_costs = shop.get("resources", {})
                 listing.level_required = shop["level"]
+                if replace_catalog:
+                    listing.quantity = shop.get("quantity", -1)
             continue
         db.add(models.ShopItem(
             item_template=models.Item(**item_data),
@@ -88,8 +110,10 @@ def add_shop_items(db: Session, *, sync_existing=False):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--sync-existing", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--sync-existing", action="store_true")
+    mode.add_argument("--replace-catalog", action="store_true")
     args = parser.parse_args()
     with database.SessionLocal() as db:
-        add_shop_items(db, sync_existing=args.sync_existing)
+        add_shop_items(db, sync_existing=args.sync_existing, replace_catalog=args.replace_catalog)
     print("Предмети успішно додано до магазину!")

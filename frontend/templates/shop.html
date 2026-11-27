@@ -57,12 +57,14 @@
             {% if listing.quantity >= 0 %}<p>У наявності {{ listing.quantity }}</p>{% endif %}
             {% if offer.bonuses %}
             <ul class="artifact-shop-bonuses">
-                {% for label, value in offer.bonuses %}
+                {% for label, value, effect in offer.bonuses %}
                 <li title="{{ label }}">
-                    {% if bonus_icons.get(label) %}
+                    {% if effect %}
+                    <img src="/static/images/hero_stats/active_effects.png" alt="{{ label }}">
+                    {% elif bonus_icons.get(label) %}
                     <img src="{{ bonus_icons[label] }}" alt="{{ label }}">
                     {% else %}{{ label }}{% endif %}
-                    {{ '%+g'|format(value) }}
+                    {{ '%+g'|format(value) }}{% if effect %}%{% endif %}
                 </li>
                 {% endfor %}
             </ul>

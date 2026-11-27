@@ -2,16 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend.database import get_current_user, get_db
-from backend.models import User
+from backend.models import GlobalEvent, User
 from backend.world_models import WorldSector
 from backend.engine.battle_service import hunting_options
 from backend.engine.hunting import ready_at
 from backend.engine.roster import saved_army
-from backend.services import world
+from backend.services import global_events, world
 
 router = APIRouter()
 templates = Jinja2Templates(directory="frontend/templates")
@@ -33,6 +33,7 @@ def map_state(db, player, journey, now):
 
 
 def location_state(db, player):
+    global_events.finish_due(db)
     journey, now = world.resolve_location(db, player)
     return map_state(db, player, journey, now)
 
@@ -56,7 +57,10 @@ def world_status(db: Session = Depends(get_db), player: User = Depends(get_curre
 def world_progression(db: Session = Depends(get_db), player: User = Depends(get_current_user)):
     if player is None:
         raise HTTPException(401, "Увійдіть до гри.")
-    return {"unlocked": db.scalars(select(WorldSector.key).where(WorldSector.unlocked.is_(True))).all()}
+    active = db.scalar(select(func.count(GlobalEvent.id)).where(
+        GlobalEvent.status == "ACTIVE", GlobalEvent.sector == player.map_sector))
+    return {"unlocked": db.scalars(select(WorldSector.key).where(WorldSector.unlocked.is_(True))).all(),
+            "active_construction": bool(active)}
 
 
 @router.post("/move-to-sector")

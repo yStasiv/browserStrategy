@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% from 'components/event_resource.html' import icon %}
+{% block title %}Ігрові події{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/game_panel.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/events.css') }}">
+<script defer src="{{ url_for('static', path='js/events.js') }}"></script>
+{% endblock %}
+{% block body %}
+<main class="game-panel events-panel"{% if not event or event.status == 'ACTIVE' %} data-event-live{% endif %}>
+    <header class="events-heading">
+        <h1>{{ event.title if event else 'Ігрові події' }}</h1>
+        <a class="game-panel-action" href="{{ '/events' if event else '/rating' }}">{{ 'Усі події' if event else 'Рейтинг' }}</a>
+    </header>
+    {% set states = {'ACTIVE': 'Активна', 'PAUSED': 'Призупинена', 'COMPLETED': 'Завершена', 'REWARDED': 'Нагороди видано'} %}
+    <div data-event-summary>
+    {% for entry in entries %}
+    <article class="event-card">
+        {% if entry.image_url %}<img class="news-image" src="{{ entry.image_url }}" alt="">{% endif %}
+        {% if not event %}<h2><a href="/events/{{ entry.id }}">{{ entry.title }}</a></h2>{% endif %}
+        <p>{{ entry.summary }}</p>
+        {% if not event %}<p>{{ states[entry.status] }} · Працює {{ entry.operational_count }} з {{ entry.project_count }} підприємств</p>{% endif %}
+        <p>Початок <time datetime="{{ entry.started_at }}">{{ entry.started_display }}</time>
+            {% if entry.completed_at %} · Завершення <time datetime="{{ entry.completed_at }}">{{ entry.completed_display }}</time>{% endif %}</p>
+        {% if not event %}
+        <p>{{ entry.participants }} учасників</p>
+        <ul class="event-resource-list">{% for key, count in entry.resources.items() %}<li>{{ icon(resource_names[key]) }} × {{ count }}</li>{% endfor %}</ul>
+        {% endif %}
+    </article>
+    {% else %}<p>Активних або завершених подій поки немає.</p>{% endfor %}
+    </div>
+
+    {% if event %}
+    <p class="news-text">{{ body }}</p>
+    <section data-event-enterprises>
+    <h2>Підприємства</h2>
+    <ul>{% for site in stats.enterprises %}<li><a href="/enterprise/{{ site.id }}">{{ site.name }}</a> · {{ site.stage }}</li>{% endfor %}</ul>
+    </section>
+    <h2>Внески учасників</h2>
+    <section data-event-ranking>
+    <p>{{ stats.participants }} учасників</p>
+    <ul class="event-resource-list">{% for key, count in stats.resources.items() %}<li>{{ icon(resource_names[key]) }} × {{ count }}</li>{% endfor %}</ul>
+    {% if stats.personal %}<p>Твій внесок
+        {% for key, count in stats.personal.resources.items() %} · {{ icon(resource_names[key]) }} × {{ count }}{% endfor %}</p>{% endif %}
+    <div class="event-table"><table>
+        <thead><tr><th>Місце</th><th>Гравець</th><th>Ресурси</th></tr></thead>
+        <tbody>{% for row in stats.rankings %}
+            <tr><td>{{ row.rank }}</td><td><a href="/player_info?id={{ row.player_id }}">{{ row.name }} [{{ row.level }}]</a></td>
+                <td>{% for key, count in row.resources.items() %}{{ icon(resource_names[key]) }} × {{ count }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+            </tr>
+        {% else %}<tr><td colspan="3">Внесків поки немає.</td></tr>{% endfor %}</tbody>
+    </table></div>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}

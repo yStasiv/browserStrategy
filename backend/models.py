@@ -475,6 +475,9 @@ class News(Base):
     status = Column(String(16), nullable=False, server_default="draft")
     created_at = Column(DateTime, nullable=False)
     published_at = Column(DateTime)
+    event_id = Column(Integer, ForeignKey("global_events.id", name="fk_news_event"), index=True)
+    recipient_id = Column(Integer, ForeignKey("users.id", name="fk_news_recipient"), index=True)
+
 
 
 class NewsAcknowledgment(Base):
@@ -482,3 +485,96 @@ class NewsAcknowledgment(Base):
 
     player_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     news_id = Column(Integer, ForeignKey("news.id", ondelete="CASCADE"), primary_key=True)
+
+
+class GlobalEvent(Base):
+    __tablename__ = "global_events"
+    __table_args__ = (CheckConstraint(
+        "status IN ('DRAFT','ACTIVE','COMPLETED','REWARDED','CANCELLED','PAUSED')", name="ck_global_event_status"),)
+
+    id = Column(Integer, primary_key=True)
+    event_type = Column(String(40), nullable=False)
+    status = Column(String(16), nullable=False, index=True)
+    title = Column(String(200), nullable=False)
+    summary = Column(Text, nullable=False)
+    description = Column(Text, nullable=False)
+    rules = Column(Text, nullable=False)
+    completion = Column(Text, nullable=False)
+    reward_description = Column(Text, nullable=False)
+    image_url = Column(String(255), nullable=False)
+    sector = Column(String, ForeignKey("world_sectors.key"), nullable=False)
+    configuration = Column(JSON, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    started_at = Column(DateTime)
+    started_by = Column(Integer, ForeignKey("users.id"))
+    completed_at = Column(DateTime)
+    rewarded_at = Column(DateTime)
+    paused_at = Column(DateTime)
+
+
+class EventConstruction(Base):
+    __tablename__ = "event_constructions"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("global_events.id"), nullable=False)
+    enterprise_id = Column(Integer, ForeignKey("enterprises.id"), unique=True)
+    enterprise_type = Column(String(64), nullable=False)
+    requirements = Column(JSON, nullable=False)
+    collected = Column(JSON, nullable=False)
+    stage_images = Column(JSON, nullable=False)
+    opening_balance = Column(Integer)
+    construction_started_at = Column(DateTime)
+    frame_completed_at = Column(DateTime)
+    construction_completed_at = Column(DateTime, index=True)
+    operational_since = Column(DateTime)
+
+
+class ConstructionContribution(Base):
+    __tablename__ = "construction_contributions"
+    __table_args__ = (
+        UniqueConstraint("player_id", "operation_id", name="uq_construction_operation"),
+        CheckConstraint("quantity > 0 AND unit_price >= 0", name="ck_construction_contribution_amount"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("global_events.id"), nullable=False, index=True)
+    enterprise_id = Column(Integer, ForeignKey("enterprises.id"), nullable=False, index=True)
+    player_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    resource_id = Column(String(64), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    unit_price = Column(Integer, nullable=False)
+    value = Column(BigInteger, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    operation_id = Column(String(36), nullable=False)
+
+
+class EventReward(Base):
+    __tablename__ = "event_rewards"
+    __table_args__ = (
+        UniqueConstraint("event_id", "player_id", name="uq_event_reward_player"),
+        CheckConstraint("status IN ('PENDING','PROCESSING','ISSUED','FAILED')", name="ck_event_reward_status"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("global_events.id"), nullable=False)
+    player_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    operation_id = Column(String(36), nullable=False, unique=True)
+    payload = Column(JSON, nullable=False)
+    multiplier = Column(String(20), nullable=False)
+    administrator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    issued_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, nullable=False)
+    issued_at = Column(DateTime)
+    status = Column(String(16), nullable=False)
+    error = Column(Text)
+
+
+class GlobalEventAudit(Base):
+    __tablename__ = "global_event_audit"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("global_events.id"), nullable=False, index=True)
+    administrator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String(30), nullable=False)
+    created_at = Column(DateTime, nullable=False)

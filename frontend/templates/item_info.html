@@ -30,8 +30,8 @@
             {% if bonuses %}
             <h2>Бонуси</h2>
             <dl class="hero-public-rating artifact-bonuses">
-                {% for name, value in bonuses %}
-                <div><dt>{{ name }}</dt><dd>{{ '%+g' | format(value) }}</dd></div>
+                {% for name, value, effect in bonuses %}
+                <div><dt>{% if effect %}<img class="artifact-effect-icon" src="/static/images/hero_stats/active_effects.png" alt="">{% endif %}{{ name }}</dt><dd>{{ '%+g' | format(value) }}{% if effect %}%{% endif %}</dd></div>
                 {% endfor %}
             </dl>
             {% endif %}

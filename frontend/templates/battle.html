@@ -20,10 +20,8 @@
         <a id="battle-return" href="{{ '/admin/stats' if admin_replay else '/player' }}" class="btn alt">{{ 'До статистики' if admin_replay else 'До персонажа' }}</a>
     </header>
 
-    <!-- Вибір бою -->
+    <!-- Історія боїв -->
     <section id="menu" class="battle-panel battle-menu hidden">
-        <h2>Оберіть супротивника</h2>
-        <div id="scenarios" class="battle-scenario-list"></div>
         <section id="battle-history" aria-label="Завершені бої"></section>
     </section>
 
@@ -32,11 +30,11 @@
         <div id="replay-controls" class="battle-panel hidden">
             <button type="button" class="btn" id="replay-play">Відтворити</button>
             <button type="button" class="btn alt" id="replay-restart">З початку</button>
-            <button type="button" class="btn alt" id="replay-next-turn">Наступний хід</button>
+            <button type="button" class="btn alt" id="replay-next-turn" title="Наступний хід" aria-label="Наступний хід">Далі</button>
             <label>Швидкість <select id="replay-speed"><option>0.5</option><option selected>1</option><option>2</option><option>4</option></select>×</label>
             <label>Подія <input id="replay-seek" type="range" min="0" value="0"></label>
             <output id="replay-position" aria-live="polite"></output>
-            <button type="button" class="btn alt" id="replay-exit">До списку боїв</button>
+            <button type="button" class="btn alt" id="replay-exit" title="До списку боїв">До списку</button>
         </div>
         <div class="battle-initiative battle-panel">
             <h2 id="initiative-title" title="Прогноз на 50 ходів">Черга ходів</h2>
@@ -67,15 +65,15 @@
                     <div id="deployment-army" role="group" aria-label="Загони для розстановки"></div>
                     <p id="deployment-placement-hint">Обери загін і клітинку в підсвіченій зоні.</p>
                     <div class="deployment-buttons">
-                        <button id="deployment-auto" type="button" class="btn alt">Автоматична розстановка</button>
+                        <button id="deployment-auto" type="button" class="btn alt">Розставити автоматично</button>
                         <button id="deployment-begin" type="button" class="btn">У бій</button>
                     </div>
                 </div>
                 <div id="battle-actions" class="battle-panel">
                     <button id="btn-auto" type="button" class="btn alt" aria-pressed="false">Авто</button>
-                    <button id="btn-wait" class="btn alt" title="Почекати пів ходу (W)">Чекати</button>
+                    <button id="btn-wait" class="btn alt" title="Очікувати (W)">Чекати</button>
                     <button id="btn-defend" class="btn alt" title="Захист (D)">Захист</button>
-                    <button id="btn-surrender" class="btn danger" title="Здатися">Здатись</button>
+                    <button id="btn-surrender" class="btn danger" title="Здатися">Здатися</button>
                 </div>
                 <section class="battle-panel battle-journal" aria-labelledby="battle-log-title">
                     <h2 id="battle-log-title">Журнал бою</h2>
@@ -98,7 +96,7 @@
     <div id="confirm" class="hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
         <div class="battle-panel battle-confirm">
             <h2 id="confirm-title">Здатися?</h2>
-            <p>Бій буде одразу завершено, а перемогу отримає суперник. Нагороду за цей бій ви не отримаєте.</p>
+            <p>Суперник переможе. Нагорода за бій не нарахується.</p>
             <div class="confirm-actions">
                 <button id="confirm-yes" class="btn danger">Так, здатись</button>
                 <button id="confirm-no" class="btn alt">Продовжити бій</button>
@@ -145,12 +143,6 @@
     const adminReplay = {{ admin_replay | default(false) | tojson }};
     // Відображення істот. Назви/емодзі лише для клієнта; правила, цифри й розміри живуть на сервері.
     const UNIT_VIEW = Object.create(null);
-    const SCENARIOS = [
-        { key: 'training', title: 'Тренувальний бій' },
-        { key: 'ruins', title: 'Руїни' },
-        { key: 'ogres', title: 'Лігво огрів' },
-        { key: 'dragon_lair', title: 'Лігво дракона (з 4 рівня)' },
-    ];
 
     // ---------- Стан клієнта ----------
     let view = null;          // остання відповідь сервера
@@ -176,7 +168,7 @@
 
     const $ = (id) => document.getElementById(id);
     const el = {
-        menu: $('menu'), battle: $('battle'), scenarios: $('scenarios'),
+        menu: $('menu'), battle: $('battle'),
         cells: $('cells'), stacks: $('stacks'), popups: $('popups'), board: $('board'), wrap: $('board-wrap'),
         initiative: $('initiative'),
         log: $('log'), toast: $('toast'), confirm: $('confirm'),
@@ -287,11 +279,12 @@
         const paddingX = parseFloat(frame.paddingLeft) + parseFloat(frame.paddingRight);
         const paddingY = parseFloat(frame.paddingTop) + parseFloat(frame.paddingBottom);
         const gutter = Object.keys(view.state.heroes ?? {}).length
-            ? Math.round(Math.max(28, Math.min(100, el.wrap.clientWidth * .085))) : 0;
+            ? Math.round(Math.max(22, Math.min(84, el.wrap.clientWidth * .072))) : 0;
         const maxWidth = el.wrap.clientWidth - paddingX - 4 - 2 * gutter;
-        const fixedHeight = matchMedia('(min-width: 64rem) and (min-height: 34rem)').matches;
+        const fixedHeight = matchMedia('(min-width: 56rem) and (min-height: 34rem)').matches;
         const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
         const maxHeight = (fixedHeight ? el.wrap.clientHeight : viewportHeight) - paddingY - 4;
+        // Leave room above the arena for the 10% visual offset.
         const size = Math.max(1, Math.floor(Math.min(maxWidth / w, maxHeight / (h * 1.2))));
         const stage = $('battle-stage');
         stage.style.width = (size * w + 4 + 2 * gutter) + 'px';
@@ -887,7 +880,7 @@
             });
             $('deployment-army').replaceChildren(...slots);
             $('deployment-placement-hint').textContent = view.deployment.remaining
-                ? `Вибери сірий загін і місце на полі · Залишилося виставити ${view.deployment.remaining}`
+                ? `Загони поза полем · ${view.deployment.remaining}. Обери загін і клітинку.`
                 : view.deployment.can_begin ? 'Усі загони виставлено.' : 'Очікуємо на розстановку суперника.';
             $('deployment-auto').disabled = busy;
             $('deployment-begin').disabled = busy || !view.deployment.can_begin;
@@ -896,7 +889,6 @@
 
         $('btn-auto').disabled = view.status !== 'active';
         $('btn-auto').setAttribute('aria-pressed', String(auto));
-        $('btn-auto').textContent = auto ? 'Авто увімкнено' : 'Авто';
         el.btnWait.disabled = !(can && view.turn.can_wait);
         el.btnDefend.disabled = !can || Boolean(view.turn?.hero);
         el.btnSurrender.disabled = !!replay || busy || view.status !== 'active';   // здатися можна й не у свій хід
@@ -1448,36 +1440,6 @@
         loadHistory();
     }
 
-    async function startScenario(key) {
-        try {
-            replayRequest++;
-            resetClientState();
-            const r = await api('/pve', 'POST', { scenario: key });
-            applyView(r, r.events);
-            el.toast.classList.add('hidden');
-        } catch (e) {
-            toast(e.message, e.code === 'army_required' ? 0 : undefined);
-            if (e.code === 'army_required') {
-                const link = document.createElement('a');
-                link.href = '/castle?section=army';
-                link.textContent = 'Набрати військо';
-                el.toast.append(' ', link);
-            }
-            showMenu();
-        }
-    }
-
-    function buildMenu() {
-        el.scenarios.innerHTML = '';
-        for (const s of SCENARIOS) {
-            const b = document.createElement('button');
-            b.className = 'btn';
-            b.textContent = s.title;
-            b.addEventListener('click', () => startScenario(s.key));
-            el.scenarios.appendChild(b);
-        }
-    }
-
     async function loadHistory() {
         const history = $('battle-history');
         try {
@@ -1759,7 +1721,6 @@
     });
 
     (async function init() {
-        buildMenu();
         const replayId = new URLSearchParams(location.search).get('replay');
         if (/^\d+$/.test(replayId || '')) {
             if (!adminReplay) showMenu();

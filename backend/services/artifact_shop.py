@@ -4,12 +4,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from backend.services.gameplay_events import record
+from backend.services.combat_effects import EFFECT_LABELS, artifact_bonus_rows
 from backend.models import Item, ShopItem
 from backend.services.hero_attributes import PROFILE_STATS
 from backend.services.hero_equipment import INVENTORY_LIMIT, lock_hero
 from backend.services.resource_balances import resource_owners, resource_quantity
 
-BONUS_LABELS = {column: name for name, column, _ in PROFILE_STATS.values()}
+BONUS_LABELS = {column: name for name, column, _ in PROFILE_STATS.values()} | EFFECT_LABELS
 SHOP_CATEGORIES = {
     "helmets": ("Шоломи", "items/background_icons/helmet.png", ("helmet",)),
     "armor": ("Броня", "items/background_icons/armor.png", ("armor", "armor:")),
@@ -25,9 +26,7 @@ SHOP_CATEGORIES = {
 
 
 def bonuses(stats):
-    stats = stats or {}
-    return [(label, stats[key]) for key, label in BONUS_LABELS.items()
-            if type(stats.get(key)) in (int, float) and stats[key]]
+    return artifact_bonus_rows(stats, BONUS_LABELS)
 
 
 def costs(listing):
@@ -86,15 +85,20 @@ def buy(db, player, listing_id):
             owner, field = owners[key]
             setattr(owner, field, resource_quantity(owners, key) - amount)
     source = listing.item_template
-    db.add(Item(
-        owner_id=player.id, name=source.name, description=source.description, item_type=source.item_type,
+    db.add(copy_artifact(listing, player.id))
+    if listing.quantity > 0:
+        listing.quantity -= 1
+    record(db, "shop_purchase", name=source.name, item_type=source.item_type,
+           level=listing.level_required, costs=prices)
+
+
+def copy_artifact(listing, owner_id):
+    source = listing.item_template
+    return Item(
+        owner_id=owner_id, name=source.name, description=source.description, item_type=source.item_type,
         image_url=source.image_url, stats={key: value for key, value in (source.stats or {}).items() if key in BONUS_LABELS},
         durability=source.max_durability if source.max_durability is not None else source.durability,
         max_durability=source.max_durability,
         initial_max_durability=source.initial_max_durability or source.max_durability,
         level_required=listing.level_required,
-    ))
-    if listing.quantity > 0:
-        listing.quantity -= 1
-    record(db, "shop_purchase", name=source.name, item_type=source.item_type,
-           level=listing.level_required, costs=prices)
+    )

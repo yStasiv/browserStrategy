@@ -80,7 +80,8 @@ def test_employment_reservation_snapshots_capacity_and_settlement(sessions, monk
     now = datetime(2026, 11, 22, 22)  # 00:00 in Kyiv, after the November UTC+2 transition.
     status, page = call("GET")
     assert status == 200 and b"22-11-2026" in page
-    assert "виплачено 54 золота за роботу".encode() in page
+    assert "виплачено 54".encode() in page
+    assert b'/static/images/resources/00_gold.png' in page
     assert b'<a href="/player_info?id=10">reader</a>.' in page.split(b'id="enterprise-history"', 1)[1]
 
 

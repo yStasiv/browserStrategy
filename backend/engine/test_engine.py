@@ -586,3 +586,33 @@ def test_battle_height_depends_on_the_largest_hero_team(hero_sides, height):
     assert (battle.width, battle.height) == (12, height)
     assert len(battle.heroes) == len(heroes)
     assert BattleState.from_dict(battle.to_dict()).height == height
+
+
+def test_combat_effects_modify_attacks_and_survive_snapshots():
+    from engine.rules import attack_preview
+
+    state = two_stacks("archer", "swordsman", ca=15, cb=30)
+    attacker, target = state.stacks["s0_0"], state.stacks["s1_0"]
+    attacker.x, target.x = 0, 6
+    state.active_id = attacker.id
+    original = attack_preview(attacker, target, ranged=True)
+    _, original_events = apply(state, Attack(target.id))
+    target.combat_effects = {"shot_protection": 5}
+    protected = attack_preview(attacker, target, ranged=True)
+    after, events = apply(BattleState.from_dict(state.to_dict()), Attack(target.id))
+    damage = next(event["damage"] for event in events if event["type"] == "attack")
+    original_damage = next(event["damage"] for event in original_events if event["type"] == "attack")
+    assert damage == max(1, original_damage * 95 // 100)
+    assert protected["final_dmg_max"] == original["final_dmg_max"] * 95 // 100
+    assert after.stacks[target.id].combat_effects == target.combat_effects
+
+    attacker.combat_effects["ranged_damage_boost"] = 5
+    boosted = attack_preview(attacker, target, ranged=True)
+    assert boosted["final_dmg_max"] == original["final_dmg_max"] * 105 * 95 // 10000
+    del attacker.combat_effects["ranged_damage_boost"]
+
+    melee = attack_preview(attacker, target, ranged=False)
+    target.combat_effects["ignore_attack"] = 25
+    assert attack_preview(attacker, target, ranged=False)["mult"] < melee["mult"]
+    attacker.combat_effects["ignore_defense"] = 25
+    assert attack_preview(attacker, target, ranged=False)["eff_def"] == melee["eff_def"] * .75

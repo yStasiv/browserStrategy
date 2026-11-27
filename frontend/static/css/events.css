@@ -1,0 +1,19 @@
+.events-panel { max-width: 66rem; }
+.events-heading, .event-resource-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+    align-items: center;
+}
+.events-heading { justify-content: space-between; }
+.events-heading h1 { margin: 0; }
+.event-card { border: 1px solid #cbb691; border-radius: .45rem; margin-block: .65rem; padding: .75rem; }
+.event-resource-list { padding-left: 1.25rem; }
+.event-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .6rem; }
+.event-checkbox { display: flex !important; align-items: baseline; }
+.event-checkbox input { width: auto !important; }
+.event-table { overflow-x: auto; }
+.event-table table { width: 100%; border-collapse: collapse; }
+.event-table th, .event-table td { text-align: left; padding: .45rem; border-bottom: 1px solid #cbb691; }
+#event-feedback { color: #8b3229; }
+.event-resource-icon { width: 2rem; height: 2rem; object-fit: contain; vertical-align: middle; }

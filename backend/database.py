@@ -29,6 +29,7 @@ def init_db():
             "reward_transactions", "player_travel", "player_resource_balances", "activity_guild_progress",
             "castle_buildings", "enterprise_shifts", "enterprise_events", "enterprise_daily_reports", "repair_jobs", "gameplay_events",
             "player_moderation_events", "news", "news_acknowledgments",
+            "global_events", "event_constructions", "construction_contributions", "event_rewards", "global_event_audit",
         }
     ]
     Base.metadata.create_all(bind=engine, tables=legacy_tables)

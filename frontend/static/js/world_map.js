@@ -259,6 +259,21 @@
             if (entry.image_url) icon.addEventListener('error', () => { icon.src = enterpriseIcon; }, {once: true});
             icon.src = entry.image_url || enterpriseIcon;
             link.append(icon, element('span', entry.name));
+            if (entry.construction) {
+                const phase = entry.construction;
+                if (phase.paused) {
+                    item.append(link, element('span', phase.stage));
+                    return item;
+                }
+                const percent = phase.started_at
+                    ? Math.max(0, Math.min(100, 100 * (Date.parse(state.server_time) - Date.parse(phase.started_at)) /
+                        (Date.parse(phase.completion_at) - Date.parse(phase.started_at))))
+                    : phase.progress;
+                const remaining = phase.completion_at ? Math.max(0, (Date.parse(phase.completion_at) - Date.parse(state.server_time)) / 1000) : 0;
+                item.append(link, element('span', phase.stage),
+                    element('span', `${Math.floor(percent)}%${remaining ? ` · ${Math.ceil(remaining / 3600)} год` : ''}`));
+                return item;
+            }
             const stock = element('span', `${number.format(entry.resource_stored)}/${number.format(entry.max_storage)}`);
             stock.title = 'Ресурси на складі / місткість складу';
             const salary = element('span', `${number.format(entry.salary)} зол./год`);
@@ -417,9 +432,13 @@
     setInterval(async () => {
         if (busy || document.hidden) return;
         try {
+            if (state.enterprises.some(site => site.construction)) {
+                await refreshState();
+                return;
+            }
             const next = await getState('/api/world/progression');
             const known = new Set(state.sectors.map(row => row.key));
-            if (!busy && (next.unlocked.length !== known.size || next.unlocked.some(key => !known.has(key)))) {
+            if (!busy && (next.active_construction || next.unlocked.length !== known.size || next.unlocked.some(key => !known.has(key)))) {
                 await refreshState();
             }
         } catch { /* manual refresh remains available for an interrupted connection */ }

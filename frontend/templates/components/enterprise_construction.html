@@ -1,0 +1,36 @@
+<section class="enterprise-section construction-panel" id="construction-panel"
+         data-url="/enterprise/{{ enterprise.id }}/construction">
+    <script id="construction-state" type="application/json">{{ construction|tojson }}</script>
+    <p>Майбутня шахта вироблятиме <img class="resource-icon" src="{{ production_resource.icon }}" alt="{{ production_resource.name }}" title="{{ production_resource.name }}">.</p>
+    <p>Подія <a href="/events/{{ construction.event_id }}">{{ construction.event_title }}</a></p>
+    <img class="enterprise-illustration construction-art" id="construction-art" src="{{ construction.image_url }}" alt="">
+    <h2 id="construction-phase">{{ construction.stage_name }}</h2>
+    <label for="construction-progress" id="construction-progress-label">Збір ресурсів</label>
+    <progress id="construction-progress" max="100" value="{{ construction.collection_progress }}"></progress>
+    <p id="construction-timing" hidden></p>
+    <p id="construction-feedback" role="status">{{ action_error or '' }}</p>
+    <section id="construction-resources">
+        {% for resource in construction.resources %}
+        <article class="construction-resource" data-resource="{{ resource.id }}">
+            <h3><img class="resource-icon" src="{{ resource.icon }}" alt="{{ resource.name }}" title="{{ resource.name }}"></h3>
+            <p data-amounts></p>
+            <progress max="{{ resource.required }}" value="{{ resource.collected }}" aria-label="{{ resource.name }}"></progress>
+            <form>
+                <label>Кількість <input name="quantity" type="number" min="1" step="1" value="1" required></label>
+                <label>Повзунок кількості <input name="quantity_range" type="range" min="1" max="1" step="1" value="1"
+                                               aria-label="Кількість ресурсу {{ resource.name }}"></label>
+                <button class="game-panel-action" type="button" data-max>Максимум</button>
+                <button class="game-panel-action" type="submit">Внести ресурси</button>
+            </form>
+        </article>
+        {% endfor %}
+    </section>
+    <dialog id="construction-confirm" class="game-panel" aria-labelledby="construction-confirm-title">
+        <h2 id="construction-confirm-title">Підтвердити внесок</h2>
+        <p><img id="construction-confirm-icon" class="resource-icon" alt=""> × <strong id="construction-confirm-amount"></strong></p>
+        <form method="dialog">
+            <button class="game-panel-action" value="cancel" autofocus>Скасувати</button>
+            <button class="game-panel-action" id="construction-confirm-submit" type="button">Підтвердити внесок</button>
+        </form>
+    </dialog>
+</section>

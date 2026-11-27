@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from backend import database
 from backend.models import News, User
 from backend.routers.admin import world_admin
-from backend.services import news
+from backend.services import global_events, news
 from backend.services.world import utc_now
 
 router = APIRouter()
@@ -23,12 +23,13 @@ class PublicStaticFiles(StaticFiles):
     async def get_response(self, path, scope):
         if Path(path).parts[:2] == ("images", "news"):
             raise HTTPException(404)
-        return await super().get_response(path, scope)
+        url = global_events.canonical_stage_url(f"/static/{path}")
+        return await super().get_response(url.removeprefix("/static/"), scope)
 
 
 def find_item(db, news_id, viewer):
     item = db.get(News, news_id)
-    if item is None or (item.status != "published" and not (viewer and viewer.is_admin)):
+    if item is None or item.event_id is not None or (item.status != "published" and not (viewer and viewer.is_admin)):
         raise HTTPException(404, "Новину не знайдено.")
     return item
 
@@ -68,7 +69,7 @@ def latest(response: Response, db: Session = Depends(database.get_db),
     item = news.latest_unread(db, player.id)
     return {"news": {
         "id": item.id, "title": item.title, "text": item.text, "text_parts": news.text_parts(item.text),
-        "image_url": item.image_url, "link_url": item.link_url,
+        "image_url": item.image_url, "link_url": item.link_url, "event_id": item.event_id,
         "published_at": news.display_date(item.published_at),
     } if item else None}
 
@@ -86,7 +87,7 @@ def acknowledge(news_id: int, db: Session = Depends(database.get_db),
 def admin_form(request, db, player, item=None, *, values=None, error=None, status=200):
     return templates.TemplateResponse("admin/news.html", {
         "request": request, "player": player, "editing": item, "values": values or item or {},
-        "articles": db.scalars(select(News).order_by(News.created_at.desc(), News.id.desc())).all(),
+        "articles": db.scalars(select(News).where(News.event_id.is_(None)).order_by(News.created_at.desc(), News.id.desc())).all(),
         "news_date": news.display_date, "error": error,
     }, status_code=status, headers=NO_CACHE)
 

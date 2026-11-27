@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import delete, or_, select, update
 
 from backend.config import ENTERPRISE_SHIFT_DURATION
-from backend.models import Enterprise, User
+from backend.models import Enterprise, EventConstruction, GlobalEvent, User
 from backend.services import map_config
 from backend.world_models import PlayerTravel, SectorConnection, WorldSector
 
@@ -160,6 +160,9 @@ def close_location(db, location_id):
     )).limit(1))
     if player is not None or journey is not None:
         raise HTTPException(409, "У секторі є гравці або через нього триває подорож.")
+    if db.scalar(select(GlobalEvent.id).where(GlobalEvent.status == "ACTIVE",
+                                               GlobalEvent.sector == sector.key).limit(1)) is not None:
+        raise HTTPException(409, "У секторі триває будівництво.")
     sector.unlocked = False
     sector.unlocked_at = None
     sector.unlocked_by = None
@@ -173,6 +176,9 @@ def close_world_except_start(db):
     if sector is None:
         raise RuntimeError("Стартовий сектор відсутній.")
     x, y = map_config.marker_position(key)
+    if db.scalar(select(GlobalEvent.id).where(GlobalEvent.status == "ACTIVE",
+                                               GlobalEvent.sector != key).limit(1)) is not None:
+        raise HTTPException(409, "За межами столиці триває будівництво.")
     # Lock travelers already at the capital before cancelling their journeys.
     db.execute(update(User).where(User.id.in_(select(PlayerTravel.player_id)))
                .values(map_sector=User.map_sector).execution_options(synchronize_session=False))
@@ -231,6 +237,7 @@ def utc_timestamp(value):
 
 def map_state(db, player, journey, now):
     from backend.services.enterprises import image_url
+    from backend.services.global_events import collection_ratio, stage, timestamp, STAGES
 
     present = location_available(db, player.map_sector)
     durations = routes_from(db, player.map_sector) if present else {}
@@ -241,6 +248,25 @@ def map_state(db, player, journey, now):
     enterprises = [] if journey or not location_available(db, player.map_sector, "enterprises") else db.scalars(
         select(Enterprise).where(Enterprise.sector == player.map_sector).order_by(Enterprise.id)
     ).all()
+    builds = {entry.enterprise_id: entry for entry in db.scalars(select(EventConstruction).where(
+        EventConstruction.enterprise_id.in_([site.id for site in enterprises])
+    ))} if enterprises else {}
+
+    def enterprise_visual(site):
+        build = builds.get(site.id)
+        if build is None:
+            return {"image_url": image_url(site)}
+        event = db.get(GlobalEvent, build.event_id)
+        paused = event.status == "PAUSED" and not build.operational_since
+        current = stage(build, (event.paused_at or now) if paused else now)
+        details = None
+        if current != "OPERATIONAL":
+            details = {"stage": "Будівництво призупинено" if paused else STAGES[current],
+                       "paused": paused, "progress": float(collection_ratio(build) * 100),
+                       "started_at": timestamp(build.construction_started_at),
+                       "completion_at": timestamp(build.construction_completed_at)}
+        return {"image_url": build.stage_images[current], "construction": details}
+
     return {
         "current_sector": player.map_sector,
         "map": geography["map"],
@@ -266,7 +292,7 @@ def map_state(db, player, journey, now):
             {
                 "id": entry.id, "name": entry.name, "resource_type": entry.resource_type,
                 "production_type": entry.production_type,
-                "image_url": image_url(entry),
+                **enterprise_visual(entry),
                 "area": entry.area, "salary": entry.salary, "workers_count": entry.workers_count,
                 "max_workers": entry.max_workers, "resource_stored": entry.resource_stored,
                 "max_storage": entry.max_storage,

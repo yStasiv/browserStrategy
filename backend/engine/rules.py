@@ -14,6 +14,8 @@ import random
 from heapq import heappop, heappush
 from typing import Dict, List, Optional, Tuple
 
+from backend.services.combat_effects import active_combat_effects
+
 from .actions import Attack, Defend, Move, Skip, Summon, Wait
 from .data import DEFAULT_SHOOTING_RANGE, DEFENSE_STANCE_MULTIPLIER, UNITS
 from .state import ATB_SCALE, MAX_ACTIONS, BattleState, HeroTurn, Stack
@@ -130,13 +132,25 @@ def is_ranged(state: BattleState, stack: Stack) -> bool:
 # ---------- шкода ----------
 
 def _multiplier(att_stack: Stack, def_stack: Stack) -> float:
-    diff = UNITS[att_stack.unit].attack - effective_defense(def_stack)
+    attack = UNITS[att_stack.unit].attack * (1 - def_stack.combat_effects.get("ignore_attack", 0) / 100)
+    defense = _attack_defense(att_stack, def_stack)
+    diff = attack - defense
     return min(4.0, 1.0 + 0.05 * diff) if diff >= 0 else max(0.3, 1.0 + 0.025 * diff)
 
 
 def effective_defense(target: Stack) -> float:
     defense = UNITS[target.unit].defense
     return defense * DEFENSE_STANCE_MULTIPLIER if target.defending else defense
+
+
+def _attack_defense(attacker, target):
+    return effective_defense(target) * (1 - attacker.combat_effects.get("ignore_defense", 0) / 100)
+
+
+def _shot_effect_damage(damage, attacker, target):
+    boost = attacker.combat_effects.get("ranged_damage_boost", 0)
+    protection = target.combat_effects.get("shot_protection", 0)
+    return max(1, math.floor(damage * (100 + boost) * (100 - protection) / 10000)) if boost or protection else damage
 
 
 def scaled_damage(base, multiplier):
@@ -150,15 +164,22 @@ def attack_preview(att: Stack, target: Stack, *, ranged: bool) -> dict:
     base_min, base_max = att.count * unit.dmg_min, att.count * unit.dmg_max
     final_min = scaled_damage(base_min, mult) * shot
     final_max = scaled_damage(base_max, mult) * shot
+    average = scaled_damage((base_min + base_max) / 2, mult) * shot
+    unit_min = scaled_damage(unit.dmg_min, mult * shot)
+    unit_max = scaled_damage(unit.dmg_max, mult * shot)
+    if ranged:
+        final_min, final_max, average, unit_min, unit_max = (
+            _shot_effect_damage(damage, att, target) for damage in (final_min, final_max, average, unit_min, unit_max)
+        )
     return {
         "base_dmg_min": base_min, "base_dmg_max": base_max,
         "roll_count": min(att.count, 10), "roll_scale": att.count / min(att.count, 10),
-        "eff_def": effective_defense(target), "mult": mult,
+        "eff_def": _attack_defense(att, target), "mult": mult,
         "can_shoot": ranged, "is_double_shot": shot == 2,
         "final_dmg_min": final_min, "final_dmg_max": final_max,
-        "average_damage": scaled_damage((base_min + base_max) / 2, mult) * shot,
-        "unit_dmg_min": scaled_damage(unit.dmg_min, mult * shot),
-        "unit_dmg_max": scaled_damage(unit.dmg_max, mult * shot),
+        "average_damage": average,
+        "unit_dmg_min": unit_min,
+        "unit_dmg_max": unit_max,
         "estimated_kills": min(target.count, final_max // UNITS[target.unit].hp),
         "will_counterattack": not ranged and not target.retaliated and final_min < total_hp(target),
     }
@@ -171,7 +192,9 @@ def shot_multiplier(att: Stack, target: Stack) -> int:
 def expected_damage(att: Stack, target: Stack, *, ranged=False) -> float:
     u = UNITS[att.unit]
     damage = (u.dmg_min + u.dmg_max) / 2 * att.count * _multiplier(att, target)
-    return damage * shot_multiplier(att, target) if ranged else damage
+    return (damage * shot_multiplier(att, target) * (1 + att.combat_effects.get("ranged_damage_boost", 0) / 100)
+            * (1 - target.combat_effects.get("shot_protection", 0) / 100)
+            if ranged else damage)
 
 
 def _roll_damage(att: Stack, target: Stack, rng: random.Random) -> int:
@@ -221,6 +244,9 @@ def init_timeline(state: BattleState) -> None:
         for stack in state.stacks.values():
             stack.luck = squad_stat(state, stack, "luck")
             stack.morale = squad_stat(state, stack, "morale")
+            hero = next((hero for hero in state.heroes.values() if hero.owner == stack.owner), None)
+            if hero:
+                stack.combat_effects = active_combat_effects((), hero.combat_effects, stack.combat_effects)
     for s in state.actors():
         interval = period(s)
         rng = random.Random(f"{state.seed}:initiative:{s.id}")
@@ -310,6 +336,8 @@ def _do_attack(st: BattleState, actor: Stack, a: Attack, rng: random.Random, eve
     dmg = _roll_damage(actor, target, rng)
     shot = shot_multiplier(actor, target) if ranged else 1
     dmg = _apply_luck(st, actor, dmg * shot, events)
+    if ranged:
+        dmg = _shot_effect_damage(dmg, actor, target)
     killed = _hurt(target, dmg)
     if ranged:
         actor.shots_left -= 1
@@ -350,6 +378,7 @@ def _do_summon(state, actor, action, events):
         id=f"summon_{actor.owner}_{state.seq}", unit=unit.key, owner=actor.owner,
         count=count, top_hp=top_hp, x=position[0], y=position[1],
         w=unit.size[0], h=unit.size[1], shots_left=unit.shots, summoned=True, initial_count=count,
+        combat_effects=dict(actor.combat_effects),
     )
     stack.luck = squad_stat(state, stack, "luck")
     stack.morale = squad_stat(state, stack, "morale")
@@ -375,7 +404,7 @@ def _hero_action(state, hero, action, rng, events):
         if target is None or target.owner == hero.owner or action.from_pos is not None or action.force_melee:
             raise IllegalAction("Некоректна ціль героя.")
         hp_before = total_hp(target)
-        damage = rng.randint(hero.damage_min, hero.damage_max)
+        damage = _shot_effect_damage(rng.randint(hero.damage_min, hero.damage_max), hero, target)
         killed = _hurt(target, damage)
         events.append({
             "type": "hero_attack", "attacker": hero.id, "target": target.id,

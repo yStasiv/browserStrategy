@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 
 from backend import database, models
 from backend.auth import session_player
-from backend.services import economy, enterprises
+from backend.services import economy, enterprises, global_events
+from backend.services.resource_balances import resource_definitions
 from backend.services.world import require_presence, utc_now
 
 router = APIRouter()
@@ -21,6 +22,7 @@ def context(request, db, enterprise_id):
     user = session_player(request, db)
     if user is None:
         raise HTTPException(401, "Увійди до гри.")
+    global_events.finish_due(db)
     site = db.get(models.Enterprise, enterprise_id)
     if site is None:
         raise HTTPException(404, "Підприємство не знайдено.")
@@ -30,6 +32,14 @@ def context(request, db, enterprise_id):
 
 def render(request, db, user, site, *, before=None, confirmation=None, error=None, status=200):
     now = utc_now()
+    build = global_events.for_site(db, site.id)
+    if build and not build.operational_since:
+        return templates.TemplateResponse("enterprise.html", {
+            "request": request, "user": user, "enterprise": site, "image_url": None,
+            "resource_names": {}, "construction": global_events.construction_state(db, build, user, now),
+            "production_resource": resource_definitions()[site.resource_type],
+            "action_error": error,
+        }, status_code=status)
     names = enterprises.resource_names()
     report = models.EnterpriseDailyReport
     history = select(report).where(report.enterprise_id == site.id, report.day < enterprises.reporting_day(now))
@@ -70,7 +80,7 @@ def render(request, db, user, site, *, before=None, confirmation=None, error=Non
             sellers = [{"site": seller, "price": enterprises.price(seller), "key": uuid4()} for seller in suppliers]
         available = site.input_stock.get(key, 0)
         consumption = per_unit * projected
-        inputs.append(dict(name=names[key], per_unit=per_unit, available=available, consumption=consumption,
+        inputs.append(dict(resource_id=key, per_unit=per_unit, available=available, consumption=consumption,
                            missing=max(0, consumption - available), sellers=sellers,
                            price=min((enterprises.price(seller) for seller in suppliers), default=None)))
     return templates.TemplateResponse("enterprise.html", {
@@ -81,8 +91,8 @@ def render(request, db, user, site, *, before=None, confirmation=None, error=Non
         "hourly_wages": sum(wages_in_progress) + max(0, site.workers_count - len(wages_in_progress)) * site.salary,
         "hourly_output": estimate, "unit_price": enterprises.price(site),
         "commission_percent": economy.GOLD_COMMISSION_PERCENT, "request_key": uuid4(),
-        "employment_key": uuid4(), "image_url": enterprises.image_url(site),
-        "resource_names": names, "inputs": inputs, "history": history[:20],
+        "employment_key": uuid4(), "image_url": (build.stage_images["OPERATIONAL"] if build else enterprises.image_url(site)),
+        "resource_names": names, "resource_icons": resource_definitions(), "inputs": inputs, "history": history[:20],
         "hires_by_day": enterprises.daily_hires(db, site.id, {row.day for row in history[:20]}),
         "next_history": history[19].day.isoformat() if len(history) > 20 else None,
         "confirmation": confirmation, "action_error": error,
@@ -119,6 +129,7 @@ def start_work(enterprise_id: int, request: Request, db: Session = Depends(datab
                 return RedirectResponse(f"/enterprise/{enterprise_id}", status_code=303)
     site = enterprises.lock_enterprise(db, enterprise_id)
     try:
+        global_events.ensure_operational(db, site.id)
         if site.sector != user.map_sector:
             raise HTTPException(403, "Підприємство має бути в поточному секторі.")
         enterprises.start_shift(db, site, user, utc_now(), key)
@@ -157,6 +168,8 @@ def buy_resources(
                   for identifier in sorted({seller_id, enterprise_id})}
         seller = locked[seller_id]
         target = locked[target_id] if procuring else None
+        for site_id in locked:
+            global_events.ensure_operational(db, site_id)
         if seller.sector != user.map_sector or (target and target.sector != user.map_sector):
             raise HTTPException(403, "Постачальник має бути в поточному секторі.")
         confirmation = enterprises.trade(

@@ -72,11 +72,6 @@
         {% include 'character/guilds.html' %}
         <section class="hero-panel">
             <h2>Статистика</h2>
-            <dl class="hero-public-rating">
-                <div><dt>Рейтинг</dt><dd>{{ player_rating.rating }}</dd></div>
-                <div><dt>Перемоги</dt><dd>{{ player_rating.wins }}</dd></div>
-                <div><dt>Поразки</dt><dd>{{ player_rating.losses }}</dd></div>
-            </dl>
             {% if player.workplace %}<p>Місце роботи · {{ player.workplace.replace('enterprise_', 'Підприємство №') }}</p>{% endif %}
             <nav class="artifact-links" aria-label="Статистика персонажа">
                 <a class="hero-link" href="/battle/history?player_id={{ player.id }}">Усі бої персонажа</a>

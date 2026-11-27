@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% from 'components/event_resource.html' import icon %}
+{% block title %}Глобальні події{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/game_panel.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/events.css') }}">
+<script defer src="{{ url_for('static', path='js/admin_events.js') }}"></script>
+{% endblock %}
+{% macro stage_artwork(images) %}
+<div class="event-fields">
+    {% for key, label in stage_names.items() %}
+    <section class="event-card" data-stage-row>
+        <label>{{ label }}
+            <input data-stage-image="{{ key }}" type="text" list="event-artwork" maxlength="255"
+                   value="{{ images.get(key, '') }}" placeholder="Стандартне зображення">
+        </label>
+        <label>Завантажити файл <input data-stage-file type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+        <button type="button" class="game-panel-action" data-stage-upload>Завантажити</button>
+        <img class="news-image news-preview" data-stage-preview alt="" hidden>
+    </section>
+    {% endfor %}
+</div>
+{% endmacro %}
+{% block body %}
+<main class="game-panel events-panel" id="admin-events" data-event="{{ event.id if event else '' }}">
+    <header class="events-heading">
+        <h1>{{ 'Нова подія' if creating else (event.title if event else 'Глобальні події') }}</h1>
+        <a class="game-panel-action" href="{{ '/admin/events' if creating or event else '/admin/events/new' }}">
+            {{ 'Усі події' if creating or event else 'Нова подія' }}
+        </a>
+    </header>
+    {% if not creating and not event %}
+    {% set labels = {'DRAFT': 'Чернетка', 'ACTIVE': 'Активна', 'PAUSED': 'Призупинена', 'COMPLETED': 'Завершена',
+                     'REWARDED': 'Нагороди видано', 'CANCELLED': 'Скасована'} %}
+    <div class="event-table">
+        <table>
+            <thead><tr><th>Назва</th><th>Сектор</th><th>Статус</th></tr></thead>
+            <tbody>
+            {% for entry in entries %}
+                <tr><td><a href="/admin/events/{{ entry.id }}">{{ entry.title }}</a></td>
+                    <td>{{ sector_names.get(entry.sector, entry.sector) }}</td><td>{{ labels[entry.status] }}</td></tr>
+            {% else %}
+                <tr><td colspan="3">Подій поки немає.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    <p id="event-feedback" role="status"></p>
+        <datalist id="event-artwork">
+            {% for type in catalog.values() %}{% for name, url in type.images.items() %}<option value="{{ url }}">{{ type.name }} · {{ stage_names[name] }}</option>{% endfor %}{% endfor %}
+        </datalist>
+    <script id="event-resource-icons" type="application/json">{{ resources|tojson }}</script>
+    <script id="event-catalog" type="application/json">{{ catalog|tojson }}</script>
+    {% if creating or (event and event.status == 'DRAFT') %}
+    <form id="event-draft" class="news-form">
+        <label>Назва <input name="title" required maxlength="180" value="{{ event.title if event else '' }}"></label>
+        <label>Короткий опис <textarea name="summary" maxlength="500" required>{{ event.summary if event else '' }}</textarea></label>
+        <label>Повний опис <textarea name="description" rows="5" required>{{ event.description if event else '' }}</textarea></label>
+        <label>Правила участі <textarea name="rules" required>{{ event.rules if event else '' }}</textarea></label>
+        <label>Умови завершення <textarea name="completion" required>{{ event.completion if event else '' }}</textarea></label>
+        <label>Опис нагород <textarea name="reward_description" required>{{ event.reward_description if event else '' }}</textarea></label>
+        <label>Сектор <select name="sector" required>
+            {% for sector in sectors %}<option value="{{ sector.key }}"{% if event and event.sector == sector.key %} selected{% endif %}>{{ sector.name }}</option>{% endfor %}
+        </select></label>
+        <label>Зображення події <input name="image_url" list="event-artwork" value="{{ event.image_url if event else '' }}"></label>
+        <img id="event-artwork-preview" class="news-image news-preview" {% if event and event.image_url %}src="{{ event.image_url }}"{% else %}hidden{% endif %} alt="">
+
+        <label>Завантажити зображення <input type="file" id="event-image" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+        <button type="button" class="game-panel-action" id="event-upload">Завантажити</button>
+        <h2>Підприємства</h2>
+        <section id="event-projects"></section>
+        <button type="button" class="game-panel-action" id="event-add-project">Додати підприємство</button>
+        <details><summary>Базова вартість ресурсів для оцінки внесків</summary>
+            <p>Порожні поля беруть базову ціну з наявного підприємства або з параметрів вибраної шахти. Для ресурсів без базової ціни вкажи її вручну.</p>
+            <div class="event-fields">{% for key, definition in resources.items() if key != 'gold' %}
+            <label>{{ icon(definition) }} <input type="number" min="1" max="2147483647" step="1" data-base-price="{{ key }}"
+                value="{{ event.configuration.base_prices.get(key, '') if event else '' }}"></label>{% endfor %}</div>
+        </details>
+        <button class="game-panel-action" type="submit">Зберегти чернетку</button>
+    </form>
+    <script id="event-configuration" type="application/json">{{ (event.configuration.projects if event else [])|tojson }}</script>
+    <template id="event-project-template">
+        <fieldset class="event-card">
+            <legend>Підприємство</legend>
+            <label>Тип <select name="enterprise_type">
+                {% for key, type in catalog.items() %}<option value="{{ key }}">{{ type.name }}</option>{% endfor %}
+            </select></label>
+            <label>Власна назва шахти <input name="name" maxlength="120" placeholder="Назва типу за замовчуванням"></label>
+            <label class="event-checkbox"><input name="adopt_placeholder" type="checkbox"> Використати наявну порожню заготовку в столиці</label>
+            <div class="event-fields">
+                {% for key, label, minimum in [
+                    ('area', 'Площа', 1), ('salary', 'Плата за зміну', 1), ('item_price', 'Базова ціна продукції', 1),
+                    ('max_workers', 'Робочі місця', 1), ('max_storage', 'Місткість складу', 1), ('balance', 'Початковий баланс', 0)
+                ] %}
+                <label>{{ label }} <input name="{{ key }}" type="number" step="1" min="{{ minimum }}"
+                    max="{{ 999 if key == 'area' else 2147483647 }}" required></label>
+                {% endfor %}
+            </div>
+            <h3>Потреби</h3>
+            <div class="event-fields">{% for key, definition in resources.items() %}
+                <label>{{ icon(definition) }} <input type="number" min="0" max="2147483647" step="1" data-requirement="{{ key }}"></label>
+            {% endfor %}</div>
+            <details><summary>Зображення п’яти стадій</summary>{{ stage_artwork({}) }}</details>
+            <button type="button" class="game-panel-action" data-remove-project>Прибрати підприємство</button>
+        </fieldset>
+    </template>
+    {% endif %}
+
+    {% if event %}
+    <article class="event-card">
+        <h2>Попередній перегляд повідомлення</h2>
+        {% if event.image_url %}<img class="news-image" src="{{ event.image_url }}" alt="">{% endif %}
+        <h3>{{ event.title }}</h3><p class="news-text">{{ preview }}</p>
+        {% if event.status == 'DRAFT' %}
+        <button type="button" class="game-panel-action" data-event-action="start">Запустити подію</button>
+        {% endif %}
+        {% if event.status in ('DRAFT', 'ACTIVE') and not stats.participants %}
+        <button type="button" class="game-panel-action" data-event-action="cancel">Скасувати подію</button>
+        {% endif %}
+    </article>
+    {% if builds %}
+    <section>
+        <h2>Хід будівництва</h2>
+        {% for build in builds %}
+            {% if build.enterprise_id %}
+            <p><a href="/enterprise/{{ build.enterprise_id }}">{{ build_names[build.enterprise_id] }}</a>
+                · {{ "Будівництво призупинено" if event.status == "PAUSED" and not build.operational_since else stage_names[stage(build, now)] }}
+                {% if build.frame_completed_at and event.status != 'PAUSED' %} · Каркас до {{ display_date(build.frame_completed_at) }}{% endif %}
+                {% if build.construction_completed_at and event.status != 'PAUSED' %} · Завершення {{ display_date(build.construction_completed_at) }}{% endif %}</p>
+            <ul class="event-resource-list">{% for key, quantity in build.requirements.items() %}
+                <li>{{ icon(resources[key]) }} {{ build.collected.get(key, 0) }} / {{ quantity }}</li>{% endfor %}</ul>
+            <details>
+                <summary>Зображення шахти «{{ build_names[build.enterprise_id] }}»</summary>
+                <form class="news-form" data-standalone-artwork="{{ build.enterprise_id }}" data-mine-type="{{ build.enterprise_type }}">
+                    {{ stage_artwork(build.stage_images) }}
+                    <button type="submit" class="game-panel-action">Зберегти зображення</button>
+                    <p role="status" data-artwork-feedback></p>
+                </form>
+            </details>
+            {% endif %}
+        {% endfor %}
+        <details>
+            <summary>Статистика внесків</summary>
+            <p>{{ stats.participants }} учасників · Оцінка внесків {{ stats.value }} {{ icon(resources.gold) }}</p>
+            <div class="event-table"><table>
+                <thead><tr><th>Місце</th><th>Гравець</th><th>Ресурси</th><th>Оцінка {{ icon(resources.gold) }}</th></tr></thead>
+                <tbody>{% for row in stats.ranking %}
+                    <tr><td>{{ row.rank }}</td><td>{{ row.name }} [{{ row.level }}]</td>
+                        <td>{% for key, amount in row.resources.items() %}{{ icon(resources[key]) }} × {{ amount }} {% endfor %}</td>
+                        <td>{{ row.value }}</td></tr>
+                {% else %}<tr><td colspan="4">Внесків поки немає.</td></tr>{% endfor %}</tbody>
+            </table></div>
+        </details>
+        {% if event.status != 'CANCELLED' %}<a href="/events/{{ event.id }}">Статистика внесків і рейтинг</a>{% endif %}
+    </section>
+    {% endif %}
+    {% if event.status == 'COMPLETED' and not rewards %}
+    <section class="event-card">
+        <h2>Нагороди події</h2>
+        <form id="event-reward-form" class="news-form">
+            <label>Коефіцієнт від вартості внеску <input type="number" name="multiplier" min="0" max="1000" step="0.000001" value="0" required></label>
+            <label>Фіксоване золото кожному <input type="number" name="gold" min="0" max="2147483647" step="1" value="0" required></label>
+            <div class="event-fields">{% for key, definition in resources.items() if key != 'gold' %}
+                <label>{{ icon(definition) }} <input type="number" step="1" min="0" max="2147483647" data-reward-resource="{{ key }}"></label>
+            {% endfor %}</div>
+            <div class="event-fields" id="event-reward-items"></div>
+            <button type="button" id="event-add-reward-item" class="game-panel-action">Додати предмет для всіх</button>
+            <h3>Додаткові нагороди за місце або для гравця</h3>
+            <div id="event-bonuses"></div>
+            <button type="button" id="event-add-bonus" class="game-panel-action">Додати нагороду</button>
+            <button class="game-panel-action" type="submit">Переглянути розрахунок</button>
+        </form>
+        <template id="event-reward-item-template">
+            <label>Предмет <select name="listing" required>
+            {% for id, label in listings %}<option value="{{ id }}">{{ label }}</option>{% endfor %}
+            </select> Кількість <input name="amount" type="number" min="1" max="500" value="1" required></label>
+        </template>
+        <template id="event-bonus-template">
+            <fieldset class="event-card">
+                <legend>Додаткова нагорода</legend>
+                <label>Підстава <select name="scope"><option value="ranks">Місце</option><option value="individuals">Гравець</option></select></label>
+                <label>Місце або ID гравця <input name="recipient" type="number" min="1" required></label>
+                <label>Золото <input name="gold" type="number" min="0" max="2147483647" value="0" required></label>
+                <div class="event-fields">{% for key, definition in resources.items() if key != 'gold' %}
+                    <label>{{ icon(definition) }} <input type="number" step="1" min="0" max="2147483647" data-reward-resource="{{ key }}"></label>
+                {% endfor %}</div>
+                <div class="event-items"></div><button type="button" class="game-panel-action" data-add-item>Додати предмет</button>
+                <button type="button" class="game-panel-action" data-remove-bonus>Прибрати</button>
+            </fieldset>
+        </template>
+        <div id="event-reward-preview" class="event-table"></div>
+        <button class="game-panel-action" type="button" id="event-reward-issue" hidden>Підтвердити видачу</button>
+    </section>
+    {% endif %}
+    {% if rewards %}
+    <section class="event-card"><h2>Журнал видачі</h2>
+        <div class="event-table"><table><thead><tr><th>Гравець</th><th>Нагорода</th><th>Коефіцієнт</th><th>Адміністратор</th><th>Операція</th><th>Стан</th></tr></thead>
+        <tbody>{% for reward in rewards %}
+            <tr><td>{{ reward.player_id }}</td><td>
+                {% if reward.payload.gold %}{{ icon(resources.gold) }} × {{ reward.payload.gold }}{% endif %}
+                {% for key, amount in reward.payload.resources.items() %}{{ icon(resources[key]) }} × {{ amount }}{% endfor %}
+                {% for id, amount in reward.payload['items'].items() %}Предмет #{{ id }} × {{ amount }}{% endfor %}
+                </td><td>{{ reward.multiplier }}</td>
+                <td>{{ reward.issued_by or reward.administrator_id }}</td><td>{{ reward.operation_id }}</td>
+                <td>{{ reward.status }} · {{ display_date(reward.issued_at or reward.created_at) }}{% if reward.error %} · {{ reward.error }}{% endif %}</td></tr>
+        {% endfor %}</tbody></table></div>
+        {% if event.status == 'COMPLETED' %}<button class="game-panel-action" type="button" data-event-action="rewards/issue">Повторити невидані нагороди</button>{% endif %}
+    </section>
+    {% endif %}
+    <details><summary>Адміністративний аудит</summary>
+        <ul>{% for row in audit %}<li>{{ display_date(row.created_at) }} · {{ row.action }} · Адміністратор {{ row.administrator_id }}</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+</main>
+{% endblock %}

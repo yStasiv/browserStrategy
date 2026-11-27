@@ -25,6 +25,18 @@
                 </dd>
             </div>
             {% endfor %}
+            {% if profile.effects_icon %}
+            <div class="hero-stat-card hero-effects-card" tabindex="0" aria-describedby="hero-active-effects">
+                <dt>
+                    <img class="hero-stat-icon" src="{{ profile.effects_icon }}" alt="Ефекти">
+                    <span id="hero-active-effects" class="hero-stat-tooltip" role="tooltip">
+                        {% for label, value in profile.active_effects %}
+                        <span>{{ label }} · {{ value }}%</span>
+                        {% else %}<span>Немає активних ефектів</span>{% endfor %}
+                    </span>
+                </dt>
+            </div>
+            {% endif %}
         </dl>
         {% if not read_only and player.pending_attribute_points %}<small>Вільні очки · {{ player.pending_attribute_points }}</small>{% endif %}
     {% if not read_only %}</form>{% endif %}

@@ -1,86 +1,74 @@
 {
   "hero_leveling": {
     "2": {
-      "exp": 1000,
+      "exp": 1500,
       "rewards": {
-        "gold": 200,
-        "singing_resin": 1,
-        "basalt_bone": 1,
-        "whisper_dust": 1,
-        "pulse_spark": 1,
-        "brand_salt": 1
+        "gold": 250
       }
     },
     "3": {
-      "exp": 3000,
-      "rewards": {
-        "gold": 300,
-        "singing_resin": 1,
-        "basalt_bone": 1,
-        "whisper_dust": 1,
-        "pulse_spark": 1,
-        "brand_salt": 1
-      }
-    },
-    "4": {
-      "exp": 6000,
-      "rewards": {
-        "gold": 400,
-        "singing_resin": 1,
-        "basalt_bone": 1,
-        "whisper_dust": 1,
-        "pulse_spark": 1,
-        "brand_salt": 1
-      }
-    },
-    "5": {
-      "exp": 10000,
+      "exp": 4000,
       "rewards": {
         "gold": 500,
         "singing_resin": 1,
-        "basalt_bone": 1,
-        "whisper_dust": 1,
-        "pulse_spark": 1,
-        "brand_salt": 1
+        "basalt_bone": 1
+      }
+    },
+    "4": {
+      "exp": 10000,
+      "rewards": {
+        "gold": 1500,
+        "singing_resin": 3,
+        "basalt_bone": 3
+      }
+    },
+    "5": {
+      "exp": 25000,
+      "rewards": {
+        "gold": 5000,
+        "singing_resin": 10,
+        "basalt_bone": 10,
+        "whisper_dust": 5,
+        "pulse_spark": 5
       }
     },
     "6": {
-      "exp": 15000,
+      "exp": 50000,
       "rewards": {
-        "gold": 600,
-        "singing_resin": 1,
-        "basalt_bone": 1,
-        "whisper_dust": 1,
-        "pulse_spark": 1,
-        "brand_salt": 1
+        "gold": 10000,
+        "singing_resin": 10,
+        "basalt_bone": 10,
+        "whisper_dust": 5,
+        "pulse_spark": 5,
+        "brand_salt": 5
       }
     },
     "7": {
-      "exp": 21000,
+      "exp": 90000,
       "rewards": {
-        "gold": 700,
-        "singing_resin": 1,
-        "basalt_bone": 1,
-        "whisper_dust": 1,
-        "pulse_spark": 1,
-        "brand_salt": 1
+        "gold": 20000,
+        "singing_resin": 10,
+        "basalt_bone": 10,
+        "whisper_dust": 10,
+        "pulse_spark": 10,
+        "brand_salt": 10
       }
     },
     "8": {
-      "exp": 28000,
+      "exp": 180000,
       "rewards": {
-        "gold": 800,
-        "singing_resin": 1,
-        "basalt_bone": 1,
-        "whisper_dust": 1,
-        "pulse_spark": 1,
-        "brand_salt": 1,
+        "gold": 35000,
+        "singing_resin": 15,
+        "basalt_bone": 15,
+        "whisper_dust": 10,
+        "pulse_spark": 10,
+        "brand_salt": 15,
         "astralit": 1
       }
     }
   },
   "default": {
-    "0": 100,
+    "0": 90,
     "1": 100,
     "2": 150,
     "3": 200,
@@ -92,20 +80,89 @@
     "9": 500,
     "10": 550
   },
-  "per_level_after_table": 50,
+  "per_level_after_table": 99000,
   "guilds": {
     "adventurers": {
-      "0": 1,
-      "1": 300,
-      "2": 1500,
-      "3": 200
+      "0": 30,
+      "1": 70,
+      "2": 150,
+      "3": 310,
+      "4": 630,
+      "5": 1270
     },
-    "hunters": {},
-    "workers": {},
-    "metalworkers": {},
-    "metalworking:jewelry": {},
-    "metalworking:forge": {},
-    "metalworking:armor": {},
-    "metalworking:enchanting": {}
+    "hunters": {
+      "0": 15,
+      "1": 40,
+      "2": 90,
+      "3": 190,
+      "4": 390,
+      "5": 750,
+      "6": 1100,
+      "7": 1600,
+      "8": 2500,
+      "9": 5000,
+      "10": 7200
+    },
+    "workers": {
+       "0": 32,
+      "1": 64,
+      "2": 168,
+      "3": 256,
+      "4": 512,
+      "5": 1024,
+      "6": 2048,
+      "7": 4096,
+      "8": 8192,
+      "9": 12000,
+      "10": 17200
+    },
+    "metalworkers": {
+      "1": 30,
+      "2": 140,
+      "3": 500,
+      "4": 1300
+    },
+    "metalworking:jewelry": {
+      "0": 10,
+      "1": 15,
+      "2": 40,
+      "3": 80,
+      "4": 160,
+      "5": 300,
+      "6": 555,
+      "7": 830,
+      "8": 1400,
+      "9": 2800,
+      "10": 6000
+    },
+    "metalworking:forge": {
+            "0": 10,
+      "1": 15,
+      "2": 40,
+      "3": 80,
+      "4": 160,
+      "5": 300,
+      "6": 555,
+      "7": 830,
+      "8": 1400,
+      "9": 2800,
+      "10": 6000
+    },
+    "metalworking:armor": {
+            "0": 10,
+      "1": 15,
+      "2": 40,
+      "3": 80,
+      "4": 160,
+      "5": 300,
+      "6": 555,
+      "7": 830,
+      "8": 1400,
+      "9": 2800,
+      "10": 6000
+    },
+    "metalworking:enchanting": {
+
+    }
   }
 }

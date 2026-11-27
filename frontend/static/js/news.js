@@ -43,7 +43,16 @@
     const button = byId('news-acknowledge');
     const feedback = byId('news-popup-feedback');
 
+    let checking = false;
+    let acknowledge;
     async function showLatest() {
+        if (checking || dialog.open || button.disabled || document.hidden) return;
+        checking = true;
+        try { await checkLatest(); }
+        finally { checking = false; }
+    }
+
+    async function checkLatest() {
         const response = await fetch('/api/news/latest', {cache: 'no-store'});
         if (!response.ok) return;
         const {news} = await response.json();
@@ -70,22 +79,38 @@
         const link = byId('news-popup-link');
         if (news.link_url) link.href = news.link_url;
         link.hidden = !news.link_url;
-        dialog.addEventListener('cancel', event => event.preventDefault());
-        button.addEventListener('click', async () => {
+        const eventLink = byId('news-popup-event-link');
+        if (news.event_id) {
+            dialog.classList.add('news-popup-event');
+            eventLink.href = `/events/${news.event_id}`;
+            eventLink.hidden = false;
+            button.textContent = 'Закрити';
+        } else {
+            if (dialog.classList) dialog.classList.remove('news-popup-event');
+            if (eventLink) eventLink.hidden = true;
+            button.textContent = 'Ознайомився';
+        }
+        feedback.textContent = '';
+        if (acknowledge && button.removeEventListener) button.removeEventListener('click', acknowledge);
+        acknowledge = async () => {
             button.disabled = true;
             dialog.close();
             try {
                 const result = await fetch(`/api/news/${news.id}/acknowledge`, {method: 'POST', keepalive: true});
-                if (!result.ok) throw new Error();
+                if (!result.ok && result.status !== 404) throw new Error();
             } catch {
                 feedback.textContent = 'Не вдалося зберегти підтвердження. Спробуй ще раз.';
                 dialog.showModal();
             } finally {
                 button.disabled = false;
             }
-        });
+        };
+        button.addEventListener('click', acknowledge);
         dialog.showModal();
     }
 
-    showLatest().catch(() => {});
+    dialog.addEventListener('cancel', event => event.preventDefault());
+    const poll = () => showLatest().catch(() => {});
+    poll();
+    if (typeof window !== 'undefined') window.setInterval(poll, 30000);
 })();

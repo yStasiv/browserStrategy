@@ -2,6 +2,7 @@
 from sqlalchemy import select
 
 from backend.models import Item
+from backend.services.combat_effects import active_combat_effects
 from backend.services.hero_attributes import HERO_RULES, hero_attributes
 from backend.services.hero_equipment import equipment_ids
 from .data import faction_key
@@ -28,4 +29,5 @@ def make_hero(db, user, side, level):
         portrait=hero_portrait_url(user.fraction, user.gender),
         faction=faction_key(user.fraction),
         equipment_ids=sorted(item.id for item in equipped),
+        combat_effects=active_combat_effects(equipped),
     )

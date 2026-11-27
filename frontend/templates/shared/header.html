@@ -42,7 +42,8 @@
                             {% for url, label in [
                                 ('/admin/enterprises', 'Підприємства'),
                                 ('/admin/world', 'Керування мапою'),
-                                ('/admin/news', 'Новини')
+                                ('/admin/news', 'Новини'),
+                                ('/admin/events', 'Глобальні події')
                             ] %}
                             <a href="{{ url }}" class="nav-link"{% if request.url.path == url %} aria-current="page"{% endif %}>{{ label }}</a>
                             {% endfor %}

@@ -52,6 +52,7 @@ class Stack:
     morale_streak: int = 1
     energy: int | None = None
     max_energy: int | None = None
+    combat_effects: dict[str, float] = field(default_factory=dict)
 
     def cells(self) -> List[Tuple[int, int]]:
         return [(self.x + i, self.y + j) for i in range(self.w) for j in range(self.h)]
@@ -76,6 +77,7 @@ class HeroTurn:
     portrait: str | None = None
     faction: str | None = None
     equipment_ids: list[int] = field(default_factory=list)
+    combat_effects: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass

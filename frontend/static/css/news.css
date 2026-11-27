@@ -33,3 +33,6 @@
 .news-admin-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; margin-top: .7rem; }
 .news-error, #news-popup-feedback { color: #8b3229; }
 @media (max-width: 42rem) { .news-admin-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.news-popup.news-popup-event { width: min(54rem, calc(100% - 2rem)); max-height: min(82dvh, 48rem); }
+#news-popup-event-link[hidden] { display: none; }

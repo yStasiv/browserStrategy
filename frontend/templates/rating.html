@@ -32,6 +32,7 @@
 {% block body %}
 <main class="hero-dashboard rating-page">
     <h1>Рейтинг гравців</h1>
+    {% if player %}<p><a class="game-panel-action" href="/events">Ігрові події</a></p>{% endif %}
     <div class="hero-panel rating-panel">
         <table class="rating-table" aria-label="Рейтинг за поточним досвідом">
             <thead>

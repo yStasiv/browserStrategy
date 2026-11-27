@@ -22,8 +22,9 @@
     ],
     "min_level": 5,
     "resources": {
-      "gold": 450,
-      "singing_resin": 20
+      "gold": 10000,
+      "singing_resin": 15,
+      "basalt_bone": 15
     },
     "requires": [
       "elves_recruitment_tier_1"
@@ -40,9 +41,12 @@
     ],
     "min_level": 9,
     "resources": {
-      "gold": 1100,
+      "gold": 28000,
       "singing_resin": 40,
-      "basalt_bone": 15
+      "basalt_bone": 40,
+      "whisper_dust": 10,
+      "pulse_spark": 10,
+      "brand_salt": 5
     },
     "requires": [
       "elves_recruitment_tier_1_form_2"
@@ -72,8 +76,9 @@
     ],
     "min_level": 6,
     "resources": {
-      "gold": 600,
-      "singing_resin": 25
+      "gold": 12000,
+      "whisper_dust": 5,
+      "brand_salt": 5
     },
     "requires": [
       "elves_recruitment_tier_2"
@@ -90,14 +95,424 @@
     ],
     "min_level": 10,
     "resources": {
-      "gold": 1300,
+      "gold": 31000,
       "singing_resin": 45,
-      "basalt_bone": 20
+      "basalt_bone": 20,
+      "whisper_dust": 15,
+      "brand_salt": 25
     },
     "requires": [
       "elves_recruitment_tier_2_form_2"
     ],
     "unit_evolution_tier": 3
+  },
+  {
+    "id": "elves_recruitment_tier_3_outpost",
+    "name": "Застава третього загону",
+    "description": "Підготовча споруда для третього загону. Потрібна для будівництва Зали третього рангу.",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 3,
+    "resources": {
+      "gold": 3000,
+      "singing_resin": 10,
+      "basalt_bone": 10
+    },
+    "requires": [],
+    "legacy_id": "third_squad_outpost"
+  },
+  {
+    "id": "elves_recruitment_tier_3",
+    "name": "Зала третього рангу",
+    "description": "Після спорудження застави відкриває найм третього типу істот своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_3_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 5,
+    "resources": {
+      "gold": 1100,
+      "singing_resin": 1,
+      "basalt_bone": 1
+    },
+    "unit_evolution_tier": 1,
+    "requires": [
+      "elves_recruitment_tier_3_outpost"
+    ],
+    "legacy_id": "recruitment_tier_3"
+  },
+  {
+    "id": "elves_recruitment_tier_3_form_2",
+    "name": "Зала третього рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_3_form_2_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 9,
+    "resources": {
+      "gold": 14000,
+      "singing_resin": 30,
+      "basalt_bone": 20,
+      "whisper_dust": 10,
+      "pulse_spark": 5,
+      "brand_salt": 5
+    },
+    "requires": [
+      "elves_recruitment_tier_3"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_3_form_2"
+  },
+  {
+    "id": "elves_recruitment_tier_3_form_3",
+    "name": "Зала третього рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_3_form_3_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 12,
+    "resources": {
+      "gold": 34000,
+      "singing_resin": 55,
+      "basalt_bone": 45,
+      "whisper_dust": 20,
+      "pulse_spark": 15,
+      "brand_salt": 30
+    },
+    "requires": [
+      "elves_recruitment_tier_3_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_3_form_3"
+  },
+  {
+    "id": "elves_recruitment_tier_4",
+    "name": "Зала четвертого рангу",
+    "description": "Дозволяє наймати істот 4-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_4_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 7,
+    "resources": {
+      "gold": 9000,
+      "singing_resin": 30,
+      "basalt_bone": 18
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_4"
+  },
+  {
+    "id": "elves_recruitment_tier_4_form_2",
+    "name": "Зала четвертого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_4_form_2_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 10,
+    "resources": {
+      "gold": 16000,
+      "singing_resin": 40,
+      "basalt_bone": 30,
+      "whisper_dust": 15,
+      "pulse_spark": 10,
+      "brand_salt": 10
+    },
+    "requires": [
+      "elves_recruitment_tier_4"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_4_form_2"
+  },
+  {
+    "id": "elves_recruitment_tier_4_form_3",
+    "name": "Зала четвертого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_4_form_3_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 13,
+    "resources": {
+      "gold": 37000,
+      "singing_resin": 65,
+      "basalt_bone": 55,
+      "whisper_dust": 25,
+      "pulse_spark": 20,
+      "brand_salt": 35
+    },
+    "requires": [
+      "elves_recruitment_tier_4_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_4_form_3"
+  },
+  {
+    "id": "elves_recruitment_tier_5",
+    "name": "Зала п’ятого рангу",
+    "description": "Дозволяє наймати істот 5-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_5_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 9,
+    "resources": {
+      "gold": 12000,
+      "singing_resin": 40,
+      "basalt_bone": 26,
+      "whisper_dust": 5
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_5"
+  },
+  {
+    "id": "elves_recruitment_tier_5_form_2",
+    "name": "Зала п’ятого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_5_form_2_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 12,
+    "resources": {
+      "gold": 18000,
+      "singing_resin": 50,
+      "basalt_bone": 40,
+      "whisper_dust": 20,
+      "pulse_spark": 15,
+      "brand_salt": 15
+    },
+    "requires": [
+      "elves_recruitment_tier_5"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_5_form_2"
+  },
+  {
+    "id": "elves_recruitment_tier_5_form_3",
+    "name": "Зала п’ятого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_5_form_3_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 15,
+    "resources": {
+      "gold": 40000,
+      "singing_resin": 75,
+      "basalt_bone": 65,
+      "whisper_dust": 30,
+      "pulse_spark": 25,
+      "brand_salt": 40
+    },
+    "requires": [
+      "elves_recruitment_tier_5_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_5_form_3"
+  },
+  {
+    "id": "elves_recruitment_tier_6",
+    "name": "Зала шостого рангу",
+    "description": "Дозволяє наймати істот 6-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_6_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 11,
+    "resources": {
+      "gold": 15000,
+      "singing_resin": 50,
+      "basalt_bone": 34,
+      "whisper_dust": 10
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_6"
+  },
+  {
+    "id": "elves_recruitment_tier_6_form_2",
+    "name": "Зала шостого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_6_form_2_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 14,
+    "resources": {
+      "gold": 20000,
+      "singing_resin": 60,
+      "basalt_bone": 50,
+      "whisper_dust": 25,
+      "pulse_spark": 20,
+      "brand_salt": 20
+    },
+    "requires": [
+      "elves_recruitment_tier_6"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_6_form_2"
+  },
+  {
+    "id": "elves_recruitment_tier_6_form_3",
+    "name": "Зала шостого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_6_form_3_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 17,
+    "resources": {
+      "gold": 43000,
+      "singing_resin": 85,
+      "basalt_bone": 75,
+      "whisper_dust": 35,
+      "pulse_spark": 30,
+      "brand_salt": 45
+    },
+    "requires": [
+      "elves_recruitment_tier_6_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_6_form_3"
+  },
+  {
+    "id": "elves_recruitment_tier_7",
+    "name": "Зала сьомого рангу",
+    "description": "Дозволяє наймати істот 7-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_7_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 13,
+    "resources": {
+      "gold": 18000,
+      "singing_resin": 60,
+      "basalt_bone": 42,
+      "whisper_dust": 15,
+      "pulse_spark": 5
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_7"
+  },
+  {
+    "id": "elves_recruitment_tier_7_form_2",
+    "name": "Зала сьомого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_7_form_2_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 16,
+    "resources": {
+      "gold": 22000,
+      "singing_resin": 70,
+      "basalt_bone": 60,
+      "whisper_dust": 30,
+      "pulse_spark": 25,
+      "brand_salt": 25
+    },
+    "requires": [
+      "elves_recruitment_tier_7"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_7_form_2"
+  },
+  {
+    "id": "elves_recruitment_tier_7_form_3",
+    "name": "Зала сьомого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_7_form_3_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 19,
+    "resources": {
+      "gold": 46000,
+      "singing_resin": 95,
+      "basalt_bone": 85,
+      "whisper_dust": 40,
+      "pulse_spark": 35,
+      "brand_salt": 50
+    },
+    "requires": [
+      "elves_recruitment_tier_7_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_7_form_3"
+  },
+  {
+    "id": "elves_recruitment_tier_8",
+    "name": "Зала восьмого рангу",
+    "description": "Дозволяє наймати істот 8-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_8_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 15,
+    "resources": {
+      "gold": 21000,
+      "singing_resin": 70,
+      "basalt_bone": 50,
+      "whisper_dust": 20,
+      "pulse_spark": 10
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_8"
+  },
+  {
+    "id": "elves_recruitment_tier_8_form_2",
+    "name": "Зала восьмого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_8_form_2_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 18,
+    "resources": {
+      "gold": 24000,
+      "singing_resin": 80,
+      "basalt_bone": 70,
+      "whisper_dust": 35,
+      "pulse_spark": 30,
+      "brand_salt": 30
+    },
+    "requires": [
+      "elves_recruitment_tier_8"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_8_form_2"
+  },
+  {
+    "id": "elves_recruitment_tier_8_form_3",
+    "name": "Зала восьмого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_8_form_3_building.png",
+    "factions": [
+      "elves"
+    ],
+    "min_level": 21,
+    "resources": {
+      "gold": 49000,
+      "singing_resin": 105,
+      "basalt_bone": 95,
+      "whisper_dust": 45,
+      "pulse_spark": 40,
+      "brand_salt": 55
+    },
+    "requires": [
+      "elves_recruitment_tier_8_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_8_form_3"
   },
   {
     "id": "underground_elves_recruitment_tier_1",
@@ -122,8 +537,9 @@
     ],
     "min_level": 5,
     "resources": {
-      "gold": 450,
-      "singing_resin": 20
+      "gold": 10000,
+      "singing_resin": 15,
+      "basalt_bone": 15
     },
     "requires": [
       "underground_elves_recruitment_tier_1"
@@ -140,9 +556,12 @@
     ],
     "min_level": 9,
     "resources": {
-      "gold": 1100,
+      "gold": 28000,
       "singing_resin": 40,
-      "basalt_bone": 15
+      "basalt_bone": 40,
+      "whisper_dust": 10,
+      "pulse_spark": 10,
+      "brand_salt": 5
     },
     "requires": [
       "underground_elves_recruitment_tier_1_form_2"
@@ -172,8 +591,9 @@
     ],
     "min_level": 6,
     "resources": {
-      "gold": 600,
-      "singing_resin": 25
+      "gold": 12000,
+      "whisper_dust": 5,
+      "brand_salt": 5
     },
     "requires": [
       "underground_elves_recruitment_tier_2"
@@ -190,14 +610,438 @@
     ],
     "min_level": 10,
     "resources": {
-      "gold": 1300,
+      "gold": 31000,
       "singing_resin": 45,
-      "basalt_bone": 20
+      "basalt_bone": 20,
+      "whisper_dust": 15,
+      "brand_salt": 25
     },
     "requires": [
       "underground_elves_recruitment_tier_2_form_2"
     ],
     "unit_evolution_tier": 3
+  },
+  {
+    "id": "ossuary",
+    "name": "Костниця",
+    "description": "Дозволяє набирати скелетів.",
+    "image_url": null,
+    "factions": [
+      "undergroundElves"
+    ],
+    "min_level": 2,
+    "resources": {
+      "gold": 1000,
+      "basalt_bone": 10
+    }
+  },
+  {
+    "id": "underground_elves_recruitment_tier_3_outpost",
+    "name": "Застава третього загону",
+    "description": "Підготовча споруда для третього загону. Потрібна для будівництва Зали третього рангу.",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 3,
+    "resources": {
+      "gold": 3000,
+      "singing_resin": 10,
+      "basalt_bone": 10
+    },
+    "requires": [],
+    "legacy_id": "third_squad_outpost"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_3",
+    "name": "Зала третього рангу",
+    "description": "Після спорудження застави відкриває найм третього типу істот своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_3_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 5,
+    "resources": {
+      "gold": 1100,
+      "singing_resin": 1,
+      "basalt_bone": 1
+    },
+    "unit_evolution_tier": 1,
+    "requires": [
+      "underground_elves_recruitment_tier_3_outpost"
+    ],
+    "legacy_id": "recruitment_tier_3"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_3_form_2",
+    "name": "Зала третього рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_3_form_2_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 8,
+    "resources": {
+      "gold": 14000,
+      "singing_resin": 30,
+      "basalt_bone": 20,
+      "whisper_dust": 10,
+      "pulse_spark": 5,
+      "brand_salt": 5
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_3"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_3_form_2"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_3_form_3",
+    "name": "Зала третього рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_3_form_3_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 12,
+    "resources": {
+      "gold": 34000,
+      "singing_resin": 55,
+      "basalt_bone": 45,
+      "whisper_dust": 20,
+      "pulse_spark": 15,
+      "brand_salt": 30
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_3_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_3_form_3"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_4",
+    "name": "Зала четвертого рангу",
+    "description": "Дозволяє наймати істот 4-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_4_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 7,
+    "resources": {
+      "gold": 9000,
+      "singing_resin": 30,
+      "basalt_bone": 18
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_4"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_4_form_2",
+    "name": "Зала четвертого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_4_form_2_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 10,
+    "resources": {
+      "gold": 16000,
+      "singing_resin": 40,
+      "basalt_bone": 30,
+      "whisper_dust": 15,
+      "pulse_spark": 10,
+      "brand_salt": 10
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_4"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_4_form_2"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_4_form_3",
+    "name": "Зала четвертого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_4_form_3_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 13,
+    "resources": {
+      "gold": 37000,
+      "singing_resin": 65,
+      "basalt_bone": 55,
+      "whisper_dust": 25,
+      "pulse_spark": 20,
+      "brand_salt": 35
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_4_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_4_form_3"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_5",
+    "name": "Зала п’ятого рангу",
+    "description": "Дозволяє наймати істот 5-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_5_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 9,
+    "resources": {
+      "gold": 12000,
+      "singing_resin": 40,
+      "basalt_bone": 26,
+      "whisper_dust": 5
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_5"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_5_form_2",
+    "name": "Зала п’ятого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_5_form_2_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 12,
+    "resources": {
+      "gold": 18000,
+      "singing_resin": 50,
+      "basalt_bone": 40,
+      "whisper_dust": 20,
+      "pulse_spark": 15,
+      "brand_salt": 15
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_5"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_5_form_2"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_5_form_3",
+    "name": "Зала п’ятого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_5_form_3_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 15,
+    "resources": {
+      "gold": 40000,
+      "singing_resin": 75,
+      "basalt_bone": 65,
+      "whisper_dust": 30,
+      "pulse_spark": 25,
+      "brand_salt": 40
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_5_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_5_form_3"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_6",
+    "name": "Зала шостого рангу",
+    "description": "Дозволяє наймати істот 6-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_6_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 11,
+    "resources": {
+      "gold": 15000,
+      "singing_resin": 50,
+      "basalt_bone": 34,
+      "whisper_dust": 10
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_6"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_6_form_2",
+    "name": "Зала шостого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_6_form_2_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 14,
+    "resources": {
+      "gold": 20000,
+      "singing_resin": 60,
+      "basalt_bone": 50,
+      "whisper_dust": 25,
+      "pulse_spark": 20,
+      "brand_salt": 20
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_6"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_6_form_2"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_6_form_3",
+    "name": "Зала шостого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_6_form_3_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 17,
+    "resources": {
+      "gold": 43000,
+      "singing_resin": 85,
+      "basalt_bone": 75,
+      "whisper_dust": 35,
+      "pulse_spark": 30,
+      "brand_salt": 45
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_6_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_6_form_3"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_7",
+    "name": "Зала сьомого рангу",
+    "description": "Дозволяє наймати істот 7-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_7_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 13,
+    "resources": {
+      "gold": 18000,
+      "singing_resin": 60,
+      "basalt_bone": 42,
+      "whisper_dust": 15,
+      "pulse_spark": 5
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_7"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_7_form_2",
+    "name": "Зала сьомого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_7_form_2_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 16,
+    "resources": {
+      "gold": 22000,
+      "singing_resin": 70,
+      "basalt_bone": 60,
+      "whisper_dust": 30,
+      "pulse_spark": 25,
+      "brand_salt": 25
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_7"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_7_form_2"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_7_form_3",
+    "name": "Зала сьомого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_7_form_3_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 19,
+    "resources": {
+      "gold": 46000,
+      "singing_resin": 95,
+      "basalt_bone": 85,
+      "whisper_dust": 40,
+      "pulse_spark": 35,
+      "brand_salt": 50
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_7_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_7_form_3"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_8",
+    "name": "Зала восьмого рангу",
+    "description": "Дозволяє наймати істот 8-го рангу своєї фракції.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_8_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 15,
+    "resources": {
+      "gold": 21000,
+      "singing_resin": 70,
+      "basalt_bone": 50,
+      "whisper_dust": 20,
+      "pulse_spark": 10
+    },
+    "unit_evolution_tier": 1,
+    "requires": [],
+    "legacy_id": "recruitment_tier_8"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_8_form_2",
+    "name": "Зала восьмого рангу · форма 2",
+    "description": "Відкриває найм істот у формі 2.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_8_form_2_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 18,
+    "resources": {
+      "gold": 24000,
+      "singing_resin": 80,
+      "basalt_bone": 70,
+      "whisper_dust": 35,
+      "pulse_spark": 30,
+      "brand_salt": 30
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_8"
+    ],
+    "unit_evolution_tier": 2,
+    "legacy_id": "recruitment_tier_8_form_2"
+  },
+  {
+    "id": "underground_elves_recruitment_tier_8_form_3",
+    "name": "Зала восьмого рангу · форма 3",
+    "description": "Відкриває найм істот у формі 3.",
+    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_8_form_3_building.png",
+    "factions": [
+      "underground_elves"
+    ],
+    "min_level": 21,
+    "resources": {
+      "gold": 49000,
+      "singing_resin": 105,
+      "basalt_bone": 95,
+      "whisper_dust": 45,
+      "pulse_spark": 40,
+      "brand_salt": 55
+    },
+    "requires": [
+      "underground_elves_recruitment_tier_8_form_2"
+    ],
+    "unit_evolution_tier": 3,
+    "legacy_id": "recruitment_tier_8_form_3"
   },
   {
     "id": "forge",
@@ -224,26 +1068,17 @@
     "factions": [],
     "min_level": 3,
     "resources": {
-      "gold": 250,
-      "singing_resin": 10
+      "gold": 1000,
+      "singing_resin": 1,
+      "basalt_bone": 1,
+      "whisper_dust": 1,
+      "pulse_spark": 1,
+      "brand_salt": 1,
+      "astralit": 1
     },
     "faction_image_urls": {
       "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_1.png",
       "elves": "/static/images/units_and_buildings/elves/buildings/elves_magic_school_level_1.png"
-    }
-  },
-  {
-    "id": "ossuary",
-    "name": "Костниця",
-    "description": "Дозволяє набирати скелетів.",
-    "image_url": null,
-    "factions": [
-      "undergroundElves"
-    ],
-    "min_level": 2,
-    "resources": {
-      "gold": 1000,
-      "basalt_bone": 10
     }
   },
   {
@@ -253,9 +1088,13 @@
     "factions": [],
     "min_level": 5,
     "resources": {
-      "gold": 500,
-      "singing_resin": 20,
-      "basalt_bone": 10
+      "gold": 5000,
+      "singing_resin": 5,
+      "basalt_bone": 5,
+      "whisper_dust": 5,
+      "pulse_spark": 5,
+      "brand_salt": 5,
+      "astralit": 5
     },
     "requires": [
       "magic_school_1"
@@ -272,9 +1111,13 @@
     "factions": [],
     "min_level": 7,
     "resources": {
-      "gold": 850,
-      "singing_resin": 30,
-      "basalt_bone": 20
+      "gold": 7000,
+      "singing_resin": 15,
+      "basalt_bone": 15,
+      "whisper_dust": 15,
+      "pulse_spark": 15,
+      "brand_salt": 15,
+      "astralit": 15
     },
     "requires": [
       "magic_school_2"
@@ -291,9 +1134,13 @@
     "factions": [],
     "min_level": 9,
     "resources": {
-      "gold": 1300,
-      "singing_resin": 40,
-      "basalt_bone": 30
+      "gold": 12000,
+      "singing_resin": 30,
+      "basalt_bone": 30,
+      "whisper_dust": 30,
+      "pulse_spark": 30,
+      "brand_salt": 30,
+      "astralit": 30
     },
     "requires": [
       "magic_school_3"
@@ -310,9 +1157,13 @@
     "factions": [],
     "min_level": 11,
     "resources": {
-      "gold": 2000,
+      "gold": 24000,
       "singing_resin": 50,
-      "basalt_bone": 45
+      "basalt_bone": 50,
+      "whisper_dust": 50,
+      "pulse_spark": 50,
+      "brand_salt": 50,
+      "astralit": 50
     },
     "requires": [
       "magic_school_4"
@@ -329,9 +1180,13 @@
     "factions": [],
     "min_level": 13,
     "resources": {
-      "gold": 3000,
-      "singing_resin": 70,
-      "basalt_bone": 60
+      "gold": 50000,
+      "singing_resin": 80,
+      "basalt_bone": 80,
+      "whisper_dust": 80,
+      "pulse_spark": 80,
+      "brand_salt": 80,
+      "astralit": 80
     },
     "requires": [
       "magic_school_5"
@@ -348,9 +1203,13 @@
     "factions": [],
     "min_level": 21,
     "resources": {
-      "gold": 6000,
+      "gold": 120000,
       "singing_resin": 120,
-      "basalt_bone": 100
+      "basalt_bone": 120,
+      "whisper_dust": 120,
+      "pulse_spark": 120,
+      "brand_salt": 120,
+      "astralit": 120
     },
     "requires": [
       "magic_school_6"
@@ -359,735 +1218,5 @@
       "underground_elves": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_magic_school_level_7.png",
       "elves": "/static/images/units_and_buildings/elves/buildings/elves_magic_school_level_7.png"
     }
-  },
-  {
-    "id": "elves_recruitment_tier_3_outpost",
-    "name": "Застава третього загону",
-    "description": "Підготовча споруда для третього загону. Потрібна для будівництва Зали третього рангу.",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 3,
-    "resources": {
-      "gold": 300,
-      "singing_resin": 15
-    },
-    "requires": [],
-    "legacy_id": "third_squad_outpost"
-  },
-  {
-    "id": "elves_recruitment_tier_3",
-    "name": "Зала третього рангу",
-    "description": "Після спорудження застави відкриває найм третього типу істот своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_3_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 5,
-    "resources": {
-      "gold": 550,
-      "singing_resin": 25,
-      "basalt_bone": 10
-    },
-    "unit_evolution_tier": 1,
-    "requires": [
-      "elves_recruitment_tier_3_outpost"
-    ],
-    "legacy_id": "recruitment_tier_3"
-  },
-  {
-    "id": "elves_recruitment_tier_3_form_2",
-    "name": "Зала третього рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_3_form_2_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 8,
-    "resources": {
-      "gold": 1100,
-      "singing_resin": 35,
-      "basalt_bone": 20
-    },
-    "requires": [
-      "elves_recruitment_tier_3"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_3_form_2"
-  },
-  {
-    "id": "elves_recruitment_tier_3_form_3",
-    "name": "Зала третього рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_3_form_3_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 12,
-    "resources": {
-      "gold": 2000,
-      "singing_resin": 60,
-      "basalt_bone": 35
-    },
-    "requires": [
-      "elves_recruitment_tier_3_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_3_form_3"
-  },
-  {
-    "id": "elves_recruitment_tier_4",
-    "name": "Зала четвертого рангу",
-    "description": "Дозволяє наймати істот 4-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_4_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 7,
-    "resources": {
-      "gold": 1500,
-      "singing_resin": 40,
-      "basalt_bone": 20
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_4"
-  },
-  {
-    "id": "elves_recruitment_tier_4_form_2",
-    "name": "Зала четвертого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_4_form_2_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 10,
-    "resources": {
-      "gold": 2300,
-      "singing_resin": 55,
-      "basalt_bone": 30
-    },
-    "requires": [
-      "elves_recruitment_tier_4"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_4_form_2"
-  },
-  {
-    "id": "elves_recruitment_tier_4_form_3",
-    "name": "Зала четвертого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_4_form_3_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 13,
-    "resources": {
-      "gold": 3200,
-      "singing_resin": 75,
-      "basalt_bone": 45
-    },
-    "requires": [
-      "elves_recruitment_tier_4_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_4_form_3"
-  },
-  {
-    "id": "elves_recruitment_tier_5",
-    "name": "Зала п’ятого рангу",
-    "description": "Дозволяє наймати істот 5-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_5_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 9,
-    "resources": {
-      "gold": 1750,
-      "singing_resin": 45,
-      "basalt_bone": 25
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_5"
-  },
-  {
-    "id": "elves_recruitment_tier_5_form_2",
-    "name": "Зала п’ятого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_5_form_2_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 12,
-    "resources": {
-      "gold": 2800,
-      "singing_resin": 65,
-      "basalt_bone": 40
-    },
-    "requires": [
-      "elves_recruitment_tier_5"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_5_form_2"
-  },
-  {
-    "id": "elves_recruitment_tier_5_form_3",
-    "name": "Зала п’ятого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_5_form_3_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 15,
-    "resources": {
-      "gold": 4200,
-      "singing_resin": 90,
-      "basalt_bone": 55
-    },
-    "requires": [
-      "elves_recruitment_tier_5_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_5_form_3"
-  },
-  {
-    "id": "elves_recruitment_tier_6",
-    "name": "Зала шостого рангу",
-    "description": "Дозволяє наймати істот 6-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_6_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 11,
-    "resources": {
-      "gold": 2100,
-      "singing_resin": 50,
-      "basalt_bone": 30
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_6"
-  },
-  {
-    "id": "elves_recruitment_tier_6_form_2",
-    "name": "Зала шостого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_6_form_2_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 14,
-    "resources": {
-      "gold": 3400,
-      "singing_resin": 75,
-      "basalt_bone": 45
-    },
-    "requires": [
-      "elves_recruitment_tier_6"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_6_form_2"
-  },
-  {
-    "id": "elves_recruitment_tier_6_form_3",
-    "name": "Зала шостого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_6_form_3_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 17,
-    "resources": {
-      "gold": 5000,
-      "singing_resin": 100,
-      "basalt_bone": 65
-    },
-    "requires": [
-      "elves_recruitment_tier_6_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_6_form_3"
-  },
-  {
-    "id": "elves_recruitment_tier_7",
-    "name": "Зала сьомого рангу",
-    "description": "Дозволяє наймати істот 7-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_7_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 13,
-    "resources": {
-      "gold": 3000,
-      "singing_resin": 75,
-      "basalt_bone": 40
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_7"
-  },
-  {
-    "id": "elves_recruitment_tier_7_form_2",
-    "name": "Зала сьомого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_7_form_2_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 16,
-    "resources": {
-      "gold": 4500,
-      "singing_resin": 95,
-      "basalt_bone": 60
-    },
-    "requires": [
-      "elves_recruitment_tier_7"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_7_form_2"
-  },
-  {
-    "id": "elves_recruitment_tier_7_form_3",
-    "name": "Зала сьомого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_7_form_3_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 19,
-    "resources": {
-      "gold": 5800,
-      "singing_resin": 110,
-      "basalt_bone": 75
-    },
-    "requires": [
-      "elves_recruitment_tier_7_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_7_form_3"
-  },
-  {
-    "id": "elves_recruitment_tier_8",
-    "name": "Зала восьмого рангу",
-    "description": "Дозволяє наймати істот 8-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_8_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 15,
-    "resources": {
-      "gold": 3800,
-      "singing_resin": 90,
-      "basalt_bone": 50
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_8"
-  },
-  {
-    "id": "elves_recruitment_tier_8_form_2",
-    "name": "Зала восьмого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_8_form_2_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 18,
-    "resources": {
-      "gold": 5200,
-      "singing_resin": 105,
-      "basalt_bone": 70
-    },
-    "requires": [
-      "elves_recruitment_tier_8"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_8_form_2"
-  },
-  {
-    "id": "elves_recruitment_tier_8_form_3",
-    "name": "Зала восьмого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/elves/buildings/elves_recruitment_tier_8_form_3_building.png",
-    "factions": [
-      "elves"
-    ],
-    "min_level": 21,
-    "resources": {
-      "gold": 6000,
-      "singing_resin": 120,
-      "basalt_bone": 80
-    },
-    "requires": [
-      "elves_recruitment_tier_8_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_8_form_3"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_3_outpost",
-    "name": "Застава третього загону",
-    "description": "Підготовча споруда для третього загону. Потрібна для будівництва Зали третього рангу.",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 3,
-    "resources": {
-      "gold": 300,
-      "singing_resin": 15
-    },
-    "requires": [],
-    "legacy_id": "third_squad_outpost"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_3",
-    "name": "Зала третього рангу",
-    "description": "Після спорудження застави відкриває найм третього типу істот своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_3_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 5,
-    "resources": {
-      "gold": 550,
-      "singing_resin": 25,
-      "basalt_bone": 10
-    },
-    "unit_evolution_tier": 1,
-    "requires": [
-      "underground_elves_recruitment_tier_3_outpost"
-    ],
-    "legacy_id": "recruitment_tier_3"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_3_form_2",
-    "name": "Зала третього рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_3_form_2_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 8,
-    "resources": {
-      "gold": 1100,
-      "singing_resin": 35,
-      "basalt_bone": 20
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_3"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_3_form_2"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_3_form_3",
-    "name": "Зала третього рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_3_form_3_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 12,
-    "resources": {
-      "gold": 2000,
-      "singing_resin": 60,
-      "basalt_bone": 35
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_3_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_3_form_3"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_4",
-    "name": "Зала четвертого рангу",
-    "description": "Дозволяє наймати істот 4-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_4_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 7,
-    "resources": {
-      "gold": 1500,
-      "singing_resin": 40,
-      "basalt_bone": 20
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_4"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_4_form_2",
-    "name": "Зала четвертого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_4_form_2_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 10,
-    "resources": {
-      "gold": 2300,
-      "singing_resin": 55,
-      "basalt_bone": 30
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_4"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_4_form_2"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_4_form_3",
-    "name": "Зала четвертого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_4_form_3_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 13,
-    "resources": {
-      "gold": 3200,
-      "singing_resin": 75,
-      "basalt_bone": 45
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_4_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_4_form_3"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_5",
-    "name": "Зала п’ятого рангу",
-    "description": "Дозволяє наймати істот 5-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_5_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 9,
-    "resources": {
-      "gold": 1750,
-      "singing_resin": 45,
-      "basalt_bone": 25
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_5"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_5_form_2",
-    "name": "Зала п’ятого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_5_form_2_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 12,
-    "resources": {
-      "gold": 2800,
-      "singing_resin": 65,
-      "basalt_bone": 40
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_5"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_5_form_2"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_5_form_3",
-    "name": "Зала п’ятого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_5_form_3_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 15,
-    "resources": {
-      "gold": 4200,
-      "singing_resin": 90,
-      "basalt_bone": 55
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_5_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_5_form_3"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_6",
-    "name": "Зала шостого рангу",
-    "description": "Дозволяє наймати істот 6-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_6_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 11,
-    "resources": {
-      "gold": 2100,
-      "singing_resin": 50,
-      "basalt_bone": 30
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_6"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_6_form_2",
-    "name": "Зала шостого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_6_form_2_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 14,
-    "resources": {
-      "gold": 3400,
-      "singing_resin": 75,
-      "basalt_bone": 45
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_6"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_6_form_2"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_6_form_3",
-    "name": "Зала шостого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_6_form_3_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 17,
-    "resources": {
-      "gold": 5000,
-      "singing_resin": 100,
-      "basalt_bone": 65
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_6_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_6_form_3"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_7",
-    "name": "Зала сьомого рангу",
-    "description": "Дозволяє наймати істот 7-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_7_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 13,
-    "resources": {
-      "gold": 3000,
-      "singing_resin": 75,
-      "basalt_bone": 40
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_7"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_7_form_2",
-    "name": "Зала сьомого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_7_form_2_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 16,
-    "resources": {
-      "gold": 4500,
-      "singing_resin": 95,
-      "basalt_bone": 60
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_7"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_7_form_2"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_7_form_3",
-    "name": "Зала сьомого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_7_form_3_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 19,
-    "resources": {
-      "gold": 5800,
-      "singing_resin": 110,
-      "basalt_bone": 75
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_7_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_7_form_3"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_8",
-    "name": "Зала восьмого рангу",
-    "description": "Дозволяє наймати істот 8-го рангу своєї фракції.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_8_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 15,
-    "resources": {
-      "gold": 3800,
-      "singing_resin": 90,
-      "basalt_bone": 50
-    },
-    "unit_evolution_tier": 1,
-    "requires": [],
-    "legacy_id": "recruitment_tier_8"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_8_form_2",
-    "name": "Зала восьмого рангу · форма 2",
-    "description": "Відкриває найм істот у формі 2.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_8_form_2_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 18,
-    "resources": {
-      "gold": 5200,
-      "singing_resin": 105,
-      "basalt_bone": 70
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_8"
-    ],
-    "unit_evolution_tier": 2,
-    "legacy_id": "recruitment_tier_8_form_2"
-  },
-  {
-    "id": "underground_elves_recruitment_tier_8_form_3",
-    "name": "Зала восьмого рангу · форма 3",
-    "description": "Відкриває найм істот у формі 3.",
-    "image_url": "/static/images/units_and_buildings/underground_elves/buildings/underground_elves_recruitment_tier_8_form_3_building.png",
-    "factions": [
-      "underground_elves"
-    ],
-    "min_level": 21,
-    "resources": {
-      "gold": 6000,
-      "singing_resin": 120,
-      "basalt_bone": 80
-    },
-    "requires": [
-      "underground_elves_recruitment_tier_8_form_2"
-    ],
-    "unit_evolution_tier": 3,
-    "legacy_id": "recruitment_tier_8_form_3"
   }
 ]

@@ -123,3 +123,16 @@
 #enterprise-history li { margin-block: .35rem; }
 #enterprise-history a { color: #365036; }
 #enterprise-history > a { margin-inline-end: .6rem; }
+
+.construction-art { width: 100%; height: 15rem; }
+.construction-panel progress { display: block; width: 100%; }
+.construction-resource { border-top: 1px solid #cbb691; margin-top: .85rem; padding: .5rem 0; }
+.construction-resource h3 { margin: .2rem 0; }
+.construction-resource form:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .5rem; }
+.construction-resource input[type="number"] { width: 7rem; }
+.construction-resource input[type="range"] { width: min(12rem, 100%); vertical-align: middle; }
+#construction-confirm { box-sizing: border-box; width: min(26rem, calc(100% - 2rem)); margin: auto; }
+#construction-confirm::backdrop { background: #24190caa; }
+.enterprise-panel .resource-icon, .enterprise-panel .event-resource-icon {
+    width: 2rem; height: 2rem; object-fit: contain; vertical-align: middle;
+}

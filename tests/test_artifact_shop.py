@@ -80,7 +80,8 @@ def test_shop_charges_all_resources_and_keeps_finite_stock_atomic(sessions):
 def test_sync_catalog_updates_templates_without_resetting_stock_or_owned_items(sessions):
     with sessions() as db:
         add_shop_items(db)
-        listing = db.scalar(select(ShopItem).where(ShopItem.quantity == 5))
+        listing = db.scalar(select(ShopItem).order_by(ShopItem.id).limit(1))
+        catalog_price, catalog_resources = listing.price, listing.resource_costs
         listing_id = listing.id
         listing.quantity = 4
         listing.price = 1
@@ -93,8 +94,8 @@ def test_sync_catalog_updates_templates_without_resetting_stock_or_owned_items(s
         db.commit()
         add_shop_items(db, sync_existing=True)
         assert len(db.scalars(select(ShopItem)).all()) == len(json.loads(ARTIFACTS_FILE.read_text()))
-        assert (listing.quantity, listing.price) == (4, 1600)
-        assert listing.resource_costs == {"basalt_bone": 40, "pulse_spark": 16}
+        assert (listing.quantity, listing.price) == (4, catalog_price)
+        assert listing.resource_costs == catalog_resources
         owned = db.get(Item, owned_id)
         assert (owned.stats, owned.durability, owned.max_durability) == ({"melee_attack": 2}, 7, 20)
         assert owned.image_url == listing.item_template.image_url
@@ -102,16 +103,7 @@ def test_sync_catalog_updates_templates_without_resetting_stock_or_owned_items(s
 
 def test_catalog_exposes_all_artifacts_and_purchases_use_each_level_and_resource_price(sessions):
     catalog = json.loads(ARTIFACTS_FILE.read_text(encoding="utf-8"))
-    names_by_level = {
-        1: "Гілка з дерева сосни",
-        2: "Стоптані постоли",
-        3: "Іржавий тесак стражника",
-        4: "Ремінь із залізною пряжкою",
-        5: "Срібний медальйон віщуна",
-        6: "Дворучна сокира коваля",
-        7: "Пластинчастий обладунок досвідченого воїна",
-        8: "Зачарований перстень стихій",
-    }
+    names_by_level = {entry["shop_data"]["level"]: entry["name"] for entry in catalog}
     with sessions() as db:
         add_shop_items(db, sync_existing=True)
         player = db.get(User, 10)
@@ -161,3 +153,21 @@ def test_catalog_exposes_all_artifacts_and_purchases_use_each_level_and_resource
             purchased = db.scalar(select(Item).where(Item.owner_id == player.id, Item.name == name))
             assert purchased.image_url == listing.item_template.image_url
             assert purchased.durability == purchased.max_durability == listing.item_template.max_durability
+
+
+
+def test_replace_catalog_removes_obsolete_listings_and_preserves_inventory(sessions):
+    with sessions() as db:
+        obsolete = ShopItem(item_template=Item(name="Obsolete", item_type="belt"), price=1)
+        owned = Item(name="Obsolete", item_type="belt", owner_id=10, durability=3)
+        db.add_all([obsolete, owned])
+        db.commit()
+        owned_id = owned.id
+        add_shop_items(db, replace_catalog=True)
+        expected = json.loads(ARTIFACTS_FILE.read_text())
+        listings = db.scalars(select(ShopItem).order_by(ShopItem.id)).all()
+        assert {row.item_template.name for row in listings} == {entry["name"] for entry in expected}
+        assert db.get(Item, owned_id).durability == 3
+        ids = [row.id for row in listings]
+        add_shop_items(db, replace_catalog=True)
+        assert db.scalars(select(ShopItem.id).order_by(ShopItem.id)).all() == ids

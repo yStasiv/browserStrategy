@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from .. import database, models
 from ..engine import battle_service
-from ..services import admin_stats, enterprises, player_moderation, world
+from ..services import admin_stats, enterprises, global_events, player_moderation, world
 from ..world_models import WorldSector
 
 router = APIRouter()
@@ -70,10 +70,15 @@ def save_enterprise(
             raise HTTPException(422, "Обери наявний сектор.")
         if fields["resource_type"] not in enterprises.resource_names() or fields["production_type"] not in ENTERPRISE_TYPES:
             raise HTTPException(422, "Обери наявний ресурс і тип підприємства.")
+        world.lock_world(db)
         if enterprise_id is None:
             db.add(models.Enterprise(**fields))
         else:
             site = enterprises.lock_enterprise(db, enterprise_id)
+            if global_events.for_site(db, enterprise_id):
+                global_events.ensure_operational(db, enterprise_id)
+                if any(fields[key] != getattr(site, key) for key in ("name", "sector", "resource_type", "production_type")):
+                    raise HTTPException(409, "Основні поля побудованого підприємства пов’язані з подією.")
             if fields["max_storage"] < site.resource_stored or fields["max_workers"] < site.workers_count:
                 raise HTTPException(409, "Нові ліміти мають вміщати поточні запаси й працівників.")
             if site.workers_count and any(fields[key] != getattr(site, key)
@@ -98,7 +103,11 @@ async def delete_enterprise(
     user: models.User = Depends(world_admin),
 ):
     if db.get(models.Enterprise, enterprise_id) is not None:
+        world.lock_world(db)
         site = enterprises.lock_enterprise(db, enterprise_id)
+        if global_events.for_site(db, enterprise_id):
+            db.rollback()
+            return render_enterprises(request, db, user, error="Підприємство пов’язане з глобальною подією.", status=409)
         if db.query(models.User.id).filter(models.User.workplace == f"enterprise_{enterprise_id}").first():
             db.rollback()
             return render_enterprises(request, db, user, error="Дочекайся завершення робочих змін.", status=409)

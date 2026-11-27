@@ -9,9 +9,9 @@ from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from PIL import Image
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
-from backend.models import News, NewsAcknowledgment
+from backend.models import GlobalEvent, News, NewsAcknowledgment
 from backend.services.guild import insert_once
 
 IMAGE_DIR = Path(__file__).resolve().parents[2] / "frontend/static/images/news"
@@ -25,10 +25,20 @@ KYIV = ZoneInfo("Europe/Kyiv")
 
 
 def published():
-    return select(News).where(News.status == "published").order_by(News.published_at.desc(), News.id.desc())
+    return select(News).where(News.status == "published", News.event_id.is_(None)).order_by(News.published_at.desc(), News.id.desc())
 
 
 def latest_unread(db, player_id):
+    event_notice = db.scalar(select(News).join(GlobalEvent, GlobalEvent.id == News.event_id).where(
+        News.status == "published",
+        or_(News.recipient_id == player_id,
+            (News.recipient_id.is_(None) & GlobalEvent.status.in_(("ACTIVE", "COMPLETED", "REWARDED")))),
+        ~select(NewsAcknowledgment.player_id).where(
+            NewsAcknowledgment.player_id == player_id, NewsAcknowledgment.news_id == News.id
+        ).exists(),
+    ).order_by(News.published_at, News.id).limit(1))
+    if event_notice:
+        return event_notice
     item = db.scalar(published().limit(1))
     if item is None or db.get(NewsAcknowledgment, (player_id, item.id)) is not None:
         return None
@@ -37,7 +47,9 @@ def latest_unread(db, player_id):
 
 def acknowledge(db, player_id, news_id):
     item = db.get(News, news_id)
-    if item is None or item.status != "published":
+    if item is None or item.status != "published" or item.recipient_id not in (None, player_id):
+        raise HTTPException(404, "Новину не знайдено.")
+    if item.event_id is not None and db.get(GlobalEvent, item.event_id).status == "CANCELLED":
         raise HTTPException(404, "Новину не знайдено.")
     insert_once(db, NewsAcknowledgment, player_id=player_id, news_id=news_id)
 
@@ -84,7 +96,7 @@ def fields(title, text, link_url):
     return {"title": title, "text": text, "link_url": link_url or None}
 
 
-def store_image(upload):
+def store_image(upload, *, directory=None, prefix=None):
     if upload is None or not upload.filename:
         return None
     suffix = Path(upload.filename).suffix.lower()
@@ -102,15 +114,16 @@ def store_image(upload):
     except (OSError, ValueError, SyntaxError, Image.DecompressionBombError) as exc:
         raise HTTPException(422, "Файл не є коректним зображенням вибраного типу.") from exc
     filename = uuid4().hex + suffix
-    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
-    path = IMAGE_DIR / filename
+    directory = directory or IMAGE_DIR
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / filename
     with path.open("xb") as target:
         try:
             target.write(contents)
         except OSError:
             path.unlink(missing_ok=True)
             raise
-    return IMAGE_PREFIX + filename
+    return (prefix or IMAGE_PREFIX) + filename
 
 
 def remove_upload(url):

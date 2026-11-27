@@ -2,12 +2,14 @@ import asyncio
 import logging
 
 from backend.db_base import SessionLocal
+from backend.services.global_events import finish_due
 from backend.services.enterprises import settle_shift, settlement_candidates
 from backend.websockets import manager
 
 
 def settle_due_workers():
-    with SessionLocal() as db:
+    with SessionLocal.begin() as db:
+        finish_due(db)
         candidates = settlement_candidates(db)
     notifications = []
     for worker_id in candidates:

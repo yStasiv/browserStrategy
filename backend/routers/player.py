@@ -7,6 +7,7 @@ from pydantic import BaseModel, StrictInt
 from backend.auth import playable_users, session_player
 from backend import database, models
 from backend.auth import get_current_user
+from backend.services import global_events
 from backend.services import news, player_moderation
 from backend.services.character_profile import dashboard, hero_state
 from backend.routers.item import ITEM_TYPES
@@ -36,18 +37,6 @@ async def player_info(
     if not player:
         raise HTTPException(status_code=404, detail="Персонажа не знайдено.")
 
-    # Отримуємо рейтинг гравця
-    player_rating = db.query(models.PlayerRating).filter(
-        models.PlayerRating.user_id == player.id
-    ).first()
-
-    if not player_rating:
-        # Якщо рейтингу ще немає, створюємо новий
-        player_rating = models.PlayerRating(user_id=player.id)
-        db.add(player_rating)
-        db.commit()
-        db.refresh(player_rating)
-
     profile = dashboard(db, player, PlayerHelper.experience_needed_for_next_level(player.level))
     profile["resources"] = [resource for resource in profile["resources"] if not resource["conditional"]]
     show_account_status = player_moderation.can_view_account_status(viewer)
@@ -60,7 +49,6 @@ async def player_info(
             "item_types": ITEM_TYPES,
             "read_only": True,
             "nav_player": viewer,
-            "player_rating": player_rating,
             "show_account_status": show_account_status,
             "can_moderate": player_moderation.can_moderate(viewer, player),
             "can_assign_moderator": player_moderation.can_assign_moderator(viewer, player),
@@ -167,7 +155,7 @@ def player_transfer_protocol(id: int, request: Request, db: Session = Depends(da
     if player is None:
         raise HTTPException(404, "Персонажа не знайдено.")
     receipt = models.RewardTransaction
-    entries = db.query(receipt).filter(receipt.recipient_id == player.id).order_by(
+    entries = db.query(receipt).filter(receipt.recipient_id == player.id, receipt.source != global_events.REWARD_SOURCE).order_by(
         receipt.created_at.desc(), receipt.id.desc(),
     ).all()
     combined = [(entry.created_at, entry, None) for entry in entries]
