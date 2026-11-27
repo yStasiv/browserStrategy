@@ -19,7 +19,9 @@
 }
 
 .world-board h1, .world-board h2 { margin: 0 0 0.6rem; color: #3b2f2a; }
-.world-side { display: grid; grid-template-rows: max-content max-content 1fr; gap: 1rem; }
+.world-side { display: grid; grid-auto-rows: max-content; align-content: start; gap: 1rem; }
+.world-map-board { align-self: start; padding-block: .55rem; }
+.world-board #world-title { text-align: center; font-size: 1.15rem; margin-bottom: .4rem; }
 #world-hunt-feedback:empty { display: none; }
 #world-hunts[hidden] { display: none; }
 .world-hunt-cooldown {
@@ -139,7 +141,27 @@
     filter: drop-shadow(0 0 1.2px #ff2525) drop-shadow(0 0 3.6px #ff2525);
 }
 .world-board .map-movement-confirmation[hidden] { display: none; }
-#world-location-detail { height: 2.8em; overflow: auto; }
+.world-travel-overlay {
+    position: absolute;
+    z-index: 3;
+    top: .6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    width: max-content;
+    max-width: calc(100% - 1.2rem);
+    padding: .35rem .65rem;
+    border: 1px solid #a47a4c;
+    border-radius: .4rem;
+    background: #f7efdcf2;
+    text-align: center;
+    font-size: .88rem;
+    pointer-events: none;
+}
+.world-travel-overlay button { pointer-events: auto; }
+.world-travel-overlay p { margin: .2rem 0 0; }
+#world-travel-panel:has(#world-travel[hidden]):has(#world-feedback:empty):has(#world-refresh[hidden]) { display: none; }
+#world-feedback:empty { display: none; }
 .world-admin { max-width: 72rem; margin: 1rem auto; }
 .world-admin:not(:has(.map-editor-layout)) .world-art { max-width: 48rem; margin-inline: auto; }
 .world-admin-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
@@ -169,18 +191,14 @@ polyline.editor-boundary { fill: none; }
 .editor-vertex.active { fill: white; stroke: #63234a; }
 @media (max-width: 48rem) { .map-editor-layout { grid-template-columns: minmax(0, 1fr); } }
 
-.world-sectors, .world-enterprises { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
-.world-sectors { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); }
-.world-sectors li, .world-enterprises li { padding: 0.65rem; border: 1px solid #caba9c; border-radius: 0.45rem; }
-.world-sectors li.is-adjacent { border-color: #65814c; background: #ecf0df; }
-.world-sectors li.is-current { border-color: #996b35; background: #f8e1b8; }
-.world-sectors p, .world-enterprises p { margin: 0.3rem 0; }
+.world-enterprises { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+.world-enterprises li { padding: 0.65rem; border: 1px solid #caba9c; border-radius: 0.45rem; }
+.world-enterprises p { margin: 0.3rem 0; }
 .world-board button[hidden] { display: none; }
 .world-board button { color: white; background: #3f5732; border: 0; min-height: 2.5rem; padding: 0.4rem 0.75rem; border-radius: 0.3rem; cursor: pointer; }
 .world-board button:focus-visible, .world-board a:focus-visible { outline: 2px solid #412710; outline-offset: 2px; }
 .world-board button:disabled { opacity: 0.55; cursor: default; }
 .world-board a { color: #354c2d; }
-.world-travel { margin-top: 0.8rem; }
 .world-travel progress { display: block; width: 100%; accent-color: #745230; }
 .world-enterprise-row {
     display: grid;

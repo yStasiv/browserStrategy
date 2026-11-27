@@ -178,7 +178,7 @@ test('map clicks update only the confirmation until a single departure is confir
     })});
     await new Promise(resolve => setImmediate(resolve));
     assert.ok(confirmation.hidden);
-    assert.match(el('world-current').textContent, /Королівська цитадель/);
+    assert.match(el('world-travel-label').textContent, /Королівська цитадель → Зелені передгір’я/);
     const css = fs.readFileSync('frontend/static/css/world_map.css', 'utf8');
     assert.match(css, /\.map-movement-confirmation\s*\{[^}]*position:\s*absolute;/s);
 });

@@ -1,11 +1,9 @@
 (() => {
     const byId = id => document.getElementById(id);
-    const current = byId('world-current');
     const markers = byId('world-markers');
     const fogLayer = byId('world-fog');
     const art = byId('world-art');
     const viewport = byId('world-map-viewport');
-    const sectors = byId('world-sectors');
     const enterpriseTabs = [...document.querySelectorAll('[data-production-type]')];
     const hunts = byId('world-hunts');
     const huntFeedback = byId('world-hunt-feedback');
@@ -20,6 +18,7 @@
     let busy = false;
     let timer;
     let huntTimer;
+    let feedbackTimer;
     let selectedLocation;
     let moveAnchor;
     let outlineInnerEdge;
@@ -29,8 +28,6 @@
     let travelerPosition;
     let travelFrame;
     const revealed = new Map();
-    const featureLabels = {castle: 'Замок', enterprises: 'Підприємства', hunting: 'Полювання',
-        guilds: 'Гільдії', market: 'Магазин', port: 'Порт'};
 
     function name(key) {
         return state.sectors.find(sector => sector.key === key)?.name ?? key;
@@ -57,31 +54,8 @@
             }
         }
         readAt = performance.now();
-        current.textContent = `Поточний сектор · ${name(state.current_sector)}`;
-        byId('world-work-notice').hidden = !state.work_blocks_travel;
         renderGeography();
         selectSector(state.sectors.find(row => (row.id ?? row.key) === selectedLocation));
-        sectors.replaceChildren();
-        const canTravel = !state.travel && !state.work_blocks_travel;
-        for (const sector of state.sectors) {
-            const here = sector.key === state.current_sector;
-            const adjacent = sector.duration_seconds !== null;
-            const card = element('li');
-            card.classList.toggle('is-current', here);
-            card.classList.toggle('is-adjacent', adjacent && canTravel);
-            const detail = here ? 'Поточний сектор' :
-                adjacent ? `У дорозі ${sector.duration_seconds} с` : 'Поза прямим маршрутом';
-            card.append(element('strong', sector.name), element('p', detail));
-            if (adjacent) {
-                const button = element('button', 'Обрати');
-                button.type = 'button';
-                button.disabled = !canTravel;
-                button.addEventListener('click', () => selectSector(sector));
-                card.append(button);
-            }
-            sectors.append(card);
-        }
-
         renderEnterprises();
         hunts.replaceChildren(...state.hunts.map(hunt => {
             const item = element('li');
@@ -161,11 +135,6 @@
             moveSelected.setAttribute('aria-label', label);
             positionMoveIcon();
         }
-        const detail = sector ?? state.sectors.find(row => row.key === state.current_sector);
-        byId('world-location-detail').textContent = !detail?.features ? '' : [
-            detail.description,
-            Object.keys(detail.features).filter(key => detail.features[key]).map(key => featureLabels[key]).join(', '),
-        ].filter(Boolean).join(' · ');
         for (const polygon of markers.querySelectorAll('[data-sector]')) {
             polygon.classList.toggle('is-selected', available && polygon.dataset.sector === sector.key);
         }
@@ -363,17 +332,29 @@
         throw failure;
     }
 
+    function showFeedback(message, duration) {
+        clearTimeout(feedbackTimer);
+        feedback.textContent = message;
+        if (duration) feedbackTimer = setTimeout(() => { feedback.textContent = ''; }, duration);
+    }
+
     async function refreshState() {
         refresh.hidden = true;
         try {
             const previous = state.travel;
             const updated = await getState('/api/world');
             render(updated);
-            feedback.textContent = previous && !updated.travel
-                ? previous.destination === updated.current_sector ? `Прибуття · ${name(updated.current_sector)}` : 'Подорож скасовано.'
-                : '';
+            if (previous && !updated.travel) {
+                if (previous.destination === updated.current_sector) {
+                    showFeedback(`Прибуття · ${name(updated.current_sector)}`, 2000);
+                } else {
+                    showFeedback('Подорож скасовано.');
+                }
+            } else {
+                showFeedback('');
+            }
         } catch (error) {
-            feedback.textContent = error.message;
+            showFeedback(error.message);
             refresh.hidden = false;
         }
     }
@@ -405,31 +386,23 @@
     async function requestSector(key) {
         if (busy) return;
         busy = true;
-        const buttons = [...sectors.querySelectorAll('button:not(:disabled)')];
-        if (!moveSelected.hidden && !moveSelected.disabled) buttons.push(moveSelected);
-        buttons.forEach(button => { button.disabled = true; });
+        moveSelected.disabled = true;
         try {
             render(await getState('/move-to-sector', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({sector: key}),
             }));
-            feedback.textContent = 'Подорож розпочато.';
+            showFeedback('Подорож розпочато.');
         } catch (error) {
-            feedback.textContent = error.message;
+            showFeedback(error.message);
             refresh.hidden = false;
-            buttons.forEach(button => { button.disabled = false; });
         } finally {
             busy = false;
             moveSelected.disabled = false;
         }
     }
 
-    byId('world-map-zoom').addEventListener('input', event => {
-        WorldGeography.zoom(art, Number(event.target.value));
-        scaleSectorOutlines();
-        positionMoveIcon();
-    });
     refresh.addEventListener('click', refreshState);
     art.addEventListener('click', () => selectSector(null));
     viewport.addEventListener('scroll', positionMoveIcon, {passive: true});

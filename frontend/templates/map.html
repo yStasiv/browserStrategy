@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Карта світу{% endblock %}
+{% block title %}Мапа світу{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/world_map.css') }}">
 <script defer src="{{ url_for('static', path='js/world_geography.js') }}"></script>
@@ -7,15 +7,12 @@
 {% endblock %}
 {% block body %}
 <main class="world-page" lang="uk">
-    <section class="world-board" aria-labelledby="world-title">
-        <h1 id="world-title">Карта світу</h1>
-        <p id="world-current"></p>
-        <p id="world-location-detail" aria-live="polite"></p>
-        <p id="world-work-notice" hidden>Під час роботи залишити сектор неможливо.</p>
+    <section class="world-board world-map-board" aria-labelledby="world-title">
+        <h1 id="world-title">Мапа світу</h1>
         <div class="world-map-container" id="world-map-container">
             <div class="world-map-viewport" id="world-map-viewport">
                 <div class="world-art" id="world-art">
-                    <img src="{{ world.map.image }}" width="{{ world.map.width }}" height="{{ world.map.height }}" alt="Ілюстрація карти світу" draggable="false">
+                    <img src="{{ world.map.image }}" width="{{ world.map.width }}" height="{{ world.map.height }}" alt="Ілюстрація мапи світу" draggable="false">
                     <svg id="world-fog" aria-hidden="true"></svg>
                     <svg id="world-markers" aria-label="Відкриті локації"></svg>
                 </div>
@@ -24,17 +21,16 @@
                     aria-label="Переміститися" hidden>
                 <img src="{{ url_for('static', path='images/map/move_marker.png') }}" width="36" height="36" alt="">
             </button>
+            <section class="world-travel-overlay" id="world-travel-panel" aria-label="Подорож">
+                <div class="world-travel" id="world-travel" hidden>
+                    <label for="world-progress" id="world-travel-label"></label>
+                    <progress id="world-progress" value="0" max="1"></progress>
+                    <p id="world-time"></p>
+                </div>
+                <p id="world-feedback" role="status"></p>
+                <button type="button" id="world-refresh" hidden>Оновити стан</button>
+            </section>
         </div>
-        <label>Масштаб карти <input type="range" id="world-map-zoom" min="1" max="2.5" step=".25" value="1"></label>
-        <div class="world-travel" id="world-travel" hidden>
-            <label for="world-progress" id="world-travel-label"></label>
-            <progress id="world-progress" value="0" max="1"></progress>
-            <p id="world-time"></p>
-        </div>
-        <p id="world-feedback" role="status"></p>
-        <button type="button" id="world-refresh" hidden>Оновити стан</button>
-        <h2>Сектори</h2>
-        <ul id="world-sectors" class="world-sectors"></ul>
     </section>
     <aside class="world-side" aria-label="Місцеві можливості">
         <section class="world-board">
